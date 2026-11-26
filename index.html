@@ -906,7 +906,7 @@ function setSweepDefaults() {
 function loadModel(m, keepFreq) {
   S.model = normalize(m);
   if (!keepFreq) S.calcFreq = +m.freq;
-  S.sweep = null; S.held = null; $('#dropHold').hidden = true;
+  S.held = null; $('#dropHold').hidden = true;
   renderModelFields(); renderTables(); setSweepDefaults(); drawSweep();
   edReset();
   S.opt.vars = []; S.opt.best = null; S.opt.start = null; S.opt.history = [];
@@ -917,7 +917,8 @@ function loadModel(m, keepFreq) {
 
 /* ---------------- edits ---------------- */
 let calcTimer = null;
-function changed(immediate) {
+function changed(immediate, modelEdited = true) {
+  if (modelEdited) invalidateSweep();
   S.dirty = true;
   validateCells();
   setStatus('stale', 'Press Calculate to update the results.');
@@ -967,7 +968,7 @@ $('#addLoad').onclick = () => { S.model.loads.push({ pos: 'w1c', type: 0, L: 1, 
 $('#mName').oninput = e => { S.model.name = e.target.value; };
 $('#mComment').oninput = e => { S.model.comment = e.target.value; };
 $('#mFreq').oninput = e => { const v = +e.target.value; if (v > 0) { const sync = Math.abs(S.calcFreq - S.model.freq) < 1e-9; S.model.freq = v; $('#mLambda').textContent = fmt(MM.lambdaOf(v), 3) + ' m'; if (sync) { S.calcFreq = v; $('#cFreq').value = v; setSweepDefaults(); } changed(); } };
-$('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(); } };
+$('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(false, false); } };
 $('#cGround').onchange = e => { S.model.ground.type = +e.target.value; renderModelFields(); changed(); };
 $('#cHeight').oninput = e => { S.model.ground.height = +e.target.value || 0; changed(); };
 $('#cEps').oninput = e => { S.model.ground.eps = +e.target.value || 13; changed(); };
@@ -2046,10 +2047,24 @@ $('#swPer').oninput = updateSweepControls; $('#swStep').oninput = updateSweepCon
 // Sweep points are shared round-robin over several workers (one per spare CPU core), and the
 // charts fill in as points arrive.
 let sweepRun = null;
+let sweepVersion = 0;
+function invalidateSweep() {
+  if (!sweepRun && !S.sweep) return;
+  sweepVersion++;
+  if (sweepRun) sweepRun.stop();
+  S.sweep = null;
+  S.sweepSegs = null;
+  $('#swRun').textContent = 'Run sweep';
+  $('#swStatus').textContent = 'Model changed. Run the sweep again.';
+  drawSweep();
+}
 function runSweep(model, fl) {
   const n = fl.length;
   const K = workerUrl ? Math.max(1, Math.min(n, (navigator.hardwareConcurrency || 4) - 1, 8)) : 0;
-  if (!K) return job({ kind: 'sweep', model, freqs: fl }).then(pts => ({ pts, K: 1 }));
+  if (!K) return new Promise((resolve, reject) => {
+    sweepRun = { stop: () => { sweepRun = null; reject(new Error('Stopped')); } };
+    job({ kind: 'sweep', model, freqs: fl }).then(pts => resolve({ pts, K: 1 }), reject);
+  });
   return new Promise((resolve, reject) => {
     // each worker takes the next frequency when it is free; the highest (slowest) frequencies go first
     const got = [], ws = [], queue = fl.slice().sort((a, b) => b - a);
@@ -2069,6 +2084,7 @@ function runSweep(model, fl) {
     for (let w = 0; w < K; w++) {
       const wk = makeWorker(); ws.push(wk);
       wk.onmessage = e => {
+        if (done) return;
         if (e.data.progress) {
           got.push(e.data.progress.pt);
           $('#swStatus').textContent = 'Sweeping… ' + got.length + ' of ' + n + ' points on ' + K + ' cores';
@@ -2097,18 +2113,24 @@ $('#swRun').onclick = async () => {
     if (!(from > 0 && to > from)) { $('#swStatus').textContent = 'Set a start frequency below the end frequency.'; return; }
     fl = Array.from({ length: cnt }, (_, i) => from + (to - from) * i / (cnt - 1));
   }
+  const version = ++sweepVersion;
   const n = fl.length;
+  S.sweep = [];
   $('#swRun').textContent = 'Stop'; $('#swStatus').textContent = 'Sweeping…';
   const t0 = performance.now();
   try {
     S.sweepSegs = segs;
+    drawSweep();
     const r = await runSweep(model, fl);
+    if (version !== sweepVersion) return;
     S.sweep = r.pts;
     $('#swStatus').textContent = n + ' points in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' + (r.K > 1 ? ' on ' + r.K + ' cores' : '');
   } catch (e) {
+    if (version !== sweepVersion) return;
     if (e.message === 'Stopped') { S.sweep = e.pts || S.sweep; $('#swStatus').textContent = 'Stopped after ' + (e.pts ? e.pts.length : 0) + ' of ' + n + ' points.'; }
     else $('#swStatus').textContent = e.message;
   }
+  sweepRun = null;
   drawSweep();
   $('#swRun').textContent = 'Run sweep';
 };
@@ -2119,7 +2141,7 @@ $('#resBtn').onclick = async () => {
     const r = await job({ kind: 'res', model, f: S.calcFreq });
     if (Math.abs(r.X) > 1) { $('#swStatus').textContent = 'No resonance found near ' + fmt(S.calcFreq, 3) + ' MHz.'; return; }
     $('#swStatus').textContent = 'Resonant at ' + fmt(r.f, 4) + ' MHz. Set as calculation frequency.';
-    S.calcFreq = +r.f.toFixed(4); $('#cFreq').value = S.calcFreq; changed(true);
+    S.calcFreq = +r.f.toFixed(4); $('#cFreq').value = S.calcFreq; changed(true, false);
     if (!$('#autoCalc').checked) calculate();
     drawSweep();
   } catch (e) { $('#swStatus').textContent = e.message; }
