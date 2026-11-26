@@ -299,7 +299,7 @@ footer a { color: var(--accent); }
         <label class="fld"><span>SC</span><input id="sSc" inputmode="decimal"></label>
         <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px;align-self:center"><input type="checkbox" id="autoCalc" checked style="width:auto"><span>Recalculate on every edit</span></label>
       </div>
-      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that is good above about 0.1 λ but underestimates ground loss close to the soil. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
+      <p class="hint">Sommerfeld is the default impedance method for elevated wires over flat, homogeneous soil. "Complex image" is faster but can underestimate feed resistance and overstate gain. Compare with Sommerfeld for your geometry and soil. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
       <ul class="warns" id="warnList"></ul>
     </div>
     <div class="card">
