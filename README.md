@@ -11,9 +11,8 @@ A wire antenna modeler that runs in your browser. Sommerwire calculates feed imp
 patterns of wire antennas with the method of moments, over free space, perfect ground or real soil, and reads and
 writes MMANA-GAL `.maa` files.
 
-Its distinguishing feature is the real-ground model: the impedance over lossy soil is solved with Sommerfeld
-integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
-come out right, ground loss included. That is where the name comes from.
+Sommerwire uses Sommerfeld integrals for the impedance of elevated wires over homogeneous lossy soil.
+The comparisons below cover feed impedance and sampled peak gain on one azimuth cut for dipoles and a vertical with elevated radials.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
@@ -22,7 +21,7 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
 - **Geometry** as editable tables (with expressions such as `R/4` or `33*F`) or drawn in a **3D editor** with snapping,
   wire splitting, undo/redo and live recalculation while you drag.
 - **Sources, loads** (series L–C with Q, parallel L–C traps, or R + jX) and **transmission lines** (ideal lines across feed gaps, like
-  NEC's TL card), for example a coax centre line in a hexbeam.
+  NEC's TL card). These lines are lossless and do not radiate. Model shield exterior current with an explicit wire.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
@@ -65,14 +64,15 @@ Pages serving the repository root.
   (εc − 1)/(εc + 1), integrated with the exact kernel) and a smooth remainder from the Sommerfeld half-space
   integrals, tabulated once per frequency and interpolated during the matrix fill: the same organisation as NEC-2,
   with the formulas derived independently and written without numerical cancellation.
-- **Far field**: sum over all segments with Fresnel reflection; gain relative to input power, so wire, load and
-  ground losses lower it.
+- **Gain** uses sky-wave radiation intensity and net accepted power summed over all driven ports. Transmitter mismatch loss is excluded.
+  Over real soil, an explicit perfect mirror or any ground-connected mesh node makes the entire impedance solve use a perfect mirror.
+  Combining those currents with the real-soil Fresnel field can yield more radiated power than the feed supplies. In that case the app reports impedance and SWR and withholds pattern outputs, including pattern-based optimization.
 
 The Help tab describes every model in detail, with references.
 
 ## Validation
 
-Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and segmentation, average ground
+Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and comparable mesh refinements, average ground
 (εr 13, 5 mS/m), Sommerfeld ground in both:
 
 | Case | nec2c | Sommerwire |
@@ -83,9 +83,9 @@ Compared with nec2c (the C translation of the public-domain NEC-2), same geometr
 | Vertical dipole, bottom at 0.5 m | 89.6 − j2.9 Ω, 0.27 dBi | 89.3 − j4.6 Ω, 0.27 dBi |
 | λ/4 vertical, 16 × 5 m radials at 5 cm, 7.1 MHz | 44.9 − j35.9 Ω, −1.21 dBi | 44.2 − j38.5 Ω, −1.18 dBi |
 
-Resistance agrees within 1–3 %, gain within 0.1 dB; the reactance offset of 1–4 Ω is the usual difference between
-MININEC- and NEC-style current expansions. On the DX Commander's small, crowded hub the codes differ more; a power
-balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it.
+These are numerical comparisons at the finer of two meshes. They do not establish accuracy for an installed antenna.
+Integrating the archived lossless PEC DX Commander nec2c pattern gives a radiated-to-accepted power ratio of 0.782.
+That discrepancy limits interpretation of this calculation. Power balance alone cannot locate the error or validate the currents of either solver.
 The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 
 ## Limitations
