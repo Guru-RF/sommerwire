@@ -11,8 +11,9 @@ A wire antenna modeler that runs in your browser. Sommerwire calculates feed imp
 patterns of wire antennas with the method of moments, over free space, perfect ground or real soil, and reads and
 writes MMANA-GAL `.maa` files.
 
-Sommerwire uses Sommerfeld integrals to solve wire impedance over lossy soil. The comparisons below cover
-feed impedance and sampled gain for elevated dipoles and a vertical with raised radials.
+For wires elevated above flat, homogeneous soil, the default impedance solve includes soil coupling through
+Sommerfeld integrals. The archived comparisons include 14.05 MHz dipoles at heights of 0.3, 1, 3 and 10 m
+and a 7.1 MHz vertical with elevated radials at 0.05, 0.3 and 2 m.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
@@ -22,7 +23,8 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
   wire splitting, undo/redo and live recalculation while you drag.
 - **Sources** with an optional ideal balun or unun (4:1, 49:1…), **loads** (series L–C or parallel L–C traps with coil and
   capacitor loss and coil self-capacitance, or R + jX) and **transmission lines** across feed gaps, like NEC's TL card, with
-  velocity factor and cable loss, for example a coax centre line in a hexbeam.
+  velocity factor and optional cable loss. The line transfers differential power between ports without radiating.
+  Draw the coax shield exterior as a wire to model common-mode current.
 - **Insulated wire** (thin-sheath approximation, as NEC-4) and wire materials from copper to magnetic steel.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
@@ -65,19 +67,21 @@ Pages serving the repository root.
   segment, reduced kernel, point matching, k − 1 unknowns at a k-wire junction, tapered segmentation as in
   MMANA-GAL.
 - **Real ground**: the reflected field is split into a quasi-static image (the perfect mirror scaled by
-  (εc − 1)/(εc + 1), integrated with the exact kernel) and a smooth remainder from the Sommerfeld half-space
+  (εc − 1)/(εc + 1), integrated with the reduced wire kernel) and a smooth remainder from the Sommerfeld half-space
   integrals, tabulated once per frequency and interpolated during the matrix fill: the same organisation as NEC-2,
   with the formulas derived independently and written without numerical cancellation.
-- **Far field**: sum over all segments with Fresnel reflection; gain relative to input power, so wire, load and
-  ground losses lower it.
+- **Far field** uses the solved currents and Fresnel reflection for the sky wave over real soil. Gain uses net
+  power accepted across all driven ports and includes modeled losses. Realized gain at the transmitter also
+  depends on mismatch and any unmodeled feed-system losses. See the [mixed-ground gain limit](help.html#mixgain)
+  for mirror-solved currents over real soil.
 
 The Help tab describes every model in detail, with references.
 
 ## Validation
 
-The archived fine-mesh results below compare feed impedance and the sampled peak gain on the azimuth 0° elevation
-cut over average soil (εr 13, 5 mS/m), using Sommerfeld ground in both solvers. The meshes have comparable
-density. NEC places a center feed on a segment and Sommerwire places it at a node.
+The archived nec2c comparison checks feed impedance and peak gain sampled on one elevation cut at azimuth 0°.
+The table shows selected fine-mesh results over average soil (εr 13, 5 mS/m) with Sommerfeld ground in both
+solvers. The geometry is shared. A centre feed uses an odd segment count in nec2c and an even count in Sommerwire.
 
 | Case | nec2c | Sommerwire |
 |---|---|---|
@@ -87,11 +91,16 @@ density. NEC places a center feed on a segment and Sommerwire places it at a nod
 | Vertical dipole, bottom at 0.5 m | 89.6 − j2.9 Ω, 0.27 dBi | 89.3 − j4.6 Ω, 0.27 dBi |
 | λ/4 vertical, 16 × 5 m radials at 5 cm, 7.1 MHz | 44.9 − j35.9 Ω, −1.21 dBi | 44.2 − j38.5 Ω, −1.18 dBi |
 
-For the rows shown, gain differs by less than 0.1 dB. Two mesh densities give a sensitivity check. For example,
-with radials at 0.3 m the Sommerwire reactance moves from −52.93 to −48.60 Ω on refinement.
+For the rows shown, gain differs by less than 0.1 dB.
+For the 7.1 MHz vertical with radials at 0.3 m, Sommerwire reactance changes from −52.93 to −48.60 Ω
+on refinement. Two mesh densities give no general near-ground error bound. The archive also lacks a
+systematic validation of Sommerfeld-table interpolation and calibrated installed impedance, current,
+efficiency or field-strength measurements.
+
 For the separate lossless DX Commander case over perfect ground at 14.175 MHz, integrating the archived NEC gain
 over the hemisphere gives a radiated-to-accepted power ratio of 0.782. The discrepancy leaves the accuracy
 of the hub currents unresolved.
+These are comparisons between programs, not measurements.
 The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 
 ## Limitations
