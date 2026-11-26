@@ -74,6 +74,8 @@ nav.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overfl
 .fld > span { font-size: 11.5px; color: var(--muted); letter-spacing: 0.03em; }
 .fld input, .fld select { background: var(--field); border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; width: 9em; font-family: var(--f-mono); }
 .fld input.wide { width: 18em; font-family: var(--f-body); }
+.fld.note { margin-top: 10px; }
+.fld.note textarea { width: 100%; min-height: 4.2em; resize: vertical; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; font: inherit; font-size: 13px; line-height: 1.45; }
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .stack .chart { aspect-ratio: auto; height: clamp(170px, 24vw, 260px); }
 .smithwrap { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 14px; align-items: start; }
@@ -202,6 +204,7 @@ footer a { color: var(--accent); }
         <label class="fld"><span>Design frequency (MHz)</span><input id="mFreq" inputmode="decimal"></label>
         <div class="fld"><span>Wavelength λ</span><div class="mono" id="mLambda" style="padding:5px 0">–</div></div>
       </div>
+      <label class="fld note"><span>Comment (saved in the .maa file)</span><textarea id="mComment" rows="3" spellcheck="true"></textarea></label>
       <p class="hint">Coordinates are in metres, radius in millimetres. Any cell takes an expression: <span class="mono">+ − * / ( )</span> with <span class="mono">R</span> = λ at the design frequency, <span class="mono">I</span> = inch, <span class="mono">F</span> = foot, e.g. <span class="mono">R/4</span> or <span class="mono">33*F</span>. Wires connect where their end points coincide exactly. Seg: <span class="mono">-1</span> tapers both ends (recommended), <span class="mono">0</span> automatic even, a positive number fixes the count.</p>
     </div>
     <div class="card">
@@ -532,6 +535,21 @@ const EXAMPLES = [
       { x1: '2.6', y1: '-2.78', z1: '14.78', x2: '2.6', y2: '-2.78', z2: '9.22', r: '1', seg: '-1' }],
     sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 75,
     comment: "Square loops centred 12 m high: driver 5.30 m sides, reflector 5.56 m sides, 2.6 m apart, fed at the bottom centre (horizontal polarization). About 84 ohm, so the SWR reference is 75 ohm coax. Beams toward -X." },
+  { name: 'Spiderbeam-style tri-band wire Yagi, 20/15/10 m', freq: 14.175, wires: [
+      { x1: '-2.7', y1: '-5.341', z1: '12', x2: '-2.7', y2: '5.341', z2: '12', r: '1', seg: '-1' },
+      { x1: '0', y1: '-5.172', z1: '12', x2: '0', y2: '5.172', z2: '12', r: '1', seg: '-1' },
+      { x1: '2.7', y1: '-4.816', z1: '12', x2: '2.7', y2: '4.816', z2: '12', r: '1', seg: '-1' },
+      { x1: '-1.6', y1: '-3.63', z1: '12', x2: '-1.6', y2: '3.63', z2: '12', r: '1', seg: '-1' },
+      { x1: '0.3', y1: '-3.396', z1: '12', x2: '0.3', y2: '3.396', z2: '12', r: '1', seg: '-1' },
+      { x1: '2.2', y1: '-3.311', z1: '12', x2: '2.2', y2: '3.311', z2: '12', r: '1', seg: '-1' },
+      { x1: '-1.2', y1: '-2.645', z1: '12', x2: '-1.2', y2: '2.645', z2: '12', r: '1', seg: '-1' },
+      { x1: '0.6', y1: '-2.464', z1: '12', x2: '0.6', y2: '2.464', z2: '12', r: '1', seg: '-1' },
+      { x1: '1.8', y1: '-2.47', z1: '12', x2: '1.8', y2: '2.47', z2: '12', r: '1', seg: '-1' },
+      { x1: '3', y1: '-2.226', z1: '12', x2: '3', y2: '2.226', z2: '12', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [],
+    tls: [{ p1: 'w2c', p2: 'w5c', z0: 200, vf: 1, len: '', rev: false }, { p1: 'w5c', p2: 'w8c', z0: 200, vf: 1, len: '', rev: false }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: "Interlaced wire Yagi in the spiderbeam style (Sommerwire's own dimensions, not the published Spiderbeam ones), 2 mm copper wire at 12 m, boom along X, beams toward +X. w1-w3: 20 m reflector, driver, director; w4-w6: 15 m; w7-w10: 10 m reflector, driver, two directors. The three drivers are joined by short 200 ohm open-wire lines to one 50 ohm feed point on the 20 m driver. Element lengths optimised for all three bands at once: SWR below 1.5 on 14.0-14.35, 21.0-21.45 and 28.0-28.8 MHz; about 6.9 / 6.4 / 6.2 dBi in free space; F/B 16-18 dB on 20 m, 15-33 dB on 15 m, only 11-15 dB on 10 m." },
   { name: 'Log-periodic dipole array (LPDA), 14–30 MHz', freq: 21.2, wires: [
       { x1: '0', y1: '-5.5', z1: '15', x2: '0', y2: '5.5', z2: '15', r: '8', seg: '-1' },
       { x1: '1.32', y1: '-4.95', z1: '15', x2: '1.32', y2: '4.95', z2: '15', r: '8', seg: '-1' },
@@ -807,7 +825,7 @@ function validateCells() {
 }
 function renderModelFields() {
   const m = S.model;
-  $('#mName').value = m.name; $('#mFreq').value = m.freq;
+  $('#mName').value = m.name; $('#mFreq').value = m.freq; $('#mComment').value = m.comment || '';
   $('#mLambda').textContent = fmt(MM.lambdaOf(+m.freq), 3) + ' m';
   $('#cFreq').value = S.calcFreq;
   $('#cGround').value = m.ground.type; $('#cHeight').value = m.ground.height;
@@ -885,6 +903,7 @@ $('#addTl').onclick = () => {
 };
 $('#addLoad').onclick = () => { S.model.loads.push({ pos: 'w1c', type: 0, L: 1, C: 0, Q: 0, R: 0, X: 0 }); renderTables(); changed(); };
 $('#mName').oninput = e => { S.model.name = e.target.value; };
+$('#mComment').oninput = e => { S.model.comment = e.target.value; };
 $('#mFreq').oninput = e => { const v = +e.target.value; if (v > 0) { const sync = Math.abs(S.calcFreq - S.model.freq) < 1e-9; S.model.freq = v; $('#mLambda').textContent = fmt(MM.lambdaOf(v), 3) + ' m'; if (sync) { S.calcFreq = v; $('#cFreq').value = v; setSweepDefaults(); } changed(); } };
 $('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(); } };
 $('#cGround').onchange = e => { S.model.ground.type = +e.target.value; renderModelFields(); changed(); };
@@ -2181,7 +2200,21 @@ $('#optApply').onclick = () => {
 };
 
 /* ---------------- files ---------------- */
-EXAMPLES.forEach((ex, i) => { const o = document.createElement('option'); o.value = i; o.textContent = ex.name; $('#exampleSel').appendChild(o); });
+// the Examples menu, grouped by band (the option value stays the index into EXAMPLES)
+const EX_BANDS = ['160 m', '80 m', '40 m', '20 m', 'Multi-band HF', 'VHF / UHF'];
+function exampleBand(n) {
+  if (/^Inverted-L/.test(n)) return '160 m';
+  if (/^Horizontal loop/.test(n)) return '80 m';
+  if (/^(Inverted V|Elevated ground plane|Coil-loaded|Delta loop|4-square|DX Commander)/.test(n)) return '40 m';
+  if (/^(3-element Yagi|Half-wave dipole|Quad loop|Moxon|Two-element|Magnetic loop)/.test(n)) return '20 m';
+  if (/^Dual-band/.test(n)) return 'VHF / UHF';
+  return 'Multi-band HF';
+}
+EX_BANDS.forEach(band => {
+  const g = document.createElement('optgroup'); g.label = band;
+  EXAMPLES.forEach((ex, i) => { if (exampleBand(ex.name) !== band) return; const o = document.createElement('option'); o.value = i; o.textContent = ex.name; g.appendChild(o); });
+  if (g.children.length) $('#exampleSel').appendChild(g);
+});
 // G3TXQ dimension table (driver half-length A, reflector length B, tip gap g, height above the 10 m band)
 const HEX_TABLE = [
   { name: '20m', A: 5.537, B: 10.465, g: 0.610, up: 0.965 }, { name: '17m', A: 4.305, B: 8.153, g: 0.470, up: 0.381 },
