@@ -1,0 +1,2085 @@
+<meta charset="utf-8">
+<title>Sommerwire</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument bench — readout strip on top, tabbed work area below, tables scroll inside their own frames. */
+:root {
+  --bg: #eef1f4; --panel: #ffffff; --ink: #18212b; --muted: #5b6876; --line: #d5dce3; --grid: #e6eaef;
+  --accent: #0d5c8c; --accent-ink: #ffffff; --trace2: #b86200; --trace3: #2f7d4f;
+  --good: #1f7a4a; --warn: #9a6a00; --bad: #b42318; --field: #f7f9fb; --sel: #dcebf5;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --cur-light: 46%;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --grid: #1d2731;
+  --accent: #4fa8dc; --accent-ink: #08131c; --trace2: #f0a040; --trace3: #5cc28a;
+  --good: #5cc28a; --warn: #e5b74a; --bad: #f07060; --field: #111921; --sel: #1c3446; --cur-light: 62%; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --grid: #1d2731;
+  --accent: #4fa8dc; --accent-ink: #08131c; --trace2: #f0a040; --trace3: #5cc28a;
+  --good: #5cc28a; --warn: #e5b74a; --bad: #f07060; --field: #111921; --sel: #1c3446; --cur-light: 62%; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 14px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
+header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-family: var(--f-display); font-weight: 600; font-size: 22px; letter-spacing: 0.01em; margin: 0; }
+.brand span { color: var(--muted); font-size: 12.5px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+button, select, input { font: inherit; color: inherit; }
+button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.ghost { background: transparent; }
+button:focus-visible, select:focus-visible, input:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+label.file { display: inline-flex; }
+label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+/* readout strip */
+.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); overflow: hidden; }
+.ro.wide { grid-column: span 2; }
+.ro { padding: 10px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: -1px; min-width: 0; }
+.ro:last-child { border-right: 0; }
+.ro .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.ro .v { font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ro .v small { font-size: 12px; color: var(--muted); }
+.v.good { color: var(--good); } .v.warn { color: var(--warn); } .v.bad { color: var(--bad); }
+.status { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); min-height: 20px; flex-wrap: wrap; }
+.pill { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em; border: 1px solid currentColor; }
+.pill.ok { color: var(--good); } .pill.stale { color: var(--warn); } .pill.err { color: var(--bad); } .pill.busy { color: var(--accent); }
+
+/* tabs */
+nav.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 14px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel { display: grid; gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.card h2 { font-family: var(--f-display); font-size: 15px; font-weight: 600; margin: 0; letter-spacing: 0.02em; }
+.card .hint { color: var(--muted); font-size: 12.5px; margin: 0; max-width: 72ch; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
+.fld { display: grid; gap: 3px; }
+.fld > span { font-size: 11.5px; color: var(--muted); letter-spacing: 0.03em; }
+.fld input, .fld select { background: var(--field); border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; width: 9em; font-family: var(--f-mono); }
+.fld input.wide { width: 18em; font-family: var(--f-body); }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.stack .chart { aspect-ratio: auto; height: clamp(170px, 24vw, 260px); }
+.smithwrap { display: grid; grid-template-columns: minmax(0, 480px) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 720px) { .smithwrap { grid-template-columns: minmax(0, 1fr); } }
+.canvasbox.smith { aspect-ratio: 1 / 1; cursor: crosshair; }
+.smithinfo { display: grid; gap: 8px; font-size: 12.5px; color: var(--muted); align-content: start; }
+.smithinfo .pt { font-family: var(--f-mono); font-size: 13px; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+
+/* tables */
+.tscroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 0; border-bottom: 1px solid var(--line); text-align: left; }
+th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 500; padding: 6px 8px; background: var(--field); white-space: nowrap; }
+td.n { padding: 4px 8px; color: var(--muted); font-family: var(--f-mono); width: 2.5em; }
+td input, td select { width: 100%; min-width: 5.6em; border: 0; background: transparent; padding: 6px 8px; font-family: var(--f-mono); font-size: 13px; }
+td input:focus { background: var(--sel); outline: none; }
+td input.bad { color: var(--bad); text-decoration: underline wavy; }
+td input:disabled { color: var(--muted); opacity: 0.45; }
+td input[type="checkbox"] { width: auto; min-width: 0; margin: 0 10px; }
+td.x { width: 2em; }
+td.x button { border: 0; background: none; color: var(--muted); padding: 4px 8px; }
+td.x button:hover { color: var(--bad); }
+tr:last-child td { border-bottom: 0; }
+table.results td { padding: 5px 9px; font-family: var(--f-mono); font-size: 12.5px; white-space: nowrap; }
+table.results tr.latest td { background: var(--sel); }
+
+/* canvases */
+.canvasbox { position: relative; width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; touch-action: none; }
+.canvasbox canvas { display: block; width: 100%; height: 100%; }
+.view3d { aspect-ratio: 16 / 10; max-height: 560px; cursor: grab; }
+.polar { aspect-ratio: 1 / 1; max-width: 100%; }
+.chart { aspect-ratio: 16 / 7; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; }
+.legend i.dash { border-top-style: dashed; }
+.overlay-note { position: absolute; left: 10px; bottom: 8px; font-size: 11.5px; color: var(--muted); pointer-events: none; }
+.warns { color: var(--warn); font-size: 12.5px; margin: 0; padding-left: 18px; }
+.mono { font-family: var(--f-mono); }
+
+dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); padding: 16px; width: min(640px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+dialog textarea { width: 100%; height: 320px; font-family: var(--f-mono); font-size: 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+#varTbl select[data-f="type"] { min-width: 12em; }
+#varTbl select[data-f="idx"] { min-width: 7.5em; }
+td.g, td.d { padding: 5px 9px; white-space: nowrap; }
+td.g { font-weight: 500; }
+td.d { color: var(--muted); font-size: 12.5px; white-space: normal; min-width: 16em; }
+td.now, td.best { padding: 5px 9px; font-family: var(--f-mono); font-size: 13px; white-space: nowrap; }
+td.best { color: var(--accent); font-weight: 500; }
+.ramp { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: middle; margin: 0 6px; background: linear-gradient(90deg, hsl(215 70% var(--cur-light)), hsl(162 70% var(--cur-light)), hsl(110 70% var(--cur-light)), hsl(60 70% var(--cur-light)), hsl(10 70% var(--cur-light))); }
+.edgrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+.edside { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.canvasbox.edel { aspect-ratio: 2 / 1.15; }
+@media (max-width: 820px) { .edgrid { grid-template-columns: 1fr; } }
+.inspector { background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.inspector h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
+.inspector .hint { margin: 0; }
+.inspector .toolbar button { padding: 5px 9px; font-size: 13px; }
+.igrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.igrid .fld input, .inspector .fld input { width: 100%; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 6px 6px 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); position: relative; }
+kbd { font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px solid currentColor; border-radius: 3px; opacity: 0.7; }
+.fld.chk { grid-auto-flow: column; align-items: center; gap: 6px; align-self: center; }
+.fld.chk input { width: auto; }
+.coord { position: absolute; left: 8px; top: 8px; font-family: var(--f-mono); font-size: 11.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; pointer-events: none; max-width: calc(100% - 16px); }
+.legend i.bandkey { border: 0; height: 10px; width: 16px; background: var(--trace3); opacity: 0.3; border-radius: 2px; }
+.bandsum { display: grid; gap: 8px; }
+.bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
+table.results td.good { color: var(--good); } table.results td.warn { color: var(--warn); } table.results td.bad { color: var(--bad); }
+footer { color: var(--muted); font-size: 12px; max-width: 80ch; display: grid; gap: 6px; }
+footer p { margin: 0; }
+footer .author { color: var(--ink); font-size: 13px; }
+footer a { color: var(--accent); }
+@media (max-width: 560px) { .ro .v { font-size: 16px; } .brand span { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Sommerwire</h1><span>Wire antenna modeler · method of moments</span></div>
+    <div class="toolbar">
+      <select id="exampleSel" aria-label="Load an example antenna">
+        <option value="">Examples…</option>
+      </select>
+      <label class="file"><input type="file" id="fileIn" accept=".maa,.MAA,.txt"><button type="button" id="openBtn">Open .maa</button></label>
+      <button type="button" id="saveBtn">Export .maa</button>
+      <button type="button" class="primary" id="calcBtn">Calculate</button>
+    </div>
+  </header>
+
+  <section class="readout" aria-label="Latest result">
+    <div class="ro"><div class="k">Frequency</div><div class="v" id="roF">–</div></div>
+    <div class="ro wide"><div class="k">Impedance (Ω)</div><div class="v" id="roZ">–</div></div>
+    <div class="ro"><div class="k" id="roSwrK">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
+    <div class="ro"><div class="k">Gain</div><div class="v" id="roG">–</div></div>
+    <div class="ro"><div class="k">F/B</div><div class="v" id="roFB">–</div></div>
+    <div class="ro"><div class="k">Elevation</div><div class="v" id="roEl">–</div></div>
+    <div class="ro"><div class="k">Polarization</div><div class="v" id="roPol">–</div></div>
+  </section>
+  <div class="status" id="status"></div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="geometry" aria-selected="true">Geometry</button>
+    <button class="tab" role="tab" data-tab="view" aria-selected="false">3D editor</button>
+    <button class="tab" role="tab" data-tab="calc" aria-selected="false">Calculate</button>
+    <button class="tab" role="tab" data-tab="pattern" aria-selected="false">Far field</button>
+    <button class="tab" role="tab" data-tab="sweep" aria-selected="false">Frequency sweep</button>
+    <button class="tab" role="tab" data-tab="opt" aria-selected="false">Optimize</button>
+    <button class="tab" role="tab" data-tab="help" aria-selected="false">Help</button>
+  </nav>
+
+  <!-- GEOMETRY -->
+  <section class="panel" data-panel="geometry">
+    <div class="card">
+      <div class="row">
+        <label class="fld"><span>Antenna name</span><input id="mName" class="wide"></label>
+        <label class="fld"><span>Design frequency (MHz)</span><input id="mFreq" inputmode="decimal"></label>
+        <div class="fld"><span>Wavelength λ</span><div class="mono" id="mLambda" style="padding:5px 0">–</div></div>
+      </div>
+      <p class="hint">Coordinates are in metres, radius in millimetres. Any cell takes an expression: <span class="mono">+ − * / ( )</span> with <span class="mono">R</span> = λ at the design frequency, <span class="mono">I</span> = inch, <span class="mono">F</span> = foot, e.g. <span class="mono">R/4</span> or <span class="mono">33*F</span>. Wires connect where their end points coincide exactly. Seg: <span class="mono">-1</span> tapers both ends (recommended), <span class="mono">0</span> automatic even, a positive number fixes the count.</p>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Wires</h2><button type="button" id="addWire">Add wire</button></div>
+      <div class="tscroll"><table id="wireTbl"><thead><tr><th>#</th><th>X1</th><th>Y1</th><th>Z1</th><th>X2</th><th>Y2</th><th>Z2</th><th>R mm</th><th>Seg</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:center"><h2>Sources</h2><button type="button" id="addSrc">Add source</button></div>
+        <p class="hint">Position <span class="mono">w1c</span> = wire 1 centre, <span class="mono">w1b</span> = begin, <span class="mono">w1e</span> = end. Voltage sources.</p>
+        <div class="tscroll"><table id="srcTbl"><thead><tr><th>#</th><th>Position</th><th>Phase °</th><th>Volts</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content:space-between;align-items:center"><h2>Loads</h2><button type="button" id="addLoad">Add load</button></div>
+        <p class="hint">Series L/C with optional Q, or a fixed R + jX.</p>
+        <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Transmission lines</h2><button type="button" id="addTl">Add line</button></div>
+      <p class="hint">An ideal, lossless line between two feed points, connected across the gap at each end like NEC's TL card. It does not radiate or couple to the wires, so it suits coax. Leave Length empty for the straight distance between the ends; the velocity factor makes the line electrically longer. Reversed swaps the two conductors at the far end. A source on a line end drives the line and the wire gap together.</p>
+      <div class="tscroll"><table id="tlTbl"><thead><tr><th>#</th><th>End 1</th><th>End 2</th><th>Z0 Ω</th><th>VF</th><th>Length m</th><th>Reversed</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Buildings</h2><button type="button" id="addHouse">Add house</button></div>
+      <p class="hint">A house beside the antenna. X and Y are the centre of the footprint, Length runs along the ridge, Rotation turns the ridge away from the X axis. A metal roof is solved as a wire grid (mesh about λ/10 at the highest frequency or finer: 1 m suits HF); finer meshes are slower. Walls are shown for reference only: stone, brick and wood are not conductors, and a wire solver cannot model them. Metal gutters run along both eaves (not bonded to the roof); downpipes run from the gutter ends into the ground, each with an earth resistance (typically tens to hundreds of ohms at HF; 0 = perfect). If your downpipes end in plastic drains, choose None. Wiring or a steel frame can be drawn as wires. Add height on the Calculate tab lifts buildings too.</p>
+      <div class="tscroll"><table id="objTbl"><thead><tr><th>#</th><th>X</th><th>Y</th><th>Length</th><th>Width</th><th>Wall height</th><th>Ridge height</th><th>Rotation °</th><th>Roof</th><th>Mesh m</th><th>Gutters</th><th>Downpipes</th><th>Earth Ω</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- VIEW -->
+  <section class="panel" data-panel="view" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2>3D editor</h2>
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="Editor mode">
+            <button type="button" data-mode="select" aria-pressed="true">Select <kbd>S</kbd></button><button type="button" data-mode="draw" aria-pressed="false">Draw <kbd>D</kbd></button><button type="button" data-mode="rotate" aria-pressed="false">Rotate <kbd>R</kbd></button>
+          </div>
+          <button type="button" id="edUndo" disabled>Undo</button><button type="button" id="edRedo" disabled>Redo</button><button type="button" id="edFit">Fit</button><button type="button" id="edHouse">Add house</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="fld"><span>Work plane</span><select id="edPlane"><option value="xy">X–Y (horizontal)</option><option value="xz">X–Z (vertical)</option><option value="yz">Y–Z (vertical)</option></select></label>
+        <label class="fld"><span id="edOffLab">Plane at Z (m)</span><input id="edOff" inputmode="decimal" value="0"></label>
+        <label class="fld"><span>Grid step (m)</span><input id="edStep" inputmode="decimal"></label>
+        <label class="fld"><span>New wire radius (mm)</span><input id="edRad" inputmode="decimal" value="1"></label>
+        <label class="fld chk"><input type="checkbox" id="edSnap" checked><span>Snap to grid</span></label>
+        <label class="fld chk"><input type="checkbox" id="showSeg" checked><span>Segments</span></label>
+        <label class="fld chk"><input type="checkbox" id="showCur" checked><span>Currents</span></label>
+        <label class="fld chk"><input type="checkbox" id="edLobe" checked><span>Far field</span></label>
+      </div>
+      <div class="edgrid">
+        <div class="canvasbox view3d" id="viewBox"><canvas id="view3d"></canvas><div class="coord" id="edCoord" hidden></div></div>
+        <div class="edside">
+          <aside class="inspector" id="inspector" aria-live="polite"></aside>
+          <div class="fld"><span>Azimuth, at the elevation of maximum gain</span><div class="canvasbox polar"><canvas id="edAz"></canvas></div></div>
+          <div class="fld"><span>Elevation, toward maximum gain</span><div class="canvasbox edel"><canvas id="edEl"></canvas></div></div>
+          <p class="hint mono" id="edPolTxt" style="margin:0"></p>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <p class="hint" id="edHint" style="margin:0"></p>
+        <div class="toolbar">
+          <button type="button" data-vp="iso">3D</button><button type="button" data-vp="top">Top (X–Y)</button>
+          <button type="button" data-vp="front">Front (X–Z)</button><button type="button" data-vp="side">Side (Y–Z)</button>
+        </div>
+      </div>
+      <div class="legend" id="viewLegend"></div>
+    </div>
+  </section>
+
+  <!-- CALCULATE -->
+  <section class="panel" data-panel="calc" hidden>
+    <div class="card">
+      <h2>Conditions</h2>
+      <div class="row">
+        <label class="fld"><span>Frequency (MHz)</span><input id="cFreq" inputmode="decimal"></label>
+        <label class="fld"><span>Ground</span><select id="cGround"><option value="0">Free space</option><option value="1">Perfect ground</option><option value="2">Real ground</option></select></label>
+        <label class="fld"><span>Add height (m)</span><input id="cHeight" inputmode="decimal"></label>
+        <label class="fld"><span>Ground εr</span><input id="cEps" inputmode="decimal"></label>
+        <label class="fld"><span>Conductivity (mS/m)</span><input id="cSig" inputmode="decimal"></label>
+        <label class="fld"><span>Impedance over real ground</span><select id="cNf"><option value="sommerfeld">Sommerfeld (accurate, as NEC-2)</option><option value="complex">Complex image (fast approximation)</option><option value="perfect">Perfect mirror (as MININEC)</option></select></label>
+        <label class="fld"><span>Wire material</span><select id="cMat"></select></label>
+        <label class="fld"><span>SWR reference (Ω)</span><input id="cZ0" inputmode="decimal"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>DM1 (fine)</span><input id="sDm1" inputmode="decimal"></label>
+        <label class="fld"><span>DM2 (coarse)</span><input id="sDm2" inputmode="decimal"></label>
+        <label class="fld"><span>SC</span><input id="sSc" inputmode="decimal"></label>
+        <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px;align-self:center"><input type="checkbox" id="autoCalc" checked style="width:auto"><span>Recalculate on every edit</span></label>
+      </div>
+      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that is good above about 0.1 λ but underestimates ground loss close to the soil. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
+      <ul class="warns" id="warnList"></ul>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Results</h2><button type="button" id="clearRes" class="ghost">Clear list</button></div>
+      <p class="hint">Each calculation adds a row so you can compare changes. The newest row is highlighted.</p>
+      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th>Gain dBi</th><th>F/B dB</th><th>Elev °</th><th>Ground</th><th>H m</th><th>Pol</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
+      <div id="srcRes"></div>
+    </div>
+  </section>
+
+  <!-- PATTERN -->
+  <section class="panel" data-panel="pattern" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2>Far-field patterns</h2>
+        <div class="toolbar">
+          <select id="polSel" aria-label="Polarization shown"><option value="tot">Total field</option><option value="h">Horizontal</option><option value="v">Vertical</option><option value="all">All three</option></select>
+          <button type="button" id="holdBtn">Hold for comparison</button>
+          <button type="button" id="dropHold" class="ghost" hidden>Clear held</button>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="fld"><span id="azTitle">Azimuth</span><div class="canvasbox polar"><canvas id="azPlot"></canvas></div></div>
+        <div class="fld"><span id="elTitle">Elevation</span><div class="canvasbox polar"><canvas id="elPlot"></canvas></div></div>
+      </div>
+      <div class="legend" id="patLegend"></div>
+      <p class="hint">Scale: dB relative to the maximum, rings at −3, −6, −10, −20 and −30 dB. Azimuth 0° is the +X axis, counter-clockwise, matching the top view.</p>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2>3D pattern</h2>
+        <div class="toolbar">
+          <button type="button" data-fp="iso">3D</button><button type="button" data-fp="top">Top (X–Y)</button>
+          <button type="button" data-fp="front">Front (X–Z)</button><button type="button" data-fp="side">Side (Y–Z)</button>
+          <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px"><input type="checkbox" id="ffAnt" checked style="width:auto"><span>Antenna</span></label>
+          <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px"><input type="checkbox" id="ffMesh" checked style="width:auto"><span>Mesh lines</span></label>
+        </div>
+      </div>
+      <div class="canvasbox view3d" id="ffBox"><canvas id="ff3d"></canvas><div class="overlay-note">Drag to rotate · wheel or pinch to zoom</div></div>
+      <div class="legend" id="ffLegend"></div>
+      <p class="hint">Same scale as the plots above: distance from the centre is dB relative to the maximum, down to −40 dB, sampled every 5°. It follows the polarization chosen above ("All three" shows the total field).</p>
+    </div>
+  </section>
+
+  <!-- SWEEP -->
+  <section class="panel" data-panel="sweep" hidden>
+    <div class="card">
+      <h2>Frequency sweep</h2>
+      <div class="row">
+        <label class="fld"><span>Range</span><select id="swMode"><option value="custom">Custom range</option><option value="hf">Whole HF, 1.8–30 MHz</option></select></label>
+        <label class="fld sw-c"><span>From (MHz)</span><input id="swFrom" inputmode="decimal"></label>
+        <label class="fld sw-c"><span>To (MHz)</span><input id="swTo" inputmode="decimal"></label>
+        <label class="fld sw-c"><span>Points</span><input id="swN" inputmode="numeric" value="41"></label>
+        <label class="fld sw-h" hidden><span>Points per band</span><input id="swPer" inputmode="numeric" value="9"></label>
+        <label class="fld sw-h" hidden><span>Step between bands (MHz)</span><input id="swStep" inputmode="decimal" value="0.25"></label>
+        <label class="fld"><span>Band plan</span><select id="swRegion"><option value="1">IARU Region 1</option><option value="2">IARU Region 2</option><option value="3">IARU Region 3</option></select></label>
+        <button type="button" class="primary" id="swRun">Run sweep</button>
+        <button type="button" id="resBtn">Find resonance</button>
+        <span class="status" id="swStatus"></span>
+      </div>
+      <div class="stack">
+        <div class="fld"><span>SWR</span><div class="canvasbox chart"><canvas id="chSwr"></canvas></div></div>
+        <div class="fld"><span>Impedance R and jX (Ω)</span><div class="canvasbox chart"><canvas id="chZ"></canvas></div></div>
+        <div class="fld"><span>Gain (dBi) and F/B (dB)</span><div class="canvasbox chart"><canvas id="chG"></canvas></div></div>
+        <div class="fld"><span id="smithTitle">Smith chart</span>
+          <div class="smithwrap">
+            <div class="canvasbox smith"><canvas id="chSmith"></canvas></div>
+            <div class="smithinfo" id="smithInfo"></div>
+          </div>
+        </div>
+      </div>
+      <div class="legend"><span><i style="border-color:var(--accent)"></i>SWR · R · Gain</span><span><i style="border-color:var(--trace2)"></i>jX · F/B</span><span><i class="bandkey"></i>Amateur bands (<span id="swRegionLab">IARU Region 1</span>)</span><span id="swPlan"></span></div>
+      <div id="swBands" class="bandsum"></div>
+    </div>
+  </section>
+
+  <!-- OPTIMIZE -->
+  <section class="panel" data-panel="opt" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Variables</h2><div class="toolbar"><button type="button" id="addVarLens">Add all wire lengths</button><button type="button" id="addVar">Add variable</button></div></div>
+      <p class="hint">Choose what the optimizer may change and the range it may use. Moving a wire end also moves every wire end touching it, so connections stay intact. "Length, centre fixed" suits Yagi and dipole elements; "Length, begin fixed" suits legs and radials that start at the feed point.</p>
+      <div class="tscroll"><table id="varTbl"><thead><tr><th>#</th><th>Change</th><th>Item</th><th>Axis / value</th><th>Now</th><th>Min</th><th>Max</th><th>Best</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="hint" id="varEmpty">No variables yet. Add one, or press "Add all wire lengths".</p>
+    </div>
+    <div class="card">
+      <h2>Goals</h2>
+      <div class="row">
+        <label class="fld"><span>Frequencies (MHz, comma separated)</span><input id="oFreqs" class="wide"></label>
+        <label class="fld"><span>Max. steps</span><input id="oMax" inputmode="numeric" value="300"></label>
+      </div>
+      <div class="tscroll"><table id="goalTbl"><thead><tr><th>Goal</th><th>Weight</th><th>Target</th><th>Effect</th></tr></thead><tbody>
+        <tr><td class="g">SWR</td><td><input id="gSwrW" value="1" inputmode="decimal"></td><td><input id="gSwrT" value="1.3" inputmode="decimal"></td><td class="d">Penalises SWR above the target</td></tr>
+        <tr><td class="g">jX</td><td><input id="gJxW" value="0" inputmode="decimal"></td><td><input id="gJxT" value="0 Ω" disabled></td><td class="d">Pushes reactance toward zero (resonance)</td></tr>
+        <tr><td class="g">Gain</td><td><input id="gGainW" value="0" inputmode="decimal"></td><td><input id="gGainT" value="max" disabled></td><td class="d">Rewards forward gain, 3 dB per unit of weight</td></tr>
+        <tr><td class="g">F/B</td><td><input id="gFbW" value="0" inputmode="decimal"></td><td><input id="gFbT" value="30" inputmode="decimal"></td><td class="d">Rewards front-to-back up to the target (dB)</td></tr>
+        <tr><td class="g">Elevation</td><td><input id="gElW" value="0" inputmode="decimal"></td><td><input id="gElT" value="15" inputmode="decimal"></td><td class="d">Pulls the main lobe toward the target angle (°)</td></tr>
+      </tbody></table></div>
+      <p class="hint">Weight 0 switches a goal off. Gain, F/B and Elevation need a far-field search at every step, so each step takes longer. Results are averaged over the listed frequencies.</p>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2>Run</h2><div class="toolbar"><button type="button" class="primary" id="optStart">Start</button><button type="button" id="optStop" disabled>Stop</button><button type="button" id="optApply" disabled>Apply best to model</button></div></div>
+      <div class="status" id="optStatus">Set variables and goals, then press Start.</div>
+      <div class="grid2">
+        <div class="fld"><span>Cost of the best design so far (lower is better)</span><div class="canvasbox chart"><canvas id="chOpt"></canvas></div></div>
+        <div class="fld" style="min-width:0"><span>Start and best, per frequency</span><div class="tscroll"><table class="results" id="optTbl"><thead><tr><th></th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th>Gain dBi</th><th>F/B dB</th><th>Elev °</th></tr></thead><tbody></tbody></table></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HELP -->
+  <section class="panel" data-panel="help" hidden>
+    <div class="card" id="helpBox"><p class="hint">Loading help…</p></div>
+  </section>
+
+  <footer>
+    <p class="author">Sommerwire by <b>ON9PK Koen Van den Heuvel</b> · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>)</p>
+    <p>Sommerwire is an independent thin-wire moment-method solver in the MININEC style (pulse currents at nodes, reduced kernel, image ground). It reads and writes the plain-text .maa layout used by MMANA-GAL so you can bring models across, but it is not MMANA-GAL and its numbers can differ slightly. The optimizer is a bounded Nelder–Mead search, restarted with smaller steps.</p>
+  </footer>
+</div>
+
+<dialog id="saveDlg">
+  <div style="display:grid;gap:10px">
+    <h2 style="margin:0;font-family:var(--f-display);font-size:16px">Export .maa</h2>
+    <p class="hint" style="margin:0;color:var(--muted)">Copy this text into a file ending in <span class="mono">.maa</span>.</p>
+    <textarea id="saveTxt" readonly></textarea>
+    <div class="row" style="justify-content:flex-end"><span id="copyMsg" style="color:var(--muted);font-size:12.5px"></span><button type="button" id="copyBtn" class="primary">Copy</button><button type="button" id="closeDlg">Close</button></div>
+  </div>
+</dialog>
+
+<script src="engine.js"></script>
+<script src="hexgen.js"></script>
+<script src="structgen.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '–');
+
+const NF_MODES = ['sommerfeld', 'complex', 'perfect'];
+/* ---------------- examples ---------------- */
+const yagiEl = (x, L, r) => ({ x1: String(x), y1: String(-L / 2), z1: '0', x2: String(x), y2: String(L / 2), z2: '0', r: String(r), seg: '-1' });
+const invH = Math.sqrt(10.18 * 10.18 - 25).toFixed(3);
+const q = 5.6, qh = q / 2;
+const gpRad = (a) => ({ x1: '0', y1: '0', z1: '0', x2: (9.9 * Math.cos(a)).toFixed(3), y2: (9.9 * Math.sin(a)).toFixed(3), z2: '-3.2', r: '1', seg: '-1' });
+const EXAMPLES = [
+  { name: '3-element Yagi, 20 m', freq: 14.15, wires: [yagiEl(0, 10.75, 10), yagiEl(3.2, 10.15, 10), yagiEl(6.6, 9.62, 10)],
+    sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 15, eps: 13, sigma: 0.005 }, material: 2, z0: 50,
+    comment: 'Boom along X, elements parallel to Y, 10 mm radius aluminium tube.' },
+  { name: 'Half-wave dipole, 20 m', freq: 14.05, wires: [{ x1: '0', y1: '-5.17', z1: '0', x2: '0', y2: '5.17', z2: '0', r: '0.8', seg: '-1' }],
+    sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 0, height: 10, eps: 13, sigma: 0.005 }, material: 0, z0: 50, comment: 'Free space reference dipole.' },
+  { name: 'Inverted V, 40 m', freq: 7.1, wires: [
+      { x1: '0', y1: '0', z1: '0', x2: '0', y2: invH, z2: '-5', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '0', x2: '0', y2: '-' + invH, z2: '-5', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 12, eps: 13, sigma: 0.005 }, material: 1, z0: 50, comment: 'Apex 12 m, ends 7 m above ground.' },
+  { name: 'Elevated ground plane, 40 m', freq: 7.1, wires: [{ x1: '0', y1: '0', z1: '0', x2: '0', y2: '0', z2: '10.1', r: '6', seg: '-1' },
+      gpRad(0), gpRad(Math.PI / 2), gpRad(Math.PI), gpRad(3 * Math.PI / 2)],
+    sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 4, eps: 13, sigma: 0.005 }, material: 2, z0: 50, comment: 'Four sloping radials, feed 4 m up.' },
+  { name: 'Quad loop, 20 m', freq: 14.15, wires: [
+      { x1: '0', y1: String(-qh), z1: '0', x2: '0', y2: String(qh), z2: '0', r: '1', seg: '-1' },
+      { x1: '0', y1: String(qh), z1: '0', x2: '0', y2: String(qh), z2: String(q), r: '1', seg: '-1' },
+      { x1: '0', y1: String(qh), z1: String(q), x2: '0', y2: String(-qh), z2: String(q), r: '1', seg: '-1' },
+      { x1: '0', y1: String(-qh), z1: String(q), x2: '0', y2: String(-qh), z2: '0', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 10, eps: 13, sigma: 0.005 }, material: 1, z0: 50, comment: 'One-wavelength square loop fed at bottom centre.' },
+  { name: 'Coil-loaded short dipole, 40 m', freq: 7.1, wires: [
+      { x1: '0', y1: '-7', z1: '0', x2: '0', y2: '-3.5', z2: '0', r: '1', seg: '-1' },
+      { x1: '0', y1: '-3.5', z1: '0', x2: '0', y2: '3.5', z2: '0', r: '1', seg: '-1' },
+      { x1: '0', y1: '3.5', z1: '0', x2: '0', y2: '7', z2: '0', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [{ pos: 'w2b', type: 0, L: 12, C: 0, Q: 200, R: 0, X: 0 }, { pos: 'w2e', type: 0, L: 12, C: 0, Q: 200, R: 0, X: 0 }],
+    ground: { type: 2, height: 10, eps: 13, sigma: 0.005 }, material: 1, z0: 50, comment: '14 m dipole with two 12 µH coils (Q 200) half way out.' },
+  { name: 'G3TXQ hexbeam, 5 bands 20–10 m', maa: "5-Band G3TXQ Broadband Hexbeam (20m-10m, Bare #14/#16 AWG)\n*\n28.35\n***Wires***\n54\n0.0000,\t0.0075,\t1.0700,\t0.0000,\t0.0075,\t0.5100,\t0.001,\t-1\n0.0000,\t-0.0075,\t1.0700,\t0.0000,\t-0.0075,\t0.5100,\t0.001,\t-1\n0.0000,\t0.0075,\t0.5100,\t0.0000,\t0.0075,\t0.3600,\t0.001,\t-1\n0.0000,\t-0.0075,\t0.5100,\t0.0000,\t-0.0075,\t0.3600,\t0.001,\t-1\n0.0000,\t0.0075,\t0.3600,\t0.0000,\t0.0075,\t0.2500,\t0.001,\t-1\n0.0000,\t-0.0075,\t0.3600,\t0.0000,\t-0.0075,\t0.2500,\t0.001,\t-1\n0.0000,\t0.0075,\t0.2500,\t0.0000,\t0.0075,\t0.1500,\t0.001,\t-1\n0.0000,\t-0.0075,\t0.2500,\t0.0000,\t-0.0075,\t0.1500,\t0.001,\t-1\n0.0000,\t-0.0075,\t1.0700,\t0.0000,\t0.0075,\t1.0700,\t0.001,\t-1\n0.0000,\t0.0075,\t1.0700,\t2.5264,\t1.4586,\t1.0700,\t0.0008,\t-1\n2.5264,\t1.4586,\t1.0700,\t0.2640,\t2.7648,\t1.0700,\t0.0008,\t-1\n0.0000,\t-0.0075,\t1.0700,\t2.5264,\t-1.4586,\t1.0700,\t0.0008,\t-1\n2.5264,\t-1.4586,\t1.0700,\t0.2640,\t-2.7648,\t1.0700,\t0.0008,\t-1\n-2.8596,\t-1.6510,\t1.0700,\t-2.8596,\t1.6510,\t1.0700,\t0.0008,\t-1\n-2.8596,\t1.6510,\t1.0700,\t0.0000,\t3.3020,\t1.0700,\t0.0008,\t-1\n0.0000,\t3.3020,\t1.0700,\t0.2420,\t3.1623,\t1.0700,\t0.0008,\t-1\n-2.8596,\t-1.6510,\t1.0700,\t0.0000,\t-3.3020,\t1.0700,\t0.0008,\t-1\n0.0000,\t-3.3020,\t1.0700,\t0.2420,\t-3.1623,\t1.0700,\t0.0008,\t-1\n0.0000,\t0.0075,\t0.5100,\t1.9627,\t1.1332,\t0.5100,\t0.0008,\t-1\n1.9627,\t1.1332,\t0.5100,\t0.2035,\t2.1489,\t0.5100,\t0.0008,\t-1\n0.0000,\t-0.0075,\t0.5100,\t1.9627,\t-1.1332,\t0.5100,\t0.0008,\t-1\n1.9627,\t-1.1332,\t0.5100,\t0.2035,\t-2.1489,\t0.5100,\t0.0008,\t-1\n-2.2373,\t-1.2917,\t0.5100,\t-2.2373,\t1.2917,\t0.5100,\t0.0008,\t-1\n-2.2373,\t1.2917,\t0.5100,\t0.0000,\t2.5834,\t0.5100,\t0.0008,\t-1\n0.0000,\t2.5834,\t0.5100,\t0.1746,\t2.4826,\t0.5100,\t0.0008,\t-1\n-2.2373,\t-1.2917,\t0.5100,\t0.0000,\t-2.5834,\t0.5100,\t0.0008,\t-1\n0.0000,\t-2.5834,\t0.5100,\t0.1746,\t-2.4826,\t0.5100,\t0.0008,\t-1\n0.0000,\t0.0075,\t0.3600,\t1.6740,\t0.9665,\t0.3600,\t0.0008,\t-1\n1.6740,\t0.9665,\t0.3600,\t0.1760,\t1.8314,\t0.3600,\t0.0008,\t-1\n0.0000,\t-0.0075,\t0.3600,\t1.6740,\t-0.9665,\t0.3600,\t0.0008,\t-1\n1.6740,\t-0.9665,\t0.3600,\t0.1760,\t-1.8314,\t0.3600,\t0.0008,\t-1\n-1.9098,\t-1.1026,\t0.3600,\t-1.9098,\t1.1026,\t0.3600,\t0.0008,\t-1\n-1.9098,\t1.1026,\t0.3600,\t0.0000,\t2.2052,\t0.3600,\t0.0008,\t-1\n0.0000,\t2.2052,\t0.3600,\t0.1533,\t2.1167,\t0.3600,\t0.0008,\t-1\n-1.9098,\t-1.1026,\t0.3600,\t0.0000,\t-2.2052,\t0.3600,\t0.0008,\t-1\n0.0000,\t-2.2052,\t0.3600,\t0.1533,\t-2.1167,\t0.3600,\t0.0008,\t-1\n0.0000,\t0.0075,\t0.2500,\t1.4095,\t0.8138,\t0.2500,\t0.0008,\t-1\n1.4095,\t0.8138,\t0.2500,\t0.1485,\t1.5418,\t0.2500,\t0.0008,\t-1\n0.0000,\t-0.0075,\t0.2500,\t1.4095,\t-0.8138,\t0.2500,\t0.0008,\t-1\n1.4095,\t-0.8138,\t0.2500,\t0.1485,\t-1.5418,\t0.2500,\t0.0008,\t-1\n-1.6253,\t-0.9384,\t0.2500,\t-1.6253,\t0.9384,\t0.2500,\t0.0008,\t-1\n-1.6253,\t0.9384,\t0.2500,\t0.0000,\t1.8767,\t0.2500,\t0.0008,\t-1\n0.0000,\t1.8767,\t0.2500,\t0.1137,\t1.8111,\t0.2500,\t0.0008,\t-1\n-1.6253,\t-0.9384,\t0.2500,\t0.0000,\t-1.8767,\t0.2500,\t0.0008,\t-1\n0.0000,\t-1.8767,\t0.2500,\t0.1137,\t-1.8111,\t0.2500,\t0.0008,\t-1\n0.0000,\t0.0075,\t0.1500,\t1.2374,\t0.7144,\t0.1500,\t0.0008,\t-1\n1.2374,\t0.7144,\t0.1500,\t0.1320,\t1.3526,\t0.1500,\t0.0008,\t-1\n0.0000,\t-0.0075,\t0.1500,\t1.2374,\t-0.7144,\t0.1500,\t0.0008,\t-1\n1.2374,\t-0.7144,\t0.1500,\t0.1320,\t-1.3526,\t0.1500,\t0.0008,\t-1\n-1.4223,\t-0.8212,\t0.1500,\t-1.4223,\t0.8212,\t0.1500,\t0.0008,\t-1\n-1.4223,\t0.8212,\t0.1500,\t0.0000,\t1.6423,\t0.1500,\t0.0008,\t-1\n0.0000,\t1.6423,\t0.1500,\t0.1147,\t1.5761,\t0.1500,\t0.0008,\t-1\n-1.4223,\t-0.8212,\t0.1500,\t0.0000,\t-1.6423,\t0.1500,\t0.0008,\t-1\n0.0000,\t-1.6423,\t0.1500,\t0.1147,\t-1.5761,\t0.1500,\t0.0008,\t-1\n***Source***\n1,\t0\nw9c,\t0.0,\t1.0\n***Load***\n0,\t1\n***Segmentation***\n800,\t80,\t2.0,\t1\n***G/H/M/R/AzEl/X***\n2,\t10.0,\t1,\t50.0,\t120,\t60,\t0.0\n" },
+  { name: 'G3TXQ hexbeam, centre line as 50 Ω coax', build: 'hexcoax' },
+  { name: 'G3TXQ hexbeam from dimension table, twin-wire centre', build: 'hextable', centre: 'twin' },
+  { name: 'G3TXQ hexbeam from dimension table, 50 Ω coax centre', build: 'hextable', centre: 'coax' },
+  { name: 'G3TXQ hexbeam, tuned per band, 50 Ω coax centre', build: 'hextable', centre: 'coax', tuned: true },
+  { name: 'EFOC29 end-fed, flat top at 8 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'rf.guru EFOC29 per its installation guide: 29 m radiator, end-fed through a 4:1 unun. Wire 2 is the outside of the coax shield, the first 12 m from the feedpoint up to the ferrite choke (modelled as an open end). SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 unun. Radiator radius 1 mm and shield radius 5 mm are assumptions.' },
+  { name: 'EFOC29 flat top at 8 m, next to a house with a metal roof', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], objects: [{ type: 'house', x: 8, y: 7, len: 10, wid: 8, eave: 5, ridge: 8, rot: 0, roof: 'metal', grid: 1, gutters: 'metal', pipes: 2, rEarth: 50 }], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'The EFOC29 flat top with a 10 x 8 m house beside it: walls 5 m, ridge 8 m, near wall 3 m from the radiator. The metal roof is a 1 m wire grid, with metal gutters and two downpipes to ground (50 ohm earth resistance each); the stone walls are drawn only.' },
+  { name: 'EFOC29 end-fed, sloper from 12 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '12', x2: '26.977', y2: '0', z2: '4.5', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '12', x2: '-6.633', y2: '0', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'rf.guru EFOC29 as a sloper: 28 m radiator from the feedpoint at 12 m down to 4.5 m, 4:1 unun at the feed. Wire 2 is the first 12 m of coax shield up to the choke. SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 unun.' },
+  { name: 'DX Commander vertical, fed against the ground', maa: "DX Commander, fed against the ground\n*\n7.15\n***Wires***\n19\n-0.06,\t0.1,\t0.01,\t0.06,\t0.1,\t0.00995,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.00995,\t0.11,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.06,\t-0.1,\t0.01,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t-0.06,\t-0.1,\t0.01,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t-0.11,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t-0.06,\t0.1,\t0.01,\t8.000e-04,\t-1\n-0.06,\t0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.00995,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t-0.11,\t0.0,\t10.36,\t8.000e-04,\t-1\n-0.06,\t0.1,\t0.01,\t-0.06,\t0.1,\t3.83,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.01,\t0.06,\t0.1,\t2.5,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.11,\t0.0,\t7.34,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t0.06,\t-0.1,\t5.24,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t-0.06,\t-0.1,\t3.0,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.0,\t0.0,\t0.01,\t0.0,\t0.0,\t0.0,\t8.000e-04,\t-1\n***Source***\n1,\t0\nw19e,\t0.0,\t1.0\n***Load***\n0,\t0\n***Segmentation***\n800,\t80,\t2.0,\t2\n***G/H/M/R/AzEl/X***\n2,\t0.0,\t1,\t50.0,\t120,\t60,\t0.0" },
+  { name: 'DX Commander vertical, 16 × 5 m radials', maa: "DX Commander, 16 x 5 m radials\n*\n7.150\n***Wires***\n35\n-0.06,\t0.1,\t0.11,\t0.06,\t0.1,\t0.11,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.11,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.06,\t-0.1,\t0.11,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t-0.06,\t-0.1,\t0.11,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t-0.11,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t-0.06,\t0.1,\t0.11,\t8.000e-4,\t-1\n-0.06,\t0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t-0.11,\t0.0,\t10.46,\t8.000e-4,\t-1\n-0.06,\t0.1,\t0.11,\t-0.06,\t0.1,\t3.93,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.06,\t0.1,\t2.6,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.11,\t0.0,\t7.44,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t0.06,\t-0.1,\t5.34,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t-0.06,\t-0.1,\t3.1,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0,\t0,\t0.11,\t0,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t5,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t4.6194,\t1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t3.5355,\t3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t1.9134,\t4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t0,\t5,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-1.9134,\t4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-3.5355,\t3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-4.6194,\t1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-5,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-4.6194,\t-1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-3.5355,\t-3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-1.9134,\t-4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t0,\t-5,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t1.9134,\t-4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t3.5355,\t-3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t4.6194,\t-1.9134,\t0.05,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw19b,\t0.0,\t1.0\n*** Load ***\n0,\t1\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t0.00,\t1,\t50.0,\t120,\t60,\t0\n### Comment ###\nRadiator raised 10 cm; feed wire w19 runs from the radiator hub down to the radial hub. 16 radials of 5 m, 5 cm above the ground." },
+];
+const clone = o => JSON.parse(JSON.stringify(o));
+function normalize(m) {
+  m.seg = Object.assign({ dm1: 400, dm2: 40, sc: 2, ec: 1 }, m.seg || {});
+  m.ground = Object.assign({ type: 0, height: 0, eps: 13, sigma: 0.005, nf: 'sommerfeld' }, m.ground || {});
+  m.loads = m.loads || []; m.sources = m.sources || []; m.tls = m.tls || []; m.objects = m.objects || [];
+  m.material = m.material | 0; m.z0 = +m.z0 || 50; m.comment = m.comment || '';
+  return m;
+}
+
+/* ---------------- state ---------------- */
+const S = { opt: { vars: [], running: false, best: null, start: null, history: [], stopFlag: false, jobId: 0, worker: null }, model: null, calcFreq: 14.15, last: null, history: [], held: null, sweep: null, dirty: true, busy: false, seq: 0 };
+
+function numObjects() {
+  const lam = MM.lambdaOf(+S.model.freq || 14), ev = v => MM.evalExpr(v, lam);
+  return (S.model.objects || []).map(o => ({ type: 'house', x: ev(o.x) || 0, y: ev(o.y) || 0, len: ev(o.len) || 10, wid: ev(o.wid) || 8, eave: ev(o.eave) || 0, ridge: ev(o.ridge) || 0, rot: ev(o.rot) || 0, roof: o.roof === 'metal' ? 'metal' : 'none', grid: ev(o.grid) || 1, gutters: o.gutters === 'metal' ? 'metal' : 'none', pipes: +o.pipes || 0, rEarth: Math.max(0, ev(o.rEarth) || 0) }));
+}
+function numericModel() {
+  const m = S.model, lam = MM.lambdaOf(+m.freq || 14);
+  const ev = v => MM.evalExpr(v, lam);
+  const wires = m.wires.map(w => ({ x1: ev(w.x1), y1: ev(w.y1), z1: ev(w.z1), x2: ev(w.x2), y2: ev(w.y2), z2: ev(w.z2), r: ev(w.r) / 1000, seg: Math.round(ev(w.seg)) || 0 }));
+  const bad = wires.findIndex(w => [w.x1, w.y1, w.z1, w.x2, w.y2, w.z2, w.r].some(x => !Number.isFinite(x)));
+  const objects = numObjects(), exp = WMStruct.expandObjects(objects), base = wires.length;
+  exp.wires.forEach(w => wires.push({ x1: w.x1, y1: w.y1, z1: w.z1, x2: w.x2, y2: w.y2, z2: w.z2, r: w.r, seg: w.seg }));
+  // earth resistance of each downpipe: a resistor at its foot (where it meets the ground)
+  const objLoads = exp.earth.filter(e => e.R > 0).map(e => ({ pos: 'w' + (base + e.index + 1) + 'b', type: 1, L: 0, C: 0, Q: 0, R: e.R, X: 0 }));
+  if (bad >= 0) throw new Error('Wire ' + (bad + 1) + ' has a value that is not a number or valid expression.');
+  return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag })),
+    loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
+    tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev }; }),
+    seg: { dm1: +m.seg.dm1 || 400, dm2: +m.seg.dm2 || 40, sc: +m.seg.sc || 2, ec: +m.seg.ec || 1 },
+    ground: { type: +m.ground.type | 0, height: +m.ground.height || 0, eps: +m.ground.eps || 13, sigma: Number.isFinite(+m.ground.sigma) && m.ground.sigma !== '' ? +m.ground.sigma : 0.005, nf: NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld' },
+    material: +m.material | 0, z0: +m.z0 || 50 };
+}
+
+/* ---------------- worker ---------------- */
+const WORKER_SRC = `
+self.onmessage = (e) => {
+  const { id, kind, model, f, from, to, n } = e.data;
+  if (kind === 'opt') {
+    try {
+      const o = MM.makeOptimizer(model, e.data.vars, e.data.goals, e.data.freqs, e.data.maxEval);
+      const snap = () => ({ evals: o.evals, maxEval: e.data.maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+      let t = 0;
+      while (!o.step()) { const now = Date.now(); if (now - t > 300) { t = now; self.postMessage({ id, progress: snap() }); } }
+      self.postMessage({ id, ok: true, data: snap() });
+    } catch (err) { self.postMessage({ id, ok: false, error: err.message || String(err) }); }
+    return;
+  }
+  try {
+    if (kind === 'calc') self.postMessage({ id, ok: true, data: pack(model, f) });
+    else if (kind === 'sweep') {
+      const fl = e.data.freqs || Array.from({ length: n }, (_, i) => (n === 1 ? from : from + (to - from) * i / (n - 1)));
+      const pts = [];
+      for (const fi of fl) {
+        const a = MM.analyze(model, fi);
+        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el };
+        pts.push(pt); self.postMessage({ id, progress: { pt, done: pts.length, of: fl.length } });
+      }
+      self.postMessage({ id, ok: true, data: pts });
+    } else if (kind === 'res') {
+      let f0 = f * 0.98, f1 = f * 1.02;
+      let x0 = MM.solve(model, f0).sources[0].X, x1 = MM.solve(model, f1).sources[0].X;
+      for (let it = 0; it < 30 && Math.abs(x1) > 0.01; it++) {
+        if (x1 === x0) break;
+        let f2 = f1 - x1 * (f1 - f0) / (x1 - x0);
+        f2 = Math.min(Math.max(f2, f * 0.5), f * 1.5);
+        f0 = f1; x0 = x1; f1 = f2; x1 = MM.solve(model, f1).sources[0].X;
+      }
+      self.postMessage({ id, ok: true, data: { f: f1, X: x1 } });
+    }
+  } catch (err) { self.postMessage({ id, ok: false, error: err.message || String(err) }); }
+};
+function pack(model, f) {
+  const a = MM.analyze(model, f);
+  const r = a.res, g = model.ground.type;
+  const segs = r.mesh.segs.map((s, i) => [s.p0[0], s.p0[1], s.p0[2], s.p1[0], s.p1[1], s.p1[2], r.segCur[i].mag]);
+  const az = [], el = [];
+  const toDb = x => MM.dB(x);
+  for (let d = 0; d <= 360; d += 1) { const G = a.pat.gain(a.el, d); az.push([d, toDb(G.tot), toDb(G.h), toDb(G.v)]); }
+  const tmax = g > 0 ? 180 : 360;
+  for (let t = 0; t <= tmax; t += 1) {
+    let e, z;
+    if (t <= 90) { e = t; z = a.az; } else if (t < 270) { e = 180 - t; z = a.az + 180; } else { e = t - 360; z = a.az; }
+    const G = a.pat.gain(e, ((z % 360) + 360) % 360); el.push([t, toDb(G.tot), toDb(G.h), toDb(G.v)]);
+  }
+  const gEls = [], gAzs = [], gT = [], gH = [], gV = [];
+  for (let e = g > 0 ? 0 : -90; e <= 90; e += 5) gEls.push(e);
+  for (let d = 0; d < 360; d += 5) gAzs.push(d);
+  for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
+  const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
+  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, ground: g, height: model.ground.height };
+}`;
+let worker = null, workerUrl = null;
+const pending = new Map();
+function onWorkerMsg(e) {
+  const p = pending.get(e.data.id); if (!p) return;
+  if (e.data.progress !== undefined) { p.onProgress && p.onProgress(e.data.progress); return; }
+  pending.delete(e.data.id);
+  e.data.ok ? p.resolve(e.data.data) : p.reject(new Error(e.data.error));
+}
+function makeWorker() { const w = new Worker(workerUrl); w.onmessage = onWorkerMsg; return w; }
+async function startWorker() {
+  try {
+    const src = await (await fetch('engine.js')).text();
+    workerUrl = URL.createObjectURL(new Blob([src + '\n' + WORKER_SRC], { type: 'text/javascript' }));
+    worker = makeWorker();
+    worker.onerror = () => { worker = null; };
+  } catch (e) { worker = null; workerUrl = null; }
+}
+const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+// main-thread fallback mirrors the worker
+const fallback = (() => { const self = { postMessage: () => {} }; let fn; try { fn = new Function('self', 'MM', WORKER_SRC + '; return { pack };')(self, MM); } catch (e) { fn = null; } return fn; })();
+function job(msg, onProgress, w) {
+  const id = ++S.seq;
+  w = w || worker;
+  if (msg.kind === 'opt') S.opt.jobId = id;
+  if (w) return new Promise((resolve, reject) => { pending.set(id, { resolve, reject, onProgress }); w.postMessage(Object.assign({ id }, msg)); });
+  return new Promise((resolve, reject) => setTimeout(() => {
+    try {
+      if (msg.kind === 'opt') {
+        const o = MM.makeOptimizer(msg.model, msg.vars, msg.goals, msg.freqs, msg.maxEval);
+        const tick = () => {
+          if (S.opt.stopFlag) return reject(new Error('Stopped'));
+          const t = performance.now(); let done = false;
+          try { while (performance.now() - t < 40 && !(done = o.step())); } catch (e) { return reject(e); }
+          onProgress && onProgress(snapOpt(o, msg.maxEval));
+          done ? resolve(snapOpt(o, msg.maxEval)) : setTimeout(tick, 0);
+        };
+        return tick();
+      }
+      if (msg.kind === 'calc') return resolve(fallback.pack(msg.model, msg.f));
+      if (msg.kind === 'sweep') {
+        const pts = [];
+        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }); }
+        return resolve(pts);
+      }
+      if (msg.kind === 'res') {
+        let f0 = msg.f * 0.98, f1 = msg.f * 1.02, x0 = MM.solve(msg.model, f0).sources[0].X, x1 = MM.solve(msg.model, f1).sources[0].X;
+        for (let it = 0; it < 30 && Math.abs(x1) > 0.01 && x1 !== x0; it++) { let f2 = f1 - x1 * (f1 - f0) / (x1 - x0); f2 = Math.min(Math.max(f2, msg.f * 0.5), msg.f * 1.5); f0 = f1; x0 = x1; f1 = f2; x1 = MM.solve(msg.model, f1).sources[0].X; }
+        return resolve({ f: f1, X: x1 });
+      }
+    } catch (e) { reject(e); }
+  }, 10));
+}
+
+/* ---------------- status / readout ---------------- */
+function setStatus(kind, text) {
+  const cls = { ok: 'ok', stale: 'stale', err: 'err', busy: 'busy' }[kind];
+  const lab = { ok: 'Calculated', stale: 'Model changed', err: 'Error', busy: 'Calculating' }[kind];
+  $('#status').innerHTML = '<span class="pill ' + cls + '">' + lab + '</span><span></span>';
+  $('#status span:last-child').textContent = text || '';
+}
+function swrClass(s) { return s <= 1.5 ? 'good' : s <= 2.5 ? 'warn' : 'bad'; }
+function renderReadout() {
+  const r = S.last;
+  const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
+  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roEl', '#roPol'].forEach(i => set(i, '–')); return; }
+  set('#roF', fmt(r.f, 3) + ' <small>MHz</small>');
+  set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
+  $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
+  set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
+  set('#roG', fmt(r.gain, 2) + ' <small>dBi</small>');
+  set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
+  set('#roEl', fmt(r.el, 1) + '<small>°</small>');
+  set('#roPol', r.pol);
+}
+
+/* ---------------- tables ---------------- */
+const WCOLS = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'r', 'seg'];
+function cellInput(val, attrs) { return '<input ' + attrs + ' value="' + String(val ?? '').replace(/"/g, '&quot;') + '" spellcheck="false" autocomplete="off">'; }
+function renderTables() {
+  const m = S.model;
+  $('#wireTbl tbody').innerHTML = m.wires.map((w, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
+    WCOLS.map(c => '<td>' + cellInput(w[c], 'id="w' + i + c + '" data-t="w" data-i="' + i + '" data-c="' + c + '" aria-label="Wire ' + (i + 1) + ' ' + c + '"') + '</td>').join('') +
+    '<td class="x"><button type="button" data-del="w" data-i="' + i + '" aria-label="Delete wire ' + (i + 1) + '">×</button></td></tr>').join('');
+  $('#srcTbl tbody').innerHTML = m.sources.map((s, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
+    ['pos', 'phase', 'mag'].map(c => '<td>' + cellInput(s[c], 'id="s' + i + c + '" data-t="s" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
+    '<td class="x"><button type="button" data-del="s" data-i="' + i + '" aria-label="Delete source">×</button></td></tr>').join('');
+  $('#loadTbl tbody').innerHTML = m.loads.map((l, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
+    '<td>' + cellInput(l.pos, 'id="l' + i + 'pos" data-t="l" data-i="' + i + '" data-c="pos"') + '</td>' +
+    '<td><select id="l' + i + 'type" data-t="l" data-i="' + i + '" data-c="type"><option value="0"' + (l.type == 0 ? ' selected' : '') + '>L / C</option><option value="1"' + (l.type == 1 ? ' selected' : '') + '>R + jX</option></select></td>' +
+    ['L', 'C', 'Q', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
+    '<td class="x"><button type="button" data-del="l" data-i="' + i + '" aria-label="Delete load">×</button></td></tr>').join('');
+  $('#objTbl tbody').innerHTML = (m.objects || []).map((o, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
+    ['x', 'y', 'len', 'wid', 'eave', 'ridge', 'rot'].map(c => '<td>' + cellInput(o[c], 'id="o' + i + c + '" data-t="o" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
+    '<td><select id="o' + i + 'roof" data-t="o" data-i="' + i + '" data-c="roof"><option value="metal"' + (o.roof === 'metal' ? ' selected' : '') + '>Metal grid</option><option value="none"' + (o.roof !== 'metal' ? ' selected' : '') + '>Not metal</option></select></td>' +
+    '<td>' + cellInput(o.grid, 'id="o' + i + 'grid" data-t="o" data-i="' + i + '" data-c="grid"') + '</td>' +
+    '<td><select id="o' + i + 'gutters" data-t="o" data-i="' + i + '" data-c="gutters"><option value="metal"' + (o.gutters === 'metal' ? ' selected' : '') + '>Metal</option><option value="none"' + (o.gutters !== 'metal' ? ' selected' : '') + '>None</option></select></td>' +
+    '<td><select id="o' + i + 'pipes" data-t="o" data-i="' + i + '" data-c="pipes">' + [0, 2, 4].map(n => '<option value="' + n + '"' + (+o.pipes === n ? ' selected' : '') + '>' + (n ? n + ' to ground' : 'None') + '</option>').join('') + '</select></td>' +
+    '<td>' + cellInput(o.rEarth ?? 50, 'id="o' + i + 'rEarth" data-t="o" data-i="' + i + '" data-c="rEarth" title="0 = perfect earth connection"') + '</td>' +
+    '<td class="x"><button type="button" data-del="o" data-i="' + i + '" aria-label="Delete house ' + (i + 1) + '">×</button></td></tr>').join('');
+  $('#tlTbl tbody').innerHTML = (m.tls || []).map((t, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
+    ['p1', 'p2', 'z0', 'vf', 'len'].map(c => '<td>' + cellInput(t[c], 'id="t' + i + c + '" data-t="t" data-i="' + i + '" data-c="' + c + '"' + (c === 'len' ? ' placeholder="straight"' : '')) + '</td>').join('') +
+    '<td><input type="checkbox" id="t' + i + 'rev" data-t="t" data-i="' + i + '" data-c="rev"' + (t.rev ? ' checked' : '') + ' aria-label="Line ' + (i + 1) + ' reversed"></td>' +
+    '<td class="x"><button type="button" data-del="t" data-i="' + i + '" aria-label="Delete line ' + (i + 1) + '">×</button></td></tr>').join('');
+  validateCells();
+}
+function validateCells() {
+  const lam = MM.lambdaOf(+S.model.freq || 14);
+  $$('#wireTbl input').forEach(inp => inp.classList.toggle('bad', !Number.isFinite(MM.evalExpr(inp.value, lam))));
+  $$('#srcTbl input[data-c="pos"], #loadTbl input[data-c="pos"], #tlTbl input[data-c="p1"], #tlTbl input[data-c="p2"]').forEach(inp => {
+    const p = MM.parsePos(inp.value); inp.classList.toggle('bad', !p || p.wire >= S.model.wires.length);
+  });
+}
+function renderModelFields() {
+  const m = S.model;
+  $('#mName').value = m.name; $('#mFreq').value = m.freq;
+  $('#mLambda').textContent = fmt(MM.lambdaOf(+m.freq), 3) + ' m';
+  $('#cFreq').value = S.calcFreq;
+  $('#cGround').value = m.ground.type; $('#cHeight').value = m.ground.height;
+  $('#cEps').value = m.ground.eps; $('#cSig').value = +(m.ground.sigma * 1000).toFixed(3); $('#cNf').value = NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld'; $('#cNf').disabled = m.ground.type !== 2;
+  $('#cMat').value = m.material; $('#cZ0').value = m.z0;
+  $('#sDm1').value = m.seg.dm1; $('#sDm2').value = m.seg.dm2; $('#sSc').value = m.seg.sc;
+  const gOn = m.ground.type > 0; $('#cHeight').disabled = !gOn; $('#cEps').disabled = m.ground.type !== 2; $('#cSig').disabled = m.ground.type !== 2;
+  $('#swFrom').value = $('#swFrom').value || '';
+}
+function setSweepDefaults() {
+  // a chosen band or whole-HF range stays selected; only a custom range follows the frequency
+  if ($('#swMode').value !== 'custom') { updateSweepControls(); return; }
+  const f = S.calcFreq; $('#swFrom').value = +(f * 0.97).toFixed(3); $('#swTo').value = +(f * 1.03).toFixed(3);
+}
+
+function loadModel(m, keepFreq) {
+  S.model = normalize(m);
+  if (!keepFreq) S.calcFreq = +m.freq;
+  S.sweep = null; S.held = null; $('#dropHold').hidden = true;
+  renderModelFields(); renderTables(); setSweepDefaults(); drawSweep();
+  edReset();
+  S.opt.vars = []; S.opt.best = null; S.opt.start = null; S.opt.history = [];
+  $('#oFreqs').value = S.calcFreq; renderVars(); renderOptTable(); drawOpt();
+  $('#optApply').disabled = true; $('#optStatus').textContent = 'Set variables and goals, then press Start.';
+  changed(true);
+}
+
+/* ---------------- edits ---------------- */
+let calcTimer = null;
+function changed(immediate) {
+  S.dirty = true;
+  validateCells();
+  setStatus('stale', 'Press Calculate to update the results.');
+  drawView();
+  if (!$('#varTbl').contains(document.activeElement)) renderVars();
+  if ($('#autoCalc').checked) { clearTimeout(calcTimer); calcTimer = setTimeout(calculate, immediate ? 0 : 350); }
+}
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.dataset || !t.dataset.t) return;
+  const i = +t.dataset.i, c = t.dataset.c;
+  const arr = { w: S.model.wires, s: S.model.sources, l: S.model.loads, t: S.model.tls, o: S.model.objects }[t.dataset.t];
+  arr[i][c] = t.type === 'checkbox' ? t.checked : t.value;
+  if (t.dataset.t === 'l' && c === 'type') { arr[i].type = +t.value; renderTables(); }
+  changed();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  pushUndo();
+  if (b.dataset.del === 'w') deleteWire(+b.dataset.i);
+  else ({ s: S.model.sources, l: S.model.loads, t: S.model.tls, o: S.model.objects }[b.dataset.del]).splice(+b.dataset.i, 1);
+  renderTables(); renderInspector(); changed();
+});
+$('#addWire').onclick = () => {
+  const w = S.model.wires[S.model.wires.length - 1];
+  S.model.wires.push(w ? { x1: w.x2, y1: w.y2, z1: w.z2, x2: w.x2, y2: w.y2, z2: String((MM.evalExpr(w.z2, 1) || 0) + 1), r: w.r, seg: '-1' }
+    : { x1: '0', y1: '-R/4', z1: '0', x2: '0', y2: 'R/4', z2: '0', r: '1', seg: '-1' });
+  renderTables(); changed();
+  const last = S.model.wires.length - 1; const el = $('#w' + last + 'x2'); el && el.focus();
+};
+$('#addSrc').onclick = () => { S.model.sources.push({ pos: 'w1c', phase: 0, mag: 1 }); renderTables(); changed(); };
+// a house beside the antenna: ridge parallel to X, 7 m to the side of the wires
+function addHouse() {
+  pushUndo();
+  const W = numWires().filter(Boolean);
+  let cx = 0, y = 7;
+  if (W.length) { const xs = W.flatMap(w => [w.a[0], w.b[0]]), ys = W.flatMap(w => [w.a[1], w.b[1]]); cx = (Math.min(...xs) + Math.max(...xs)) / 2; y = Math.max(...ys) + 7; }
+  S.model.objects.push({ type: 'house', x: +cx.toFixed(2), y: +(y + 4).toFixed(2), len: 10, wid: 8, eave: 5, ridge: 8, rot: 0, roof: 'metal', grid: 1, gutters: 'metal', pipes: 2, rEarth: 50 });
+  renderTables(); changed(); edFit();
+}
+$('#addHouse').onclick = addHouse;
+$('#addTl').onclick = () => {
+  const n = S.model.wires.length;
+  S.model.tls.push({ p1: 'w1c', p2: 'w' + Math.max(1, Math.min(2, n)) + 'c', z0: 50, vf: 0.66, len: '', rev: false });
+  renderTables(); changed();
+};
+$('#addLoad').onclick = () => { S.model.loads.push({ pos: 'w1c', type: 0, L: 1, C: 0, Q: 0, R: 0, X: 0 }); renderTables(); changed(); };
+$('#mName').oninput = e => { S.model.name = e.target.value; };
+$('#mFreq').oninput = e => { const v = +e.target.value; if (v > 0) { const sync = Math.abs(S.calcFreq - S.model.freq) < 1e-9; S.model.freq = v; $('#mLambda').textContent = fmt(MM.lambdaOf(v), 3) + ' m'; if (sync) { S.calcFreq = v; $('#cFreq').value = v; setSweepDefaults(); } changed(); } };
+$('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(); } };
+$('#cGround').onchange = e => { S.model.ground.type = +e.target.value; renderModelFields(); changed(); };
+$('#cHeight').oninput = e => { S.model.ground.height = +e.target.value || 0; changed(); };
+$('#cEps').oninput = e => { S.model.ground.eps = +e.target.value || 13; changed(); };
+$('#cSig').oninput = e => { S.model.ground.sigma = (+e.target.value || 0) / 1000; changed(); };
+$('#cNf').onchange = e => { S.model.ground.nf = e.target.value; changed(); };
+$('#cMat').onchange = e => { S.model.material = +e.target.value; changed(); };
+$('#cZ0').oninput = e => { S.model.z0 = +e.target.value || 50; changed(); };
+['dm1', 'dm2', 'sc'].forEach(k => { $('#s' + k[0].toUpperCase() + k.slice(1)).oninput = e => { const v = +e.target.value; if (v > 0) { S.model.seg[k] = v; changed(); } }; });
+MM.MATERIALS.forEach((m, i) => { const o = document.createElement('option'); o.value = i; o.textContent = m.name; $('#cMat').appendChild(o); });
+
+/* ---------------- calculate ---------------- */
+// One calculation at a time. A request that arrives while one runs is remembered and runs next,
+// so dragging in the editor gives a steady stream of fresh results instead of a queue.
+// Live calculations (during a drag) do not add rows to the results list.
+async function calculate(opts) {
+  const live = !!(opts && opts.live === true);
+  clearTimeout(calcTimer);
+  if (S.calcBusy) { if (S.calcAgain !== 'full') S.calcAgain = live ? 'live' : 'full'; return; }
+  let model;
+  try { model = numericModel(); } catch (e) { setStatus('err', e.message); return; }
+  const key = JSON.stringify(model);
+  S.calcBusy = true;
+  if (!live) setStatus('busy', 'Solving…');
+  try {
+    const t0 = performance.now();
+    const r = await job({ kind: 'calc', model, f: S.calcFreq });
+    r.name = S.model.name; r.ms = performance.now() - t0;
+    S.last = r;
+    let now = null; try { now = JSON.stringify(numericModel()); } catch (e) { now = null; }
+    S.dirty = now !== key;
+    if (!live) { S.history.unshift(r); if (S.history.length > 40) S.history.pop(); renderResults(); }
+    renderReadout(); drawView(); drawPatterns(); drawSmith(); drawEdPolar();
+    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
+    $('#warnList').innerHTML = r.warnings.map(w => '<li></li>').join('');
+    $$('#warnList li').forEach((li, i) => li.textContent = r.warnings[i]);
+  } catch (e) {
+    setStatus('err', e.message);
+  } finally {
+    S.calcBusy = false;
+    if (S.calcAgain) { const k = S.calcAgain; S.calcAgain = null; calculate(k === 'live' ? { live: true } : undefined); }
+  }
+}
+$('#calcBtn').onclick = calculate;
+const GNAME = ['Free', 'Perfect', 'Real'];
+function renderResults() {
+  $('#resTbl tbody').innerHTML = S.history.map((r, i) => '<tr class="' + (i === 0 ? 'latest' : '') + '"><td>' + (S.history.length - i) + '</td><td class="nm"></td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 2) + '</td><td>' + fmt(r.X, 2) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') +
+    '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
+  $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
+  const r = S.last;
+  if (r && r.sources.length > 1) {
+    $('#srcRes').innerHTML = '<div class="tscroll"><table class="results"><thead><tr><th>Source</th><th>R Ω</th><th>jX Ω</th><th>|I| A</th><th>Power W</th></tr></thead><tbody>' +
+      r.sources.map(s => '<tr><td>' + s.spec.replace(/</g, '') + '</td><td>' + fmt(s.R, 2) + '</td><td>' + fmt(s.X, 2) + '</td><td>' + fmt(Math.hypot(s.Ir, s.Ii), 4) + '</td><td>' + fmt(s.P, 4) + '</td></tr>').join('') + '</tbody></table></div>';
+  } else $('#srcRes').innerHTML = '';
+}
+$('#clearRes').onclick = () => { S.history = S.last ? [S.last] : []; renderResults(); };
+
+/* ---------------- canvas helpers ---------------- */
+function prep(canvas) {
+  const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  const w = Math.max(10, Math.round(r.width)), h = Math.max(10, Math.round(r.height));
+  if (canvas.width !== w * d || canvas.height !== h * d) { canvas.width = w * d; canvas.height = h * d; }
+  const c = canvas.getContext('2d'); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h);
+  return { c, w, h };
+}
+const FONT = () => '11px ' + css('--f-mono');
+
+/* ---------------- 3D editor ---------------- */
+// Orthographic camera. Screen right R, screen up U, toward viewer D form a right-handed set (R x U = D).
+const V = { yaw: -0.6, pitch: 0.45, zoom: 1, panX: 0, panY: 0, ctr: [0, 0, 0], span: 10 };
+const VPS = { iso: [-0.6, 0.45], top: [0, Math.PI / 2], front: [0, 0], side: [Math.PI / 2, 0] };
+const PLANES = { xy: { n: [0, 0, 1], k: 2, ax: [0, 1], lab: 'Z' }, xz: { n: [0, 1, 0], k: 1, ax: [0, 2], lab: 'Y' }, yz: { n: [1, 0, 0], k: 0, ax: [1, 2], lab: 'X' } };
+const ED = { mode: 'select', plane: 'xy', offset: 0, step: 0.5, start: null, startInfo: null, hover: null, sel: null, drag: null, undo: [], redo: [], cam: null, msg: '', pre: null };
+const v3 = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k], dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], len: a => Math.hypot(a[0], a[1], a[2])
+};
+const same = (a, b) => Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6 && Math.abs(a[2] - b[2]) < 1e-6;
+const fm = v => String(+(+v).toFixed(4));
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const niceStep = x => { const p = Math.pow(10, Math.floor(Math.log10(x))); return [5, 2.5, 2, 1].map(k => k * p).find(s => s <= x) || p; };
+
+function camera(w, h) {
+  const cy = Math.cos(V.yaw), sy = Math.sin(V.yaw), cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  const sc = Math.min(w, h) * 0.75 / V.span * V.zoom;
+  const R = [cy, sy, 0], U = [-sy * sp, cy * sp, cp], D = [sy * cp, -cy * cp, sp];
+  const ox = w / 2 + V.panX, oy = h / 2 + V.panY;
+  const P = p => {
+    const d = v3.sub(p, V.ctr);
+    return [ox + v3.dot(d, R) * sc, oy - v3.dot(d, U) * sc, v3.dot(d, D)];
+  };
+  const ray = (sx, sy2) => { const a = (sx - ox) / sc, b = -(sy2 - oy) / sc; return v3.add(V.ctr, v3.add(v3.mul(R, a), v3.mul(U, b))); };
+  return { P, ray, sc, D };
+}
+function numWires() {
+  const lam = MM.lambdaOf(+S.model.freq || 14);
+  return S.model.wires.map(w => {
+    const a = [w.x1, w.y1, w.z1].map(v => MM.evalExpr(v, lam)), b = [w.x2, w.y2, w.z2].map(v => MM.evalExpr(v, lam));
+    return a.concat(b).every(Number.isFinite) ? { a, b } : null;
+  });
+}
+function setEnd(w, k, p) { if (k === 0) { w.x1 = fm(p[0]); w.y1 = fm(p[1]); w.z1 = fm(p[2]); } else { w.x2 = fm(p[0]); w.y2 = fm(p[1]); w.z2 = fm(p[2]); } }
+function endGroup(p) { const g = []; numWires().forEach((w, i) => { if (!w) return; if (same(w.a, p)) g.push([i, 0]); if (same(w.b, p)) g.push([i, 1]); }); return g; }
+
+/* undo */
+function snapshot() { return JSON.stringify({ w: S.model.wires, s: S.model.sources, l: S.model.loads, t: S.model.tls, o: S.model.objects }); }
+function edButtons() { $('#edUndo').disabled = !ED.undo.length; $('#edRedo').disabled = !ED.redo.length; }
+function pushUndo(snap) { ED.undo.push(snap || snapshot()); if (ED.undo.length > 100) ED.undo.shift(); ED.redo = []; edButtons(); }
+function restore(str) {
+  const o = JSON.parse(str); S.model.wires = o.w; S.model.sources = o.s; S.model.loads = o.l; S.model.tls = o.t || []; S.model.objects = o.o || [];
+  if (ED.sel && !S.model.wires[ED.sel.wire]) ED.sel = null;
+  ED.start = null; renderTables(); renderInspector(); changed(); edButtons();
+}
+function undo() { if (!ED.undo.length) return; ED.redo.push(snapshot()); restore(ED.undo.pop()); }
+function redo() { if (!ED.redo.length) return; ED.undo.push(snapshot()); restore(ED.redo.pop()); }
+
+/* model edits */
+function remapPos(pos, fn) {
+  const m = /^\s*w\s*(\d+)\s*([bce].*)$/i.exec(String(pos)); if (!m) return pos;
+  const k = fn(parseInt(m[1], 10) - 1); return k < 0 ? null : 'w' + (k + 1) + m[2].toLowerCase();
+}
+function deleteWire(i) {
+  S.model.wires.splice(i, 1);
+  const f = k => (k === i ? -1 : k > i ? k - 1 : k);
+  S.model.sources = S.model.sources.map(s => Object.assign({}, s, { pos: remapPos(s.pos, f) })).filter(s => s.pos);
+  S.model.loads = S.model.loads.map(l => Object.assign({}, l, { pos: remapPos(l.pos, f) })).filter(l => l.pos);
+  S.model.tls = (S.model.tls || []).map(t => Object.assign({}, t, { p1: remapPos(t.p1, f), p2: remapPos(t.p2, f) })).filter(t => t.p1 && t.p2);
+  S.opt.vars = S.opt.vars.filter(v => v.type === 'load' || v.idx !== i).map(v => (v.type !== 'load' && v.idx > i ? Object.assign({}, v, { idx: v.idx - 1 }) : v));
+  if (ED.sel && ED.sel.wire === i) ED.sel = null; else if (ED.sel && ED.sel.wire > i) ED.sel.wire--;
+}
+// split whichever wire passes through p (not at its ends); returns true when split.
+// A feed or load at the wire centre ("wNc") is kept in place: the wire is first split at its centre
+// and the reference moves to that junction ("wNe" of the first half).
+function splitAt(p, inner) {
+  const W = numWires();
+  for (let j = 0; j < W.length; j++) {
+    const w = W[j]; if (!w) continue;
+    const d = v3.sub(w.b, w.a), L = v3.len(d); if (L < 1e-9) continue;
+    const t = v3.dot(v3.sub(p, w.a), d) / (L * L); if (t <= 1e-6 || t >= 1 - 1e-6) continue;
+    if (v3.len(v3.sub(v3.add(w.a, v3.mul(d, t)), p)) > 1e-5) continue;
+    const cre = new RegExp('^\\s*w\\s*' + (j + 1) + '\\s*c', 'i');
+    if (!inner && S.model.sources.concat(S.model.loads).some(s => cre.test(s.pos)) || !inner && (S.model.tls || []).some(t => cre.test(t.p1) || cre.test(t.p2))) {
+      splitAt(v3.mul(v3.add(w.a, w.b), 0.5), true);
+      S.model.sources.forEach(s => { if (cre.test(s.pos)) s.pos = 'w' + (j + 1) + 'e'; });
+      S.model.loads.forEach(l => { if (cre.test(l.pos)) l.pos = 'w' + (j + 1) + 'e'; });
+      (S.model.tls || []).forEach(t => { if (cre.test(t.p1)) t.p1 = 'w' + (j + 1) + 'e'; if (cre.test(t.p2)) t.p2 = 'w' + (j + 1) + 'e'; });
+      splitAt(p, true);
+      return true;
+    }
+    const old = S.model.wires[j];
+    const nw = { x1: '', y1: '', z1: '', x2: old.x2, y2: old.y2, z2: old.z2, r: old.r, seg: old.seg };
+    setEnd(nw, 0, p); setEnd(old, 1, p);
+    S.model.wires.push(nw);
+    const n = S.model.wires.length, re = new RegExp('^\\s*w\\s*' + (j + 1) + '\\s*e', 'i');
+    S.model.sources.forEach(s => { if (re.test(s.pos)) s.pos = 'w' + n + 'e'; });
+    S.model.loads.forEach(l => { if (re.test(l.pos)) l.pos = 'w' + n + 'e'; });
+    (S.model.tls || []).forEach(t => { if (re.test(t.p1)) t.p1 = 'w' + n + 'e'; if (re.test(t.p2)) t.p2 = 'w' + n + 'e'; });
+    return true;
+  }
+  return false;
+}
+
+/* picking */
+function planeHit(sx, sy, off) {
+  const cam = ED.cam; if (!cam) return null;
+  const n = PLANES[ED.plane].n, nd = v3.dot(n, cam.D);
+  if (Math.abs(nd) < 0.12) return null;
+  const o = cam.ray(sx, sy), t = (off - v3.dot(n, o)) / nd;
+  return v3.add(o, v3.mul(cam.D, t));
+}
+function gridSnap(p, off) {
+  const pl = PLANES[ED.plane], q = p.slice();
+  if ($('#edSnap').checked) pl.ax.forEach(k => { q[k] = Math.round(q[k] / ED.step) * ED.step; });
+  q[pl.k] = off; return q;
+}
+function hitEnd(sx, sy, skip) {
+  let best = null, bd = 10;
+  numWires().forEach((w, i) => {
+    if (!w) return;
+    [w.a, w.b].forEach((p, k) => {
+      if (skip && skip(p)) return;
+      const q = ED.cam.P(p), d = Math.hypot(q[0] - sx, q[1] - sy);
+      if (d < bd) { bd = d; best = { kind: 'end', wire: i, end: k, p: p.slice() }; }
+    });
+  });
+  return best;
+}
+function hitWire(sx, sy) {
+  let best = null, bd = 7;
+  numWires().forEach((w, i) => {
+    if (!w) return;
+    const A = ED.cam.P(w.a), B = ED.cam.P(w.b), dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+    if (L2 < 1) return;
+    let t = Math.min(1, Math.max(0, ((sx - A[0]) * dx + (sy - A[1]) * dy) / L2));
+    const d = Math.hypot(A[0] + t * dx - sx, A[1] + t * dy - sy);
+    if (d >= bd || t < 0.02 || t > 0.98) return;
+    const L = v3.len(v3.sub(w.b, w.a));
+    if ($('#edSnap').checked) { const s = Math.round(t * L / ED.step) * ED.step; if (s > 1e-3 && s < L - 1e-3) t = s / L; }
+    bd = d; best = { kind: 'wire', wire: i, t, p: v3.add(w.a, v3.mul(v3.sub(w.b, w.a), t)) };
+  });
+  return best;
+}
+function snapTarget(sx, sy) {
+  const e = hitEnd(sx, sy); if (e) return e;
+  const w = hitWire(sx, sy); if (w) return w;
+  const p = planeHit(sx, sy, ED.offset); if (!p) return null;
+  return { kind: 'grid', p: gridSnap(p, ED.offset) };
+}
+
+/* drawing */
+function drawClick(sx, sy) {
+  const t = snapTarget(sx, sy);
+  if (!t) { ED.msg = 'edge'; drawView(); return; }
+  if (!ED.start) {
+    ED.start = t.p; ED.startInfo = t;
+    if (t.kind !== 'grid') { ED.offset = +fm(t.p[PLANES[ED.plane].k]); $('#edOff').value = ED.offset; }
+    drawView(); return;
+  }
+  if (same(t.p, ED.start)) return;
+  pushUndo();
+  if (ED.startInfo && ED.startInfo.kind === 'wire') splitAt(ED.start);
+  if (t.kind === 'wire') splitAt(t.p);
+  const w = { x1: '', y1: '', z1: '', x2: '', y2: '', z2: '', r: $('#edRad').value || '1', seg: '-1' };
+  setEnd(w, 0, ED.start); setEnd(w, 1, t.p);
+  S.model.wires.push(w);
+  ED.sel = { type: 'wire', wire: S.model.wires.length - 1 };
+  if (t.kind === 'grid') { ED.start = t.p; ED.startInfo = t; } else { ED.start = null; ED.startInfo = null; }
+  renderTables(); renderInspector(); changed();
+}
+
+/* select and move */
+function selectDown(sx, sy) {
+  const e = hitEnd(sx, sy);
+  if (e) {
+    ED.sel = { type: 'end', wire: e.wire, end: e.end };
+    ED.drag = { kind: 'end', snap: snapshot(), orig: e.p, group: endGroup(e.p), moved: false };
+  } else {
+    const w = hitWire(sx, sy);
+    if (w) {
+      const W = numWires()[w.wire];
+      ED.sel = { type: 'wire', wire: w.wire };
+      const off = w.p[PLANES[ED.plane].k];
+      ED.drag = { kind: 'wire', snap: snapshot(), groups: [[W.a, endGroup(W.a)], [W.b, endGroup(W.b)]], grab: planeHit(sx, sy, off), off, moved: false };
+    } else ED.sel = null;
+  }
+  renderInspector(); drawView();
+}
+function dragMove(sx, sy) {
+  const d = ED.drag, pl = PLANES[ED.plane];
+  const back = () => { S.model.wires = JSON.parse(d.snap).w; };
+  if (d.kind === 'end') {
+    let np; const e = hitEnd(sx, sy, p => same(p, d.orig));
+    if (e) np = e.p;
+    else { const h = planeHit(sx, sy, d.orig[pl.k]); if (!h) return; np = gridSnap(h, d.orig[pl.k]); }
+    back(); d.group.forEach(([i, k]) => setEnd(S.model.wires[i], k, np));
+    ED.hover = { kind: e ? 'end' : 'grid', p: np };
+  } else {
+    if (!d.grab) return;
+    const h = planeHit(sx, sy, d.off); if (!h) return;
+    const delta = v3.sub(h, d.grab);
+    if ($('#edSnap').checked) pl.ax.forEach(k => { delta[k] = Math.round(delta[k] / ED.step) * ED.step; });
+    delta[pl.k] = 0;
+    back(); d.groups.forEach(([p, g]) => { const np = v3.add(p, delta); g.forEach(([i, k]) => setEnd(S.model.wires[i], k, np)); });
+    ED.hover = { kind: 'grid', p: v3.add(d.groups[0][0], delta) };
+  }
+  S.dirty = true;
+  drawView();
+  if ($('#autoCalc').checked) calculate({ live: true });
+}
+function dragEnd() { pushUndo(ED.drag.snap); renderTables(); changed(); renderInspector(); }
+
+/* inspector */
+function renderInspector() {
+  const box = $('#inspector'); if (!box || !S.model) return;
+  const sel = ED.sel, m = S.model;
+  if (!sel || !m.wires[sel.wire]) {
+    ED.sel = null;
+    box.innerHTML = '<h3>Nothing selected</h3><p class="hint">' + m.wires.length + ' wire' + (m.wires.length === 1 ? '' : 's') + ' in the model.</p>' +
+      '<p class="hint">Draw: click to start a wire and click again to end it. Clicking on a wire end connects to it; clicking along a wire splits it there.</p>' +
+      '<p class="hint">Keys: <kbd>S</kbd> select, <kbd>D</kbd> draw, <kbd>R</kbd> rotate, <kbd>Esc</kbd> stop, <kbd>Del</kbd> delete, <kbd>⌘Z</kbd>/<kbd>Ctrl Z</kbd> undo.</p>';
+    return;
+  }
+  const i = sel.wire, w = m.wires[i], W = numWires()[i];
+  const refs = m.sources.map((s, k) => ['Source ' + (k + 1), s.pos]).concat(m.loads.map((l, k) => ['Load ' + (k + 1), l.pos]), (m.tls || []).flatMap((t, k) => [['Line ' + (k + 1), t.p1], ['Line ' + (k + 1), t.p2]]))
+    .filter(([, pos]) => { const p = MM.parsePos(pos); return p && p.wire === i; });
+  const refHtml = refs.length ? '<p class="hint">' + refs.map(([n, pos]) => esc(n) + ' at <span class="mono">' + esc(pos) + '</span>').join(' · ') + '</p>' : '';
+  if (sel.type === 'end') {
+    const p = W ? (sel.end ? W.b : W.a) : [NaN, NaN, NaN], g = W ? endGroup(p).length : 0;
+    box.innerHTML = '<h3>Wire ' + (i + 1) + ', ' + (sel.end ? 'end' : 'begin') + ' point</h3>' +
+      (g > 1 ? '<p class="hint">Shared by ' + g + ' wire ends. Moving it keeps them connected.</p>' : '') +
+      '<div class="igrid">' + ['X', 'Y', 'Z'].map((a, k) => '<label class="fld"><span>' + a + ' (m)</span><input id="insE' + k + '" data-ie="' + k + '" value="' + fm(p[k]) + '" inputmode="decimal"></label>').join('') + '</div>' +
+      refHtml + '<div class="toolbar"><button type="button" data-ia="selwire">Select wire</button><button type="button" data-ia="del">Delete wire</button></div>';
+  } else {
+    const L = W ? v3.len(v3.sub(W.b, W.a)) : NaN;
+    const cells = [['x1', 'X1'], ['y1', 'Y1'], ['z1', 'Z1'], ['x2', 'X2'], ['y2', 'Y2'], ['z2', 'Z2'], ['r', 'R mm'], ['seg', 'Seg']];
+    box.innerHTML = '<h3>Wire ' + (i + 1) + '</h3><p class="hint mono" id="insLen">Length ' + fmt(L, 3) + ' m</p>' +
+      '<div class="igrid">' + cells.map(([c, lab]) => '<label class="fld"><span>' + lab + '</span><input id="insW' + c + '" data-iw="' + c + '" value="' + esc(w[c]) + '" spellcheck="false"></label>').join('') + '</div>' +
+      refHtml + '<div class="toolbar"><button type="button" data-ia="feed">Feed at centre</button><button type="button" data-ia="load">Load at centre</button><button type="button" data-ia="split">Split in half</button><button type="button" data-ia="del">Delete</button></div>';
+  }
+}
+(function inspectorInput() {
+  const box = $('#inspector');
+  box.addEventListener('focusin', () => { ED.pre = snapshot(); });
+  box.addEventListener('change', e => {
+    const t = e.target, sel = ED.sel; if (!sel || !S.model.wires[sel.wire]) return;
+    if (t.dataset.iw) {
+      pushUndo(ED.pre); S.model.wires[sel.wire][t.dataset.iw] = t.value;
+    } else if (t.dataset.ie !== undefined) {
+      const W = numWires()[sel.wire]; if (!W) return;
+      const p = sel.end ? W.b : W.a, v = MM.evalExpr(t.value, MM.lambdaOf(+S.model.freq || 14));
+      if (!Number.isFinite(v)) { t.classList.add('bad'); return; }
+      t.classList.remove('bad');
+      const np = p.slice(); np[+t.dataset.ie] = v;
+      pushUndo(ED.pre); endGroup(p).forEach(([i, k]) => setEnd(S.model.wires[i], k, np));
+    } else return;
+    ED.pre = snapshot(); renderTables(); changed();
+    const W = numWires()[sel.wire], len = $('#insLen');
+    if (len && W) len.textContent = 'Length ' + fmt(v3.len(v3.sub(W.b, W.a)), 3) + ' m';
+  });
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-ia]'); if (!b || !ED.sel) return;
+    const i = ED.sel.wire, a = b.dataset.ia;
+    if (a === 'selwire') ED.sel = { type: 'wire', wire: i };
+    else {
+      pushUndo();
+      if (a === 'del') deleteWire(i);
+      else if (a === 'feed') { const pos = 'w' + (i + 1) + 'c'; if (S.model.sources.length) S.model.sources[0].pos = pos; else S.model.sources.push({ pos, phase: 0, mag: 1 }); }
+      else if (a === 'load') S.model.loads.push({ pos: 'w' + (i + 1) + 'c', type: 0, L: 1, C: 0, Q: 0, R: 0, X: 0 });
+      else if (a === 'split') { const W = numWires()[i]; if (W) splitAt(v3.mul(v3.add(W.a, W.b), 0.5)); }
+      renderTables(); changed();
+    }
+    renderInspector(); drawView();
+  });
+})();
+
+/* view state */
+function edFit() {
+  const W = numWires().filter(Boolean);
+  WMStruct.expandObjects(numObjects()).walls.forEach(({ e }) => W.push({ a: e[0], b: e[1] }));
+  if (!W.length) { V.ctr = [0, 0, 0]; V.span = MM.lambdaOf(+S.model.freq || 14) / 2; }
+  else {
+    const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    W.forEach(w => [w.a, w.b].forEach(p => { for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], p[k]); mx[k] = Math.max(mx[k], p[k]); } }));
+    V.ctr = [0, 1, 2].map(k => (mn[k] + mx[k]) / 2);
+    V.span = Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 0.5);
+  }
+  V.zoom = 1; V.panX = V.panY = 0; drawView();
+}
+function edReset() {
+  ED.sel = null; ED.start = null; ED.hover = null; ED.drag = null; ED.undo = []; ED.redo = []; ED.offset = 0;
+  ED.step = niceStep(MM.lambdaOf(+S.model.freq || 14) / 40);
+  $('#edStep').value = ED.step; $('#edOff').value = 0;
+  $('#edRad').value = S.model.wires[0] ? S.model.wires[0].r : '1';
+  edFit(); renderInspector(); edButtons();
+}
+const HINTS = {
+  select: 'Click a wire or an end point to select it; drag to move it in the work plane. Connected ends move together.',
+  draw: 'Click to start, click again to end; keep clicking to chain wires. Esc, double-click or right-click stops.',
+  rotate: 'Drag to rotate, Shift+drag to pan, scroll or pinch to zoom. In other modes, right-drag or Alt+drag rotates.'
+};
+function setMode(m) {
+  ED.mode = m; ED.start = null; ED.hover = null;
+  $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  $('#viewBox').style.cursor = m === 'draw' ? 'crosshair' : m === 'rotate' ? 'grab' : 'default';
+  $('#edHint').textContent = HINTS[m];
+  drawView();
+}
+function setPlane(pl) { ED.plane = pl; $('#edPlane').value = pl; $('#edOffLab').textContent = 'Plane at ' + PLANES[pl].lab + ' (m)'; }
+
+/* rendering */
+function drawGrid(c, P, ax, k, off, half, step, col, major) {
+  const n0 = Math.ceil(half / step), stride = Math.max(1, Math.ceil(n0 / 60));
+  const ia = Math.round(V.ctr[ax[0]] / step), ib = Math.round(V.ctr[ax[1]] / step);
+  const mk = (a, b) => { const p = [0, 0, 0]; p[ax[0]] = a * step; p[ax[1]] = b * step; p[k] = off; return P(p); };
+  c.lineWidth = 1;
+  for (let i = -n0; i <= n0; i += stride) {
+    c.strokeStyle = major && (ia + i) % 5 === 0 ? major : col;
+    let p = mk(ia + i, ib - n0), q = mk(ia + i, ib + n0); c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
+    c.strokeStyle = major && (ib + i) % 5 === 0 ? major : col;
+    p = mk(ia - n0, ib + i); q = mk(ia + n0, ib + i); c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
+  }
+}
+function updateCoord() {
+  const el = $('#edCoord'); let t = '';
+  if (ED.mode === 'draw' && ED.msg === 'edge') t = 'The work plane is edge-on. Rotate the view or choose another plane.';
+  else if (ED.hover && ED.mode !== 'rotate') {
+    const p = ED.hover.p;
+    t = 'X ' + fmt(p[0], 3) + '   Y ' + fmt(p[1], 3) + '   Z ' + fmt(p[2], 3);
+    if (ED.hover.kind === 'end') t += '  · wire end';
+    if (ED.hover.kind === 'wire') t += '  · on wire ' + (ED.hover.wire + 1);
+    if (ED.mode === 'draw' && ED.start) t += '  · length ' + fmt(v3.len(v3.sub(p, ED.start)), 3) + ' m';
+  }
+  el.textContent = t; el.hidden = !t;
+}
+function drawView() {
+  const cv = $('#view3d'); if (!cv || !cv.offsetParent || !S.model) return;
+  const { c, w, h } = prep(cv);
+  const cam = camera(w, h); ED.cam = cam; const P = cam.P;
+  const ink = css('--ink'), muted = css('--muted'), grid = css('--grid'), line = css('--line'), acc = css('--accent'), tr2 = css('--trace2'), panel = css('--panel');
+  const W = numWires();
+  const gnd = S.model.ground.type > 0, H = gnd ? (+S.model.ground.height || 0) : 0;
+  c.lineCap = 'round';
+  // real ground sits "add height" below Z = 0 of the table coordinates
+  const showGround = gnd && H >= 0 && H < V.span * 1.2;
+  if (showGround) drawGrid(c, P, [0, 1], 2, -H, V.span * 0.9, niceStep(V.span / 8), grid, null);
+  if (ED.mode !== 'rotate') { const pl = PLANES[ED.plane]; drawGrid(c, P, pl.ax, pl.k, ED.offset, Math.max(V.span * 0.8, ED.step * 8), ED.step, grid, line); }
+  // axes
+  const al = V.span * 0.15, o = P([0, 0, 0]);
+  c.font = FONT();
+  [['X', [al, 0, 0]], ['Y', [0, al, 0]], ['Z', [0, 0, al]]].forEach(([n, d]) => {
+    const b = P(d); c.strokeStyle = muted; c.lineWidth = 1; c.beginPath(); c.moveTo(o[0], o[1]); c.lineTo(b[0], b[1]); c.stroke();
+    c.fillStyle = muted; c.fillText(n, b[0] + 3, b[1] - 3);
+  });
+  // buildings: walls for reference (dashed), metal roof grid (thin)
+  const objs = WMStruct.expandObjects(numObjects());
+  c.save(); c.lineWidth = 1; c.strokeStyle = muted; c.setLineDash([4, 4]);
+  objs.walls.forEach(({ e }) => { const a = P(e[0]), b = P(e[1]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); });
+  c.setLineDash([]);
+  if (!(S.last && !S.dirty && $('#showCur').checked)) {
+    c.strokeStyle = ink; c.globalAlpha = 0.45;
+    objs.wires.forEach(w => { const a = P([w.x1, w.y1, w.z1]), b = P([w.x2, w.y2, w.z2]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); });
+  }
+  c.restore();
+  // far-field lobe around the antenna (latest result), translucent so the wires stay visible
+  if ($('#edLobe').checked && S.last && S.last.grid) {
+    const Wv = W.filter(Boolean);
+    if (Wv.length) {
+      const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+      Wv.forEach(ww => [ww.a, ww.b].forEach(p => { for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], p[k]); mx[k] = Math.max(mx[k], p[k]); } }));
+      const ctr = [0, 1, 2].map(k => (mn[k] + mx[k]) / 2), Rl = V.span * 0.65;
+      const G = S.last.grid, nE = G.els.length, nA = G.azs.length, ref = S.last.gain;
+      const px = new Float64Array(nE * nA), py = new Float64Array(nE * nA), pd = new Float64Array(nE * nA), pt = new Float64Array(nE * nA);
+      for (let i = 0; i < nE; i++) {
+        const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
+        for (let j = 0; j < nA; j++) {
+          const kk = i * nA + j, a = G.azs[j] * Math.PI / 180, t = Math.max(0, (G.tot[kk] - ref + 40) / 40), rr = t * Rl;
+          const q = P([ctr[0] + rr * ce * Math.cos(a), ctr[1] + rr * ce * Math.sin(a), ctr[2] + rr * se]);
+          px[kk] = q[0]; py[kk] = q[1]; pd[kk] = q[2]; pt[kk] = t;
+        }
+      }
+      const quads = [];
+      for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
+        const a = i * nA + j, b = i * nA + (j + 1) % nA, cc = (i + 1) * nA + (j + 1) % nA, d = (i + 1) * nA + j;
+        const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4; if (tt <= 0) continue;
+        quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt]);
+      }
+      quads.sort((p1, p2) => p1[4] - p2[4]);
+      const Lc = css('--cur-light') || '46%';
+      c.save(); c.lineWidth = 0.6;
+      for (const [a, b, cc, d, , tt] of quads) {
+        c.beginPath(); c.moveTo(px[a], py[a]); c.lineTo(px[b], py[b]); c.lineTo(px[cc], py[cc]); c.lineTo(px[d], py[d]); c.closePath();
+        const col = 'hsl(' + (215 - 205 * tt) + ' 70% ' + Lc + ')';
+        c.globalAlpha = 0.13; c.fillStyle = col; c.fill();
+        c.globalAlpha = 0.32; c.strokeStyle = col; c.stroke();
+      }
+      c.restore();
+    }
+  }
+  // wires, coloured by current when the result matches the model
+  const fresh = S.last && !S.dirty && $('#showCur').checked;
+  if (fresh) {
+    const hz = S.last.ground ? (+S.last.height || 0) : 0;
+    let maxI = 0; S.last.segs.forEach(s => { maxI = Math.max(maxI, s[6]); });
+    const L = css('--cur-light') || '46%';
+    const order = S.last.segs.map(s => [s, (P([s[0], s[1], s[2] - hz])[2] + P([s[3], s[4], s[5] - hz])[2]) / 2]).sort((a, b) => a[1] - b[1]);
+    for (const [s] of order) {
+      const a = P([s[0], s[1], s[2] - hz]), b = P([s[3], s[4], s[5] - hz]), t = maxI > 0 ? s[6] / maxI : 0;
+      c.strokeStyle = 'hsl(' + (215 - 205 * t) + ' 78% ' + L + ')'; c.lineWidth = 1.5 + 3 * t;
+      c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+    }
+  } else {
+    c.strokeStyle = ink; c.lineWidth = 2;
+    W.forEach(ww => { if (!ww) return; const a = P(ww.a), b = P(ww.b); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); });
+  }
+  // hover and selection
+  const hv = ED.hover;
+  if (ED.mode === 'select' && hv && hv.kind === 'wire' && !ED.drag && W[hv.wire]) {
+    const a = P(W[hv.wire].a), b = P(W[hv.wire].b); c.strokeStyle = tr2; c.lineWidth = 3; c.globalAlpha = 0.6;
+    c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.globalAlpha = 1;
+  }
+  if (ED.sel && W[ED.sel.wire]) {
+    const ww = W[ED.sel.wire], a = P(ww.a), b = P(ww.b);
+    c.strokeStyle = acc; c.lineWidth = 5; c.globalAlpha = 0.45; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.globalAlpha = 1;
+    c.lineWidth = 2; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+  }
+  // segmentation and feed/load marks from the solver mesh
+  let mesh = null;
+  try { mesh = MM.buildMesh(numericModel(), S.calcFreq); } catch (e) { mesh = null; }
+  const mz = p => [p[0], p[1], p[2] - (mesh && mesh.hasGround ? mesh.H : 0)];
+  if (mesh && $('#showSeg').checked) {
+    c.fillStyle = muted;
+    mesh.nodes.forEach(nd => { const q = P(mz(nd.p)); c.fillRect(q[0] - 1.5, q[1] - 1.5, 3, 3); });
+  }
+  // wire ends (filled when shared by several wires)
+  if (ED.mode !== 'rotate') {
+    const ends = new Map();
+    W.forEach(ww => { if (!ww) return; [ww.a, ww.b].forEach(p => { const k = p.map(v => v.toFixed(5)).join(); const e = ends.get(k); ends.set(k, { p, n: e ? e.n + 1 : 1 }); }); });
+    ends.forEach(({ p, n }) => { const q = P(p); c.fillStyle = n > 1 ? ink : panel; c.strokeStyle = ink; c.lineWidth = 1.2; c.fillRect(q[0] - 3.5, q[1] - 3.5, 7, 7); c.strokeRect(q[0] - 3.5, q[1] - 3.5, 7, 7); });
+  }
+  if (ED.sel && ED.sel.type === 'end' && W[ED.sel.wire]) {
+    const q = P(ED.sel.end ? W[ED.sel.wire].b : W[ED.sel.wire].a); c.strokeStyle = acc; c.lineWidth = 2.5; c.beginPath(); c.arc(q[0], q[1], 8, 0, 2 * Math.PI); c.stroke();
+  }
+  if (mesh) {
+    const mark = (spec, kind) => {
+      const p = MM.parsePos(spec); if (!p) return;
+      const list = mesh.wireSegs[p.wire]; if (!list || !list.length) return;
+      let pt;
+      if (p.where === 'b') pt = mesh.segs[list[0]].p0;
+      else if (p.where === 'e') pt = mesh.segs[list[list.length - 1]].p1;
+      else if (list.length === 1) pt = mesh.segs[list[0]].mid;
+      else { let tot = 0; list.forEach(s => { tot += mesh.segs[s].len; }); let t = 0, bd = Infinity; list.forEach(s => { t += mesh.segs[s].len; const d = Math.abs(t - tot / 2); if (d < bd) { bd = d; pt = mesh.segs[s].p1; } }); }
+      const q = P(mz(pt)); c.lineWidth = 2;
+      if (kind === 's') { c.strokeStyle = acc; c.beginPath(); c.arc(q[0], q[1], 7, 0, 2 * Math.PI); c.stroke(); }
+      else { c.strokeStyle = tr2; c.strokeRect(q[0] - 6, q[1] - 6, 12, 12); }
+    };
+    S.model.sources.forEach(s => mark(s.pos, 's'));
+    S.model.loads.forEach(l => mark(l.pos, 'l'));
+    // transmission lines: dashed connection between their two feed points
+    (S.model.tls || []).forEach((t, k) => {
+      const a = MM.portPoint(mesh, t.p1), b = MM.portPoint(mesh, t.p2); if (!a || !b) return;
+      const qa = P(mz(a)), qb = P(mz(b));
+      c.save(); c.strokeStyle = tr2; c.lineWidth = 2; c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(qa[0], qa[1]); c.lineTo(qb[0], qb[1]); c.stroke(); c.setLineDash([]);
+      c.fillStyle = tr2; [qa, qb].forEach(q => { c.beginPath(); c.arc(q[0], q[1], 3, 0, 2 * Math.PI); c.fill(); });
+      c.font = FONT(); c.fillText('TL' + (k + 1), (qa[0] + qb[0]) / 2 + 6, (qa[1] + qb[1]) / 2);
+      c.restore();
+    });
+  }
+  // drawing preview
+  if (ED.mode === 'draw') {
+    if (ED.start) {
+      const a = P(ED.start); c.fillStyle = acc; c.beginPath(); c.arc(a[0], a[1], 4, 0, 2 * Math.PI); c.fill();
+      if (hv) { const b = P(hv.p); c.strokeStyle = acc; c.lineWidth = 2; c.setLineDash([6, 4]); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); c.setLineDash([]); }
+    }
+    if (hv) {
+      const q = P(hv.p); c.lineWidth = 2;
+      if (hv.kind === 'end') { c.strokeStyle = acc; c.beginPath(); c.arc(q[0], q[1], 9, 0, 2 * Math.PI); c.stroke(); }
+      else if (hv.kind === 'wire') { c.strokeStyle = tr2; c.beginPath(); c.moveTo(q[0], q[1] - 7); c.lineTo(q[0] + 7, q[1]); c.lineTo(q[0], q[1] + 7); c.lineTo(q[0] - 7, q[1]); c.closePath(); c.stroke(); }
+      else { c.strokeStyle = acc; c.beginPath(); c.moveTo(q[0] - 6, q[1]); c.lineTo(q[0] + 6, q[1]); c.moveTo(q[0], q[1] - 6); c.lineTo(q[0], q[1] + 6); c.stroke(); }
+    }
+  } else if (ED.drag && ED.drag.moved && hv) {
+    const q = P(hv.p); c.strokeStyle = acc; c.lineWidth = 2; c.beginPath(); c.arc(q[0], q[1], 6, 0, 2 * Math.PI); c.stroke();
+  }
+  // scale bar
+  const bar = niceStep(V.span / 3 / V.zoom), px = bar * cam.sc;
+  c.strokeStyle = muted; c.lineWidth = 1; c.beginPath(); c.moveTo(w - 16 - px, h - 14); c.lineTo(w - 16, h - 14); c.stroke();
+  c.fillStyle = muted; c.textAlign = 'right'; c.fillText(bar >= 1 ? bar + ' m' : +(bar * 100).toFixed(1) + ' cm', w - 16, h - 20); c.textAlign = 'left';
+  updateCoord();
+  $('#viewLegend').innerHTML = '<span><i style="border:2px solid var(--accent);border-radius:50%;width:10px;height:10px"></i>Source</span><span><i style="border:2px solid var(--trace2);width:10px;height:10px"></i>Load</span>' +
+    '<span><i style="border:1.5px solid var(--ink);background:var(--ink);width:8px;height:8px"></i>Joined wire ends</span>' +
+    ((S.model.tls || []).length ? '<span><i class="dash" style="border-color:var(--trace2)"></i>Transmission line</span>' : '') +
+    ((S.model.objects || []).length ? '<span><i class="dash" style="border-color:var(--muted)"></i>House walls (not solved)</span><span>Metal roof: wire grid</span>' : '') +
+    (fresh ? '<span>Wire colour: current, blue (low) to red (high)</span>' : '') +
+    (showGround ? '<span>Ground drawn ' + fmt(H, 1) + ' m below Z = 0 (add height)</span>' : '');
+}
+
+/* input */
+(function edInput() {
+  const box = $('#viewBox'); const ptrs = new Map(); let pinch = null, orbit = null, down = null;
+  const pos = e => { const r = box.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  box.addEventListener('contextmenu', e => e.preventDefault());
+  box.addEventListener('pointerdown', e => {
+    box.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: V.zoom };
+      orbit = null; down = null;
+      if (ED.drag) { if (ED.drag.moved) S.model.wires = JSON.parse(ED.drag.snap).w; ED.drag = null; }
+      return;
+    }
+    const [sx, sy] = pos(e);
+    down = { x: e.clientX, y: e.clientY };
+    if (ED.mode === 'rotate' || e.altKey || e.button === 1 || e.button === 2) {
+      orbit = { x: e.clientX, y: e.clientY, yaw: V.yaw, pitch: V.pitch, pan: e.shiftKey || e.button === 1, px: V.panX, py: V.panY, button: e.button };
+      return;
+    }
+    if (ED.mode === 'select') selectDown(sx, sy);
+  });
+  box.addEventListener('pointermove', e => {
+    const [sx, sy] = pos(e);
+    if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; V.zoom = Math.min(20, Math.max(0.2, pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)); drawView(); return; }
+    if (orbit) {
+      if (orbit.pan) { V.panX = orbit.px + e.clientX - orbit.x; V.panY = orbit.py + e.clientY - orbit.y; }
+      else { V.yaw = orbit.yaw + (e.clientX - orbit.x) * 0.01; V.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, orbit.pitch + (e.clientY - orbit.y) * 0.01)); }
+      drawView(); return;
+    }
+    if (ED.drag && down) {
+      if (!ED.drag.moved && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 4) return;
+      ED.drag.moved = true; dragMove(sx, sy); return;
+    }
+    if (ED.mode === 'draw') { ED.hover = snapTarget(sx, sy); ED.msg = ED.hover ? '' : 'edge'; }
+    else if (ED.mode === 'select') { ED.hover = hitEnd(sx, sy) || hitWire(sx, sy); box.style.cursor = ED.hover ? 'move' : 'default'; }
+    else return;
+    drawView();
+  });
+  const end = e => {
+    const had = ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+    if (!had || !down) { if (!ptrs.size) down = null; return; }
+    const [sx, sy] = pos(e), click = Math.hypot(e.clientX - down.x, e.clientY - down.y) < 5;
+    if (orbit) { if (click && orbit.button === 2 && ED.mode === 'draw') { ED.start = null; drawView(); } orbit = null; }
+    else if (ED.drag) { if (ED.drag.moved) dragEnd(); ED.drag = null; drawView(); }
+    else if (ED.mode === 'draw' && click && e.type === 'pointerup') drawClick(sx, sy);
+    if (!ptrs.size) down = null;
+  };
+  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+  box.addEventListener('pointerleave', () => { if (!ED.drag && !orbit && ED.hover) { ED.hover = null; drawView(); } });
+  box.addEventListener('dblclick', () => { if (ED.mode === 'draw') { ED.start = null; drawView(); } });
+  box.addEventListener('wheel', e => { e.preventDefault(); V.zoom = Math.min(20, Math.max(0.2, V.zoom * Math.exp(-e.deltaY * 0.0015))); drawView(); }, { passive: false });
+
+  $$('[data-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.mode); });
+  $('#edHouse').onclick = addHouse;
+  $('#edUndo').onclick = undo; $('#edRedo').onclick = redo; $('#edFit').onclick = edFit;
+  $('#edPlane').onchange = e => { setPlane(e.target.value); drawView(); };
+  $('#edOff').oninput = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { ED.offset = v; drawView(); } };
+  $('#edStep').oninput = e => { const v = parseFloat(e.target.value); if (v > 0) { ED.step = v; drawView(); } };
+  $('#edSnap').onchange = drawView; $('#showSeg').onchange = drawView; $('#showCur').onchange = drawView;
+  $$('[data-vp]').forEach(b => { b.onclick = () => {
+    [V.yaw, V.pitch] = VPS[b.dataset.vp]; V.zoom = 1; V.panX = V.panY = 0;
+    const pl = { top: 'xy', front: 'xz', side: 'yz' }[b.dataset.vp]; if (pl) setPlane(pl);
+    drawView();
+  }; });
+  document.addEventListener('keydown', e => {
+    if ($('[data-panel="view"]').hidden) return;
+    if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName || '')) return;
+    const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+    if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+    if (mod || e.altKey) return;
+    if (e.key === 'Escape') { if (ED.start) ED.start = null; else { ED.sel = null; renderInspector(); } drawView(); }
+    else if ((e.key === 'Delete' || e.key === 'Backspace') && ED.sel) { e.preventDefault(); pushUndo(); deleteWire(ED.sel.wire); ED.sel = null; renderTables(); renderInspector(); changed(); }
+    else if (k === 'd') setMode('draw'); else if (k === 's') setMode('select'); else if (k === 'r') setMode('rotate');
+  });
+  setPlane('xy'); setMode('select');
+})();
+
+/* ---------------- polar plots ---------------- */
+function drawPolar(cv, series, half, ref) {
+  const { c, w, h } = prep(cv);
+  const muted = css('--muted'), grid = css('--grid'), line = css('--line');
+  const R = half ? Math.min(w / 2, h * 0.9) - 26 : Math.min(w, h) / 2 - 26;
+  const cx = w / 2, cy = half ? h * 0.5 + R * 0.5 : h / 2;
+  const rings = [0, -3, -6, -10, -20, -30];
+  const rad = dB => Math.max(0, (dB + 40) / 40) * R;
+  c.lineWidth = 1; c.font = FONT();
+  for (const g of rings) {
+    c.strokeStyle = g === 0 ? line : grid; c.beginPath();
+    c.arc(cx, cy, rad(g), half ? Math.PI : 0, 2 * Math.PI); c.stroke();
+    c.fillStyle = muted; if (g < 0) c.fillText(String(g), cx + 3, cy - rad(g) + 11);
+  }
+  for (let a = 0; a < 360; a += 30) {
+    if (half && a > 180) continue;
+    const t = a * Math.PI / 180;
+    c.strokeStyle = grid; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + R * Math.cos(t), cy - R * Math.sin(t)); c.stroke();
+    c.fillStyle = muted; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(a + '°', cx + (R + 14) * Math.cos(t), cy - (R + 14) * Math.sin(t));
+    c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  }
+  for (const s of series) {
+    c.strokeStyle = s.color; c.lineWidth = s.width || 2; c.setLineDash(s.dash ? [5, 4] : []);
+    c.beginPath();
+    s.pts.forEach(([a, dB], i) => { const t = a * Math.PI / 180, r = rad(dB - ref); const x = cx + r * Math.cos(t), y = cy - r * Math.sin(t); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.stroke(); c.setLineDash([]);
+  }
+}
+function drawPatterns() {
+  const az = $('#azPlot'); if (!az.offsetParent) return;
+  const r = S.last;
+  if (!r) { prep(az); prep($('#elPlot')); return; }
+  const mode = $('#polSel').value;
+  const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
+  const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
+  const build = (cut, heldCut) => {
+    const out = [];
+    if (heldCut) out.push({ pts: pick(heldCut, 1), color: muted, dash: true, width: 1.5 });
+    if (mode === 'tot' || mode === 'all') out.push({ pts: pick(cut, 1), color: acc });
+    if (mode === 'h' || mode === 'all') out.push({ pts: pick(cut, 2), color: mode === 'all' ? tr2 : acc });
+    if (mode === 'v' || mode === 'all') out.push({ pts: pick(cut, 3), color: mode === 'all' ? tr3 : acc });
+    return out;
+  };
+  const ref = Math.max(r.gain, S.held ? S.held.gain : -999);
+  drawPolar(az, build(r.cutAz, S.held && S.held.cutAz), false, ref);
+  drawPolar($('#elPlot'), build(r.cutEl, S.held && S.held.cutEl), r.ground > 0, ref);
+  $('#azTitle').textContent = 'Azimuth at ' + fmt(r.el, 1) + '° elevation · max ' + fmt(r.gain, 2) + ' dBi';
+  $('#elTitle').textContent = 'Elevation toward ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB';
+  let lg = '';
+  if (mode === 'all') lg += '<span><i style="border-color:var(--accent)"></i>Total</span><span><i style="border-color:var(--trace2)"></i>Horizontal</span><span><i style="border-color:var(--trace3)"></i>Vertical</span>';
+  else lg += '<span><i style="border-color:var(--accent)"></i>' + { tot: 'Total', h: 'Horizontal', v: 'Vertical' }[mode] + ' · ' + fmt(r.f, 3) + ' MHz</span>';
+  if (S.held) lg += '<span><i class="dash" style="border-color:var(--muted)"></i>Held: <span class="heldName"></span></span>';
+  $('#patLegend').innerHTML = lg;
+  if (S.held) $('#patLegend .heldName').textContent = S.held.label;
+  drawFF3D();
+}
+$('#polSel').onchange = drawPatterns;
+
+/* mini far-field plots beside the 3D editor */
+function drawEdPolar() {
+  const az = $('#edAz'); if (!az || !az.offsetParent) return;
+  const r = S.last;
+  if (!r) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = ''; return; }
+  const acc = css('--accent');
+  drawPolar(az, [{ pts: r.cutAz.map(p => [p[0], p[1]]), color: acc }], false, r.gain);
+  drawPolar($('#edEl'), [{ pts: r.cutEl.map(p => [p[0], p[1]]), color: acc }], r.ground > 0, r.gain);
+  $('#edPolTxt').textContent = fmt(r.gain, 2) + ' dBi at ' + fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB';
+}
+$('#edLobe').onchange = () => drawView();
+
+/* ---------------- 3D far field ---------------- */
+const FV = { yaw: -0.6, pitch: 0.45, zoom: 1 };
+function drawFF3D() {
+  const cv = $('#ff3d'); if (!cv || !cv.offsetParent) return;
+  const { c, w, h } = prep(cv);
+  const r = S.last, muted = css('--muted'), ink = css('--ink'), grid = css('--grid'), panel = css('--panel');
+  if (!r || !r.grid) { c.fillStyle = muted; c.font = '13px ' + css('--f-body'); c.fillText('Calculate to see the 3D pattern.', 16, 24); $('#ffLegend').innerHTML = ''; return; }
+  const G = r.grid, mode = $('#polSel').value;
+  const arr = mode === 'h' ? G.h : mode === 'v' ? G.v : G.tot;
+  const ref = r.gain, nE = G.els.length, nA = G.azs.length;
+  const R = Math.min(w, h) * 0.4 * FV.zoom;
+  const cy = Math.cos(FV.yaw), sy = Math.sin(FV.yaw), cp = Math.cos(FV.pitch), sp = Math.sin(FV.pitch);
+  const P = (x, y, z) => { const x1 = x * cy + y * sy, y1 = x * sy - y * cy; return [w / 2 + x1, h / 2 + R * 0.08 - (z * cp - y1 * sp), y1 * cp + z * sp]; };
+  const N = nE * nA, px = new Float64Array(N), py = new Float64Array(N), pd = new Float64Array(N), pt = new Float64Array(N);
+  for (let i = 0; i < nE; i++) {
+    const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
+    for (let j = 0; j < nA; j++) {
+      const k = i * nA + j, a = G.azs[j] * Math.PI / 180;
+      const t = Math.max(0, (arr[k] - ref + 40) / 40), rr = t * R;
+      const q = P(rr * ce * Math.cos(a), rr * ce * Math.sin(a), rr * se);
+      px[k] = q[0]; py[k] = q[1]; pd[k] = q[2]; pt[k] = t;
+    }
+  }
+  // ground circle and axes behind the surface
+  c.lineWidth = 1;
+  if (r.ground > 0) {
+    c.strokeStyle = muted; c.setLineDash([4, 4]); c.beginPath();
+    for (let d = 0; d <= 360; d += 5) { const a = d * Math.PI / 180, q = P(R * Math.cos(a), R * Math.sin(a), 0); d ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]); }
+    c.stroke(); c.setLineDash([]);
+  }
+  const axes = [['X', [1.15 * R, 0, 0]], ['Y', [0, 1.15 * R, 0]], ['Z', [0, 0, 1.15 * R]]];
+  const o = P(0, 0, 0);
+  c.strokeStyle = grid;
+  axes.forEach(([, v]) => { const q = P(v[0], v[1], v[2]); c.beginPath(); c.moveTo(o[0], o[1]); c.lineTo(q[0], q[1]); c.stroke(); });
+  // surface quads, painter's order (far first)
+  const quads = [];
+  for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
+    const a = i * nA + j, b = i * nA + (j + 1) % nA, cc = (i + 1) * nA + (j + 1) % nA, d = (i + 1) * nA + j;
+    const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4;
+    if (tt <= 0) continue;
+    quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt]);
+  }
+  quads.sort((p, q) => p[4] - q[4]);
+  const L = css('--cur-light') || '46%', mesh = $('#ffMesh').checked;
+  c.lineWidth = 0.5; c.lineJoin = 'round';
+  for (const [a, b, cc, d, , tt] of quads) {
+    c.beginPath(); c.moveTo(px[a], py[a]); c.lineTo(px[b], py[b]); c.lineTo(px[cc], py[cc]); c.lineTo(px[d], py[d]); c.closePath();
+    const col = 'hsl(' + (215 - 205 * tt) + ' 70% ' + L + ')';
+    c.fillStyle = col; c.fill();
+    c.strokeStyle = mesh ? panel : col; c.stroke();
+  }
+  // antenna, scaled into the middle of the plot
+  if ($('#ffAnt').checked && r.segs.length) {
+    const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    r.segs.forEach(s => { for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], s[k], s[k + 3]); mx[k] = Math.max(mx[k], s[k], s[k + 3]); } });
+    const ctr = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
+    const sc = 0.3 * R / Math.max(mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2], 1e-3);
+    c.strokeStyle = ink; c.lineWidth = 2; c.lineCap = 'round';
+    for (const s of r.segs) {
+      const a = P((s[0] - ctr[0]) * sc, (s[1] - ctr[1]) * sc, (s[2] - ctr[2]) * sc), b = P((s[3] - ctr[0]) * sc, (s[4] - ctr[1]) * sc, (s[5] - ctr[2]) * sc);
+      c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+    }
+  }
+  c.fillStyle = muted; c.font = FONT();
+  axes.forEach(([n, v]) => { const q = P(v[0], v[1], v[2]); c.fillText(n, q[0] + 4, q[1] - 4); });
+  const pol = { tot: 'Total field', all: 'Total field', h: 'Horizontal', v: 'Vertical' }[mode];
+  $('#ffLegend').innerHTML = '<span>−40 dB<span class="ramp"></span>0 dB = ' + fmt(r.gain, 2) + ' dBi max</span><span>' + pol + ' · ' + fmt(r.f, 3) + ' MHz</span>';
+}
+(function ffInput() {
+  const box = $('#ffBox'); let drag = null; const ptrs = new Map(); let pinch = null;
+  box.addEventListener('pointerdown', e => { box.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); drag = { x: e.clientX, y: e.clientY, yaw: FV.yaw, pitch: FV.pitch }; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), z: FV.zoom }; } });
+  box.addEventListener('pointermove', e => {
+    if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && ptrs.size === 2) { const [a, b] = [...ptrs.values()]; FV.zoom = Math.min(5, Math.max(0.3, pinch.z * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d)); drawFF3D(); return; }
+    if (!drag) return;
+    FV.yaw = drag.yaw + (e.clientX - drag.x) * 0.01;
+    FV.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, drag.pitch + (e.clientY - drag.y) * 0.01));
+    drawFF3D();
+  });
+  const end = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) drag = null; };
+  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
+  box.addEventListener('wheel', e => { e.preventDefault(); FV.zoom = Math.min(5, Math.max(0.3, FV.zoom * Math.exp(-e.deltaY * 0.0015))); drawFF3D(); }, { passive: false });
+  $$('[data-fp]').forEach(b => b.onclick = () => { [FV.yaw, FV.pitch] = VPS[b.dataset.fp]; FV.zoom = 1; drawFF3D(); });
+  $('#ffAnt').onchange = drawFF3D; $('#ffMesh').onchange = drawFF3D;
+})();
+
+$('#holdBtn').onclick = () => { if (!S.last) return; S.held = Object.assign({}, S.last, { label: (S.last.name || '') + ', ' + fmt(S.last.f, 3) + ' MHz, ' + fmt(S.last.gain, 2) + ' dBi' }); $('#dropHold').hidden = false; drawPatterns(); };
+$('#dropHold').onclick = () => { S.held = null; $('#dropHold').hidden = true; drawPatterns(); };
+
+/* ---------------- sweep charts ---------------- */
+function lineChart(cv, xs, series, opt) {
+  const { c, w, h } = prep(cv);
+  const muted = css('--muted'), grid = css('--grid');
+  const L = 44, Rm = opt.right ? 44 : 12, T = 10, B = 24;
+  const pw = w - L - Rm, ph = h - T - B;
+  if (!xs.length) { c.fillStyle = muted; c.font = '12.5px ' + css('--f-body'); c.fillText('Run a sweep to fill this chart.', L, T + 20); return; }
+  const x0 = xs[0], x1 = xs[xs.length - 1];
+  const X = x => L + (x - x0) / (x1 - x0 || 1) * pw;
+  const ticks = a => { const n = Math.min(50, Math.max(0, Math.round((a.hi - a.lo) / a.step))); return Array.from({ length: n + 1 }, (_, i) => a.lo + i * a.step); };
+  const nice = (lo, hi) => {
+    if (!(hi - lo > 1e-6 * Math.max(1, Math.abs(lo), Math.abs(hi)))) { const c = Number.isFinite(lo + hi) ? (lo + hi) / 2 : 0; lo = c - 1; hi = c + 1; }
+    const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4))); const m = [1, 2, 5, 10].find(k => (hi - lo) / (step * k) <= 6) * step;
+    return { lo: Math.floor(lo / m) * m, hi: Math.ceil(hi / m) * m, step: m };
+  };
+  const axes = {};
+  ['left', 'right'].forEach(side => {
+    const ss = series.filter(s => (s.axis || 'left') === side); if (!ss.length) return;
+    let lo = Infinity, hi = -Infinity;
+    ss.forEach(s => s.ys.forEach(y => { if (Number.isFinite(y)) { lo = Math.min(lo, y); hi = Math.max(hi, y); } }));
+    if (opt.clamp && opt.clamp[side]) { const [a, b] = opt.clamp[side]; if (a !== null) lo = Math.max(lo, a); if (b !== null) hi = Math.min(hi, b); if (opt.floor && opt.floor[side] !== undefined) lo = Math.min(lo, opt.floor[side]); }
+    axes[side] = nice(lo, hi);
+  });
+  const Y = (side, y) => { const a = axes[side]; return T + ph - (Math.min(Math.max(y, a.lo), a.hi) - a.lo) / (a.hi - a.lo) * ph; };
+  c.font = FONT(); c.lineWidth = 1;
+  if (opt.bands) {
+    // shade the amateur bands; labels only where they have room
+    c.save(); c.textAlign = 'center'; let lastRight = -Infinity;
+    for (const [lo, hi, lab] of opt.bands) {
+      if (hi < x0 || lo > x1) continue;
+      const xa = X(Math.max(lo, x0)), xb = X(Math.min(hi, x1)), xm = (xa + xb) / 2;
+      c.globalAlpha = 0.16; c.fillStyle = opt.bandColor; c.fillRect(xa, T, Math.max(2, xb - xa), ph);
+      const tw = c.measureText(lab).width;
+      if (xm - tw / 2 > lastRight + 3) { c.globalAlpha = 1; c.fillStyle = muted; c.fillText(lab, xm, T + 10); lastRight = xm + tw / 2; }
+    }
+    c.restore();
+  }
+  const la = axes.left;
+  for (const v of ticks(la)) { const y = Y('left', v); c.strokeStyle = grid; c.beginPath(); c.moveTo(L, y); c.lineTo(L + pw, y); c.stroke(); c.fillStyle = muted; c.textAlign = 'right'; c.fillText(+v.toFixed(3), L - 6, y + 4); }
+  if (axes.right) { const ra = axes.right; for (const v of ticks(ra)) { const y = Y('right', v); c.fillStyle = muted; c.textAlign = 'left'; c.fillText(+v.toFixed(3), L + pw + 6, y + 4); } }
+  const xn = nice(x0, x1);
+  c.textAlign = 'center';
+  for (const v of ticks(xn)) { if (v < x0 - 1e-9 || v > x1 + 1e-9) continue; const x = X(v); c.strokeStyle = grid; c.beginPath(); c.moveTo(x, T); c.lineTo(x, T + ph); c.stroke(); c.fillStyle = muted; c.fillText(+v.toFixed(3), x, h - 7); }
+  c.textAlign = 'left';
+  if (opt.zeroLine) { const s = opt.zeroLine; const y = Y(s, 0); c.strokeStyle = muted; c.setLineDash([2, 3]); c.beginPath(); c.moveTo(L, y); c.lineTo(L + pw, y); c.stroke(); c.setLineDash([]); }
+  if (opt.marker !== undefined) { const x = X(opt.marker); c.strokeStyle = muted; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(x, T); c.lineTo(x, T + ph); c.stroke(); c.setLineDash([]); }
+  for (const s of series) {
+    const side = s.axis || 'left';
+    c.strokeStyle = s.color; c.lineWidth = 2; c.beginPath();
+    xs.forEach((x, i) => { const y = Y(side, s.ys[i]); i ? c.lineTo(X(x), y) : c.moveTo(X(x), y); }); c.stroke();
+    let bi = 0; s.ys.forEach((y, i) => { if (opt.minMark && y < s.ys[bi]) bi = i; });
+    if (opt.minMark && s === series[0]) { c.fillStyle = s.color; c.beginPath(); c.arc(X(xs[bi]), Y(side, s.ys[bi]), 3.5, 0, 2 * Math.PI); c.fill(); c.fillStyle = muted; c.fillText(fmt(s.ys[bi], 2) + ' @ ' + fmt(xs[bi], 3), Math.min(X(xs[bi]) + 6, L + pw - 90), Y(side, s.ys[bi]) - 6); }
+  }
+}
+function drawSweep() {
+  const cv = $('#chSwr'); if (!cv.offsetParent) return;
+  const d = S.sweep || [];
+  const xs = d.map(p => p.f), acc = css('--accent'), tr2 = css('--trace2');
+  const mk = S.calcFreq, bands = bandsFor(), bandColor = css('--trace3');
+  lineChart(cv, xs, [{ ys: d.map(p => Math.min(p.swr, 10)), color: acc }], { clamp: { left: [1, 10] }, floor: { left: 1 }, minMark: true, marker: mk, bands, bandColor });
+  lineChart($('#chZ'), xs, [{ ys: d.map(p => p.R), color: acc }, { ys: d.map(p => p.X), color: tr2 }], { zeroLine: 'left', marker: mk, bands, bandColor });
+  lineChart($('#chG'), xs, [{ ys: d.map(p => p.gain), color: acc }, { ys: d.map(p => p.fb), color: tr2, axis: 'right' }], { right: true, marker: mk, bands, bandColor });
+  renderBandTable();
+  drawSmith();
+}
+/* ---------------- Smith chart ---------------- */
+let smithHover = -1, smithPts = [];
+const gammaOf = (R, X, z0) => { const zr = R / z0, zi = X / z0, den = (zr + 1) * (zr + 1) + zi * zi; return [(zr * zr + zi * zi - 1) / den, 2 * zi / den]; };
+function drawSmith() {
+  const cv = $('#chSmith'); if (!cv || !cv.offsetParent || !S.model) return;
+  const { c, w, h } = prep(cv);
+  const muted = css('--muted'), grid = css('--grid'), line = css('--line'), acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), ink = css('--ink');
+  const z0 = +S.model.z0 || 50;
+  $('#smithTitle').textContent = 'Smith chart, normalised to ' + fmt(z0, 0) + ' Ω';
+  const R = Math.min(w, h) / 2 - 26, cx = w / 2, cy = h / 2;
+  const P = (u, v) => [cx + u * R, cy - v * R];
+  const vals = [0.2, 0.5, 1, 2, 5];
+  c.font = FONT(); c.lineWidth = 1;
+  // grid: constant-resistance circles and constant-reactance arcs, clipped to |Γ| = 1
+  c.save(); c.beginPath(); c.arc(cx, cy, R, 0, 2 * Math.PI); c.clip();
+  c.strokeStyle = grid;
+  vals.forEach(r => { const [x0] = P(r / (1 + r), 0); c.beginPath(); c.arc(x0, cy, R / (1 + r), 0, 2 * Math.PI); c.stroke(); });
+  vals.forEach(x => [x, -x].forEach(xx => { const [px, py] = P(1, 1 / xx); c.beginPath(); c.arc(px, py, R / Math.abs(xx), 0, 2 * Math.PI); c.stroke(); }));
+  c.strokeStyle = line; c.beginPath(); c.moveTo(cx - R, cy); c.lineTo(cx + R, cy); c.stroke();
+  // SWR 2:1 circle, |Γ| = 1/3
+  c.strokeStyle = tr3; c.setLineDash([4, 4]); c.beginPath(); c.arc(cx, cy, R / 3, 0, 2 * Math.PI); c.stroke(); c.setLineDash([]);
+  c.restore();
+  c.strokeStyle = line; c.lineWidth = 1.2; c.beginPath(); c.arc(cx, cy, R, 0, 2 * Math.PI); c.stroke();
+  // labels: resistance on the real axis, reactance around the rim
+  c.fillStyle = muted; c.textAlign = 'left';
+  [0].concat(vals).forEach(r => { const [x] = P((r - 1) / (r + 1), 0); c.fillText(String(r), x + 3, cy - 4); });
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  vals.concat([1e9]).forEach(x => [x, -x].forEach(xx => {
+    const u = (xx * xx - 1) / (xx * xx + 1), v = 2 * xx / (xx * xx + 1);
+    const [px, py] = P(u * 1.09, v * 1.09);
+    if (Math.abs(xx) < 1e8) c.fillText((xx > 0 ? '+j' : '−j') + Math.abs(xx), px, py);
+  }));
+  c.fillText('∞', ...P(1.07, 0)); c.textBaseline = 'alphabetic';
+  c.fillStyle = tr3; c.textAlign = 'left'; c.fillText('SWR 2', ...P(0.04, 0.37));
+  // sweep trace
+  const d = S.sweep || [], bands = bandsFor();
+  smithPts = d.map(p => P(...gammaOf(p.R, p.X, z0)));
+  if (smithPts.length) {
+    c.strokeStyle = acc; c.lineWidth = 2; c.beginPath();
+    smithPts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke();
+    c.fillStyle = tr3;
+    d.forEach((p, i) => { if (bands.some(([lo, hi]) => p.f >= lo - 1e-9 && p.f <= hi + 1e-9)) { c.beginPath(); c.arc(smithPts[i][0], smithPts[i][1], 2.6, 0, 2 * Math.PI); c.fill(); } });
+    const [sx, sy] = smithPts[0], [ex, ey] = smithPts[smithPts.length - 1];
+    c.strokeStyle = ink; c.lineWidth = 1.5; c.beginPath(); c.arc(sx, sy, 5, 0, 2 * Math.PI); c.stroke();
+    c.fillStyle = ink; c.fillRect(ex - 4, ey - 4, 8, 8);
+  }
+  // latest calculation result
+  if (S.last && !S.dirty) {
+    const [lx, ly] = P(...gammaOf(S.last.R, S.last.X, z0));
+    c.strokeStyle = tr2; c.lineWidth = 2; c.beginPath(); c.arc(lx, ly, 7, 0, 2 * Math.PI); c.stroke();
+  }
+  // hover
+  if (smithHover >= d.length) smithHover = -1;
+  if (smithHover >= 0) { const [hx, hy] = smithPts[smithHover]; c.strokeStyle = acc; c.lineWidth = 2; c.beginPath(); c.arc(hx, hy, 8, 0, 2 * Math.PI); c.stroke(); }
+  renderSmithInfo(d, z0);
+}
+function renderSmithInfo(d, z0) {
+  const box = $('#smithInfo');
+  const ptHtml = (lab, p) => {
+    const g = gammaOf(p.R, p.X, z0), gm = Math.hypot(g[0], g[1]);
+    return '<div class="pt"><span>' + lab + ' ' + fmt(p.f, 4) + ' MHz</span><span>Z = ' + fmt(p.R, 1) + (p.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(p.X), 1) + ' Ω</span>' +
+      '<span>SWR ' + (p.swr < 100 ? fmt(p.swr, 2) : '> 99') + ' · |Γ| ' + fmt(gm, 3) + ' · RL ' + (gm > 0 ? fmt(-20 * Math.log10(gm), 1) : '∞') + ' dB</span></div>';
+  };
+  if (!d.length) { box.innerHTML = '<p style="margin:0">Run a sweep to plot the impedance here.</p>'; return; }
+  box.innerHTML = (smithHover >= 0 ? ptHtml('Point', d[smithHover]) : '<p style="margin:0">Hover the curve to read a point.</p>') +
+    ptHtml('Start ◯', d[0]) + ptHtml('End ■', d[d.length - 1]) +
+    '<p style="margin:0">Green dots are points inside amateur bands; the dashed circle is SWR 2:1. ' + (S.last && !S.dirty ? 'The orange ring is the latest calculation at ' + fmt(S.last.f, 3) + ' MHz. ' : '') + 'The reference impedance is set on the Calculate tab.</p>';
+}
+(function smithInput() {
+  const cv = $('#chSmith');
+  cv.addEventListener('pointermove', e => {
+    const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    let best = -1, bd = 14;
+    smithPts.forEach(([x, y], i) => { const dd = Math.hypot(x - mx, y - my); if (dd < bd) { bd = dd; best = i; } });
+    if (best !== smithHover) { smithHover = best; drawSmith(); }
+  });
+  cv.addEventListener('pointerleave', () => { if (smithHover !== -1) { smithHover = -1; drawSmith(); } });
+})();
+/* amateur HF bands per IARU region: [low MHz, high MHz, name] */
+const HF_COMMON = [[10.1, 10.15, '30m'], [14.0, 14.35, '20m'], [18.068, 18.168, '17m'], [21.0, 21.45, '15m'], [24.89, 24.99, '12m'], [28.0, 29.7, '10m']];
+const HAM_BANDS = {
+  1: [[1.81, 2.0, '160m'], [3.5, 3.8, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.2, '40m']].concat(HF_COMMON),
+  2: [[1.8, 2.0, '160m'], [3.5, 4.0, '80m'], [5.3305, 5.4065, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON),
+  3: [[1.8, 2.0, '160m'], [3.5, 3.9, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON)
+};
+const bandsFor = () => HAM_BANDS[$('#swRegion').value] || HAM_BANDS[1];
+// whole-HF plan: a coarse step between the bands, evenly spaced points inside each band (edges included)
+function hfPlan() {
+  const per = Math.min(41, Math.max(3, Math.round(+$('#swPer').value) || 9));
+  const step = Math.max(0.05, +$('#swStep').value || 0.25);
+  const B = bandsFor(), fl = [];
+  for (let i = 0; 1.8 + i * step <= 30 + 1e-9; i++) { const f = +(1.8 + i * step).toFixed(6); if (!B.some(([lo, hi]) => f >= lo && f <= hi)) fl.push(f); }
+  B.forEach(([lo, hi]) => { for (let i = 0; i < per; i++) fl.push(+(lo + (hi - lo) * i / (per - 1)).toFixed(6)); });
+  fl.sort((a, b) => a - b);
+  const out = fl.filter((f, i) => i === 0 || f - fl[i - 1] > 1e-6);
+  if (out.length > 600) throw new Error('That plan has ' + out.length + ' points. Use fewer points per band or a larger step between bands.');
+  return out;
+}
+function renderBandTable() {
+  const box = $('#swBands'), d = S.sweep || [];
+  const sw = x => (x < 100 ? fmt(x, 2) : '> 99');
+  const rows = bandsFor().map(([lo, hi, lab]) => {
+    const pts = d.filter(p => p.f >= lo - 1e-9 && p.f <= hi + 1e-9);
+    if (pts.length < 2) return '';
+    const best = pts.reduce((a, b) => (b.swr < a.swr ? b : a));
+    return '<tr><td>' + lab + '</td><td>' + fmt(lo, 3) + '–' + fmt(hi, 3) + '</td><td class="' + swrClass(best.swr) + '">' + sw(best.swr) + ' at ' + fmt(best.f, 3) + '</td>' +
+      '<td>' + sw(pts[0].swr) + ' / ' + sw(pts[pts.length - 1].swr) + '</td><td>' + fmt(best.R, 1) + (best.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(best.X), 1) + '</td>' +
+      '<td>' + fmt(Math.max(...pts.map(p => p.gain)), 2) + '</td><td>' + fmt(Math.max(...pts.map(p => p.fb)), 1) + '</td><td>' + pts.length + '</td></tr>';
+  }).join('');
+  box.innerHTML = rows ? '<h3>Per band</h3><div class="tscroll"><table class="results"><thead><tr><th>Band</th><th>MHz</th><th>Best SWR</th><th>SWR at band edges</th><th>Z at best SWR (Ω)</th><th>Max gain dBi</th><th>Max F/B dB</th><th>Points</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '';
+}
+// Range dropdown: custom, whole HF, then each amateur band of the chosen region ("band:10m")
+function fillRangeOptions() {
+  const sel = $('#swMode'), cur = sel.value;
+  sel.querySelectorAll('optgroup').forEach(g => g.remove());
+  const g = document.createElement('optgroup'); g.label = 'Amateur band';
+  bandsFor().forEach(([lo, hi, lab]) => {
+    const o = document.createElement('option'); o.value = 'band:' + lab;
+    o.textContent = lab + ' band, ' + +lo.toFixed(4) + '–' + +hi.toFixed(4) + ' MHz'; g.appendChild(o);
+  });
+  sel.appendChild(g);
+  sel.value = cur; if (sel.value !== cur) sel.value = 'custom';
+}
+function updateSweepControls() {
+  const mode = $('#swMode').value, hf = mode === 'hf';
+  if (mode.startsWith('band:')) {
+    const b = bandsFor().find(x => 'band:' + x[2] === mode);
+    if (b) { $('#swFrom').value = +b[0].toFixed(4); $('#swTo').value = +b[1].toFixed(4); }
+  }
+  $$('.sw-c').forEach(el => { el.hidden = hf; }); $$('.sw-h').forEach(el => { el.hidden = !hf; });
+  $('#swRegionLab').textContent = $('#swRegion').selectedOptions[0].textContent;
+  let plan = '';
+  if (hf) { try { plan = hfPlan().length + ' points planned'; } catch (e) { plan = e.message; } }
+  $('#swPlan').textContent = plan;
+}
+$('#swMode').onchange = updateSweepControls;
+$('#swRegion').onchange = () => { fillRangeOptions(); updateSweepControls(); drawSweep(); };
+// typing a range by hand means a custom range
+['#swFrom', '#swTo'].forEach(id => $(id).addEventListener('input', () => { if ($('#swMode').value.startsWith('band:')) $('#swMode').value = 'custom'; }));
+fillRangeOptions();
+$('#swPer').oninput = updateSweepControls; $('#swStep').oninput = updateSweepControls;
+// Sweep points are shared round-robin over several workers (one per spare CPU core), and the
+// charts fill in as points arrive.
+let sweepRun = null;
+function runSweep(model, fl) {
+  const n = fl.length;
+  const K = workerUrl ? Math.max(1, Math.min(n, (navigator.hardwareConcurrency || 4) - 1, 8)) : 0;
+  if (!K) return job({ kind: 'sweep', model, freqs: fl }).then(pts => ({ pts, K: 1 }));
+  return new Promise((resolve, reject) => {
+    // each worker takes the next frequency when it is free; the highest (slowest) frequencies go first
+    const got = [], ws = [], queue = fl.slice().sort((a, b) => b - a);
+    let busy = 0, done = false, lastDraw = 0;
+    const sorted = () => got.slice().sort((a, b) => a.f - b.f);
+    const finish = err => {
+      if (done) return; done = true; sweepRun = null;
+      ws.forEach(w => w.terminate());
+      if (err) { err.pts = sorted(); reject(err); } else resolve({ pts: sorted(), K });
+    };
+    sweepRun = { stop: () => finish(new Error('Stopped')) };
+    const feed = wk => {
+      if (done) return;
+      if (!queue.length) { if (busy === 0) finish(); return; }
+      busy++; wk.postMessage({ id: 0, kind: 'sweep', model, freqs: [queue.shift()] });
+    };
+    for (let w = 0; w < K; w++) {
+      const wk = makeWorker(); ws.push(wk);
+      wk.onmessage = e => {
+        if (e.data.progress) {
+          got.push(e.data.progress.pt);
+          $('#swStatus').textContent = 'Sweeping… ' + got.length + ' of ' + n + ' points on ' + K + ' cores';
+          const now = performance.now();
+          if (now - lastDraw > 250) { lastDraw = now; S.sweep = sorted(); drawSweep(); }
+          return;
+        }
+        busy--;
+        if (!e.data.ok) return finish(new Error(e.data.error));
+        feed(wk);
+      };
+      wk.onerror = ev => finish(new Error(ev.message || 'A background worker failed.'));
+      feed(wk);
+    }
+  });
+}
+$('#swRun').onclick = async () => {
+  if (sweepRun) { sweepRun.stop(); return; }
+  let model; try { model = numericModel(); } catch (e) { $('#swStatus').textContent = e.message; return; }
+  let fl;
+  if ($('#swMode').value === 'hf') { try { fl = hfPlan(); } catch (e) { $('#swStatus').textContent = e.message; return; } }
+  else {
+    const from = +$('#swFrom').value, to = +$('#swTo').value, cnt = Math.min(201, Math.max(2, Math.round(+$('#swN').value) || 41));
+    if (!(from > 0 && to > from)) { $('#swStatus').textContent = 'Set a start frequency below the end frequency.'; return; }
+    fl = Array.from({ length: cnt }, (_, i) => from + (to - from) * i / (cnt - 1));
+  }
+  const n = fl.length;
+  $('#swRun').textContent = 'Stop'; $('#swStatus').textContent = 'Sweeping…';
+  const t0 = performance.now();
+  try {
+    const r = await runSweep(model, fl);
+    S.sweep = r.pts;
+    $('#swStatus').textContent = n + ' points in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' + (r.K > 1 ? ' on ' + r.K + ' cores' : '');
+  } catch (e) {
+    if (e.message === 'Stopped') { S.sweep = e.pts || S.sweep; $('#swStatus').textContent = 'Stopped after ' + (e.pts ? e.pts.length : 0) + ' of ' + n + ' points.'; }
+    else $('#swStatus').textContent = e.message;
+  }
+  drawSweep();
+  $('#swRun').textContent = 'Run sweep';
+};
+$('#resBtn').onclick = async () => {
+  let model; try { model = numericModel(); } catch (e) { $('#swStatus').textContent = e.message; return; }
+  $('#swStatus').textContent = 'Searching for jX = 0…';
+  try {
+    const r = await job({ kind: 'res', model, f: S.calcFreq });
+    if (Math.abs(r.X) > 1) { $('#swStatus').textContent = 'No resonance found near ' + fmt(S.calcFreq, 3) + ' MHz.'; return; }
+    $('#swStatus').textContent = 'Resonant at ' + fmt(r.f, 4) + ' MHz. Set as calculation frequency.';
+    S.calcFreq = +r.f.toFixed(4); $('#cFreq').value = S.calcFreq; changed(true);
+    if (!$('#autoCalc').checked) calculate();
+    drawSweep();
+  } catch (e) { $('#swStatus').textContent = e.message; }
+};
+
+/* ---------------- help (help.html, also readable on its own) ---------------- */
+let helpLoaded = false;
+async function loadHelp() {
+  if (helpLoaded) return;
+  const box = $('#helpBox');
+  try {
+    const html = await (await fetch('help.html')).text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    box.innerHTML = doc.querySelector('#helpdoc').innerHTML; box.classList.add('helpdoc');
+    box.querySelectorAll('a[href^="#"]').forEach(a => a.onclick = e => { e.preventDefault(); const t = box.querySelector(a.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    helpLoaded = true;
+  } catch (e) { box.innerHTML = '<p class="hint">The help page could not be loaded: ' + e.message + '</p>'; }
+}
+
+/* ---------------- tabs ---------------- */
+function showTab(name) {
+  $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  $$('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== name);
+  if (name === 'geometry') renderTables();
+  if (name === 'view') renderInspector();
+  if (name === 'help') loadHelp();
+  requestAnimationFrame(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
+  try { localStorage.setItem('wm-tab', name); } catch (e) {}
+}
+$$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+window.addEventListener('resize', () => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
+if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.("change", () => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); });
+new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* ---------------- optimizer ---------------- */
+const VTYPES = [['len-c', 'Length, centre fixed'], ['len-b', 'Length, begin fixed'], ['pos', 'Move wire'], ['end', 'Move wire end'], ['load', 'Load value']];
+const VDETAIL = {
+  'len-c': [['', '–']], 'len-b': [['', '–']],
+  pos: [['x', 'X'], ['y', 'Y'], ['z', 'Z']],
+  end: [['bx', 'Begin X'], ['by', 'Begin Y'], ['bz', 'Begin Z'], ['ex', 'End X'], ['ey', 'End Y'], ['ez', 'End Z']],
+  load: [['L', 'L µH'], ['C', 'C pF'], ['R', 'R Ω'], ['X', 'X Ω']]
+};
+const r3 = x => +(+x).toFixed(4);
+function varSpec(v) {
+  const sp = { type: v.type, idx: +v.idx, min: +v.min, max: +v.max };
+  if (v.type === 'pos') sp.axis = v.detail;
+  if (v.type === 'end') { sp.end = v.detail[0]; sp.axis = v.detail[1]; }
+  if (v.type === 'load') sp.field = v.detail;
+  return sp;
+}
+function varNow(v) { try { return MM.varValue(numericModel(), varSpec(v)); } catch (e) { return NaN; } }
+function autoRange(v) {
+  const now = varNow(v);
+  if (!Number.isFinite(now)) { v.min = 0; v.max = 1; return; }
+  if (v.type === 'len-c' || v.type === 'len-b') { v.min = r3(now * 0.9); v.max = r3(now * 1.1); }
+  else if (v.type === 'load') { v.min = r3(now ? now * 0.5 : 0); v.max = r3(now ? now * 1.5 : 10); if (v.min > v.max) [v.min, v.max] = [v.max, v.min]; }
+  else { v.min = r3(now - 0.5); v.max = r3(now + 0.5); }
+}
+function newVar(type, idx) { const v = { type, idx, detail: VDETAIL[type][0][0], min: 0, max: 1 }; autoRange(v); return v; }
+function bestFor(i) {
+  const b = S.opt.best; if (!b || S.opt.key !== JSON.stringify(S.opt.vars.map(varSpec).map(s => [s.type, s.idx, s.axis, s.end, s.field]))) return null;
+  return b.vals[i];
+}
+function renderVars() {
+  const vs = S.opt.vars, m = S.model, dis = S.opt.running ? ' disabled' : '';
+  $('#varEmpty').hidden = vs.length > 0;
+  $('#varTbl').parentElement.hidden = vs.length === 0;
+  $('#varTbl tbody').innerHTML = vs.map((v, i) => {
+    const items = v.type === 'load' ? m.loads.map((l, k) => [k, 'Load ' + (k + 1) + ' (' + l.pos + ')']) : m.wires.map((w, k) => [k, 'Wire ' + (k + 1)]);
+    const opt = (list, cur) => list.map(([val, lab]) => '<option value="' + val + '"' + (String(val) === String(cur) ? ' selected' : '') + '>' + lab + '</option>').join('');
+    const now = varNow(v), best = bestFor(i);
+    return '<tr><td class="n">' + (i + 1) + '</td>' +
+      '<td><select id="v' + i + 'type" data-vi="' + i + '" data-f="type"' + dis + '>' + opt(VTYPES, v.type) + '</select></td>' +
+      '<td><select id="v' + i + 'idx" data-vi="' + i + '" data-f="idx"' + dis + '>' + (items.length ? opt(items, v.idx) : '<option>none</option>') + '</select></td>' +
+      '<td><select id="v' + i + 'detail" data-vi="' + i + '" data-f="detail"' + (VDETAIL[v.type].length < 2 || S.opt.running ? ' disabled' : '') + '>' + opt(VDETAIL[v.type], v.detail) + '</select></td>' +
+      '<td class="now">' + (Number.isFinite(now) ? r3(now) : '–') + '</td>' +
+      '<td>' + cellInput(v.min, 'id="v' + i + 'min" data-vi="' + i + '" data-f="min" inputmode="decimal"' + dis) + '</td>' +
+      '<td>' + cellInput(v.max, 'id="v' + i + 'max" data-vi="' + i + '" data-f="max" inputmode="decimal"' + dis) + '</td>' +
+      '<td class="best">' + (best !== null && best !== undefined ? r3(best) : '–') + '</td>' +
+      '<td class="x"><button type="button" data-vdel="' + i + '" aria-label="Delete variable ' + (i + 1) + '"' + dis + '>×</button></td></tr>';
+  }).join('');
+}
+$('#varTbl').addEventListener('change', e => {
+  const t = e.target, i = +t.dataset.vi, f = t.dataset.f; if (!f) return;
+  const v = S.opt.vars[i];
+  if (f === 'type') {
+    v.type = t.value; v.detail = VDETAIL[v.type][0][0];
+    const n = v.type === 'load' ? S.model.loads.length : S.model.wires.length; if (v.idx >= n) v.idx = 0;
+    autoRange(v); renderVars();
+  } else if (f === 'idx' || f === 'detail') { v[f] = f === 'idx' ? +t.value : t.value; autoRange(v); renderVars(); }
+});
+$('#varTbl').addEventListener('input', e => { const t = e.target; if (t.dataset.f === 'min' || t.dataset.f === 'max') S.opt.vars[+t.dataset.vi][t.dataset.f] = t.value; });
+$('#varTbl').addEventListener('click', e => { const b = e.target.closest('[data-vdel]'); if (!b) return; S.opt.vars.splice(+b.dataset.vdel, 1); renderVars(); });
+$('#addVar').onclick = () => { if (!S.model.wires.length) return; S.opt.vars.push(newVar('len-c', 0)); renderVars(); };
+$('#addVarLens').onclick = () => {
+  S.model.wires.forEach((w, k) => { if (!S.opt.vars.some(v => (v.type === 'len-c' || v.type === 'len-b') && v.idx === k)) S.opt.vars.push(newVar('len-c', k)); });
+  renderVars();
+};
+function readGoals() {
+  const n = (id, d) => { const x = parseFloat($(id).value); return Number.isFinite(x) ? x : d; };
+  return { swr: { w: n('#gSwrW', 0), target: n('#gSwrT', 1.3) }, jx: { w: n('#gJxW', 0) }, gain: { w: n('#gGainW', 0) },
+    fb: { w: n('#gFbW', 0), cap: n('#gFbT', 30) }, el: { w: n('#gElW', 0), target: n('#gElT', 15) } };
+}
+function renderOptTable() {
+  const st = S.opt.start, b = S.opt.best;
+  if (!st || !b) { $('#optTbl tbody').innerHTML = '<tr><td colspan="8" style="color:var(--muted)">No run yet.</td></tr>'; return; }
+  const row = (lab, r) => '<tr><td>' + lab + '</td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 1) + '</td><td>' + fmt(r.X, 1) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 1) + '</td><td>' + fmt(r.el, 1) + '</td></tr>';
+  $('#optTbl tbody').innerHTML = st.per.map(r => row('Start', r)).join('') + b.per.map((r, i) => row('Best', r).replace('<tr>', '<tr class="latest">')).join('');
+}
+function drawOpt() {
+  const cv = $('#chOpt'); if (!cv.offsetParent) return;
+  const h = S.opt.history || [];
+  lineChart(cv, h.map((_, i) => i + 1), [{ ys: h, color: css('--accent') }], {});
+}
+function optStatus(t) { $('#optStatus').textContent = t; }
+function optProgress(p) {
+  S.opt.best = p.best; S.opt.start = p.start; S.opt.history = p.history;
+  optStatus((S.opt.running ? 'Running · ' : '') + 'step ' + p.evals + ' of ' + p.maxEval + ' · cost ' + fmt(p.start ? p.start.cost : NaN, 3) + ' → ' + fmt(p.best ? p.best.cost : NaN, 3));
+  renderVars(); renderOptTable(); drawOpt();
+}
+$('#optStart').onclick = async () => {
+  let model; try { model = numericModel(); } catch (e) { optStatus(e.message); return; }
+  const specs = S.opt.vars.map(varSpec);
+  if (!specs.length) { optStatus('Add at least one variable first.'); return; }
+  for (let i = 0; i < specs.length; i++) {
+    const s = specs[i];
+    if (!(s.max > s.min)) { optStatus('Variable ' + (i + 1) + ': Max must be larger than Min.'); return; }
+    if (!Number.isFinite(MM.varValue(model, s))) { optStatus('Variable ' + (i + 1) + ' points at a wire or load that does not exist.'); return; }
+  }
+  let freqs = $('#oFreqs').value.split(/[\s,;]+/).map(Number).filter(x => x > 0);
+  if (!freqs.length) { freqs = [S.calcFreq]; $('#oFreqs').value = S.calcFreq; }
+  const goals = readGoals();
+  if (!(goals.swr.w || goals.jx.w || goals.gain.w || goals.fb.w || goals.el.w)) { optStatus('Give at least one goal a weight above 0.'); return; }
+  const maxEval = Math.min(5000, Math.max(10, Math.round(+$('#oMax').value) || 300));
+  Object.assign(S.opt, { running: true, stopFlag: false, best: null, start: null, history: [], specs, baseKey: JSON.stringify(S.model),
+    key: JSON.stringify(specs.map(s => [s.type, s.idx, s.axis, s.end, s.field])) });
+  $('#optStart').disabled = true; $('#optStop').disabled = false; $('#optApply').disabled = true;
+  renderVars(); optStatus('Starting…');
+  S.opt.worker = workerUrl ? makeWorker() : null;
+  try {
+    const res = await job({ kind: 'opt', model, vars: specs, goals, freqs, maxEval }, optProgress, S.opt.worker);
+    S.opt.running = false; optProgress(res);
+    optStatus('Finished after ' + res.evals + ' steps · cost ' + fmt(res.start.cost, 3) + ' → ' + fmt(res.best.cost, 3) + '. Press "Apply best to model" to keep it.');
+  } catch (e) {
+    S.opt.running = false;
+    if (e.message === 'Stopped') optStatus('Stopped' + (S.opt.best ? ' · best cost ' + fmt(S.opt.best.cost, 3) + '. You can still apply it.' : '.'));
+    else optStatus('Optimizer error: ' + e.message);
+  }
+  if (S.opt.worker) { S.opt.worker.terminate(); S.opt.worker = null; }
+  $('#optStart').disabled = false; $('#optStop').disabled = true; $('#optApply').disabled = !S.opt.best;
+  renderVars();
+};
+$('#optStop').onclick = () => {
+  S.opt.stopFlag = true;
+  if (S.opt.worker) {
+    S.opt.worker.terminate(); S.opt.worker = null;
+    const p = pending.get(S.opt.jobId); if (p) { pending.delete(S.opt.jobId); p.reject(new Error('Stopped')); }
+  }
+};
+$('#optApply').onclick = () => {
+  const b = S.opt.best; if (!b) return;
+  let base; try { base = numericModel(); } catch (e) { optStatus(e.message); return; }
+  const moved = JSON.stringify(S.model) !== S.opt.baseKey;
+  const nm = MM.applyVars(base, S.opt.specs, b.vals);
+  let n = 0;
+  nm.wires.forEach((w, i) => ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].forEach(c => { if (Math.abs(w[c] - base.wires[i][c]) > 1e-9) { S.model.wires[i][c] = String(r3(w[c])); n++; } }));
+  nm.loads.forEach((l, i) => ['L', 'C', 'R', 'X'].forEach(c => { if (Math.abs((+l[c] || 0) - (+base.loads[i][c] || 0)) > 1e-12) { S.model.loads[i][c] = r3(l[c]); n++; } }));
+  renderTables(); changed(true); renderVars();
+  $('#optApply').disabled = true;
+  optStatus('Applied: ' + n + ' value' + (n === 1 ? '' : 's') + ' changed in the model.' + (moved ? ' The model had been edited since the run started, so check the result.' : '') + ' The readout above shows the new result.');
+};
+
+/* ---------------- files ---------------- */
+EXAMPLES.forEach((ex, i) => { const o = document.createElement('option'); o.value = i; o.textContent = ex.name; $('#exampleSel').appendChild(o); });
+// The hexbeam with its 8 centre-line wires replaced by a 15 mm bridge at each driver,
+// chained by 50 ohm coax lines (VF 0.66) from the feed at the top (20 m) down to 10 m.
+function hexCoaxModel() {
+  const m = modelFromMAA(EXAMPLES.find(e => e.maa).maa);
+  m.name = 'G3TXQ hexbeam, centre line as 50 Ω coax';
+  m.wires = m.wires.slice(8);
+  [0.51, 0.36, 0.25, 0.15].forEach(z => m.wires.push({ x1: '0', y1: '-0.0075', z1: String(z), x2: '0', y2: '0.0075', z2: String(z), r: '1', seg: '-1' }));
+  m.sources = [{ pos: 'w1c', phase: 0, mag: 1 }];
+  m.tls = [['w1c', 'w47c'], ['w47c', 'w48c'], ['w48c', 'w49c'], ['w49c', 'w50c']].map(([p1, p2]) => ({ p1, p2, z0: 50, vf: 0.66, len: '', rev: false }));
+  m.comment = 'Centre twin-wire line replaced by 50 ohm coax (VF 0.66) between 15 mm bridges at each driver.';
+  return m;
+}
+// G3TXQ dimension table (driver half-length A, reflector length B, tip gap g, height above the 10 m band)
+const HEX_TABLE = [
+  { name: '20m', A: 5.537, B: 10.465, g: 0.610, up: 0.965 }, { name: '17m', A: 4.305, B: 8.153, g: 0.470, up: 0.381 },
+  { name: '15m', A: 3.670, B: 6.970, g: 0.406, up: 0.229 }, { name: '12m', A: 3.091, B: 5.893, g: 0.343, up: 0.127 },
+  { name: '10m', A: 2.713, B: 5.192, g: 0.305, up: 0 }
+];
+// Per-band tuning found with Sommerwire: driver half-length scale (all bands), and the whole 12 m band
+// scaled as well, so each band's SWR dip sits at the band centre with the 50 ohm coax centre line.
+const HEX_TUNE = { 20: [1.0033, 1], 17: [1.0148, 1], 15: [1.0153, 1], 12: [1.0266, 1.0266], 10: [1.0026, 1] };
+function hexTableModel(centre, tuned) {
+  const table = !tuned ? HEX_TABLE : HEX_TABLE.map(b => { const [ka, kr] = HEX_TUNE[parseInt(b.name, 10)]; return Object.assign({}, b, { A: b.A * ka, B: b.B * kr, g: b.g * kr }); });
+  const h = hexbeamFromTable(table, { centre, z0: 50, vf: 0.66 });
+  const dims = h.geo.map(g => g.name + ': R ' + g.R.toFixed(3) + ' m, driver edge ' + g.d.toFixed(3) + ' m, tail ' + g.t.toFixed(3) + ' m').join('; ');
+  return {
+    name: 'G3TXQ hexbeam ' + (tuned ? 'tuned per band' : 'from dimension table') + ', ' + (centre === 'coax' ? '50 Ω coax centre' : 'twin-wire centre'), freq: 14.175,
+    wires: h.wires, sources: h.sources, loads: [], tls: h.tls,
+    seg: { dm1: 800, dm2: 80, sc: 2, ec: 1 }, ground: { type: 2, height: 10, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: (tuned ? 'Tuned per band in Sommerwire (driver lengths, plus the whole 12 m band). ' : '') + 'Built from the G3TXQ dimension table with all wires on each band\'s hexagon. ' + dims
+  };
+}
+function modelFromMAA(text) {
+  const m = MM.parseMAA(String(text));
+  m.wires = m.wires.map(w => {
+    const r = MM.evalExpr(w.r, MM.lambdaOf(m.freq));
+    return { x1: w.x1, y1: w.y1, z1: w.z1, x2: w.x2, y2: w.y2, z2: w.z2, r: Number.isFinite(r) ? String(+(Math.abs(r) * 1000).toFixed(4)) : String(w.r), seg: String(w.seg) };
+  });
+  if (!m.wires.length) throw new Error('No wires found in this file.');
+  return m;
+}
+$('#exampleSel').onchange = e => {
+  if (e.target.value === '') return;
+  const ex = EXAMPLES[+e.target.value];
+  S.history = []; loadModel(ex.build === 'hextable' ? hexTableModel(ex.centre, ex.tuned) : ex.build === 'hexcoax' ? hexCoaxModel() : ex.maa ? modelFromMAA(ex.maa) : clone(ex)); e.target.value = '';
+};
+$('#openBtn').onclick = () => $('#fileIn').click();
+$('#fileIn').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      loadModel(modelFromMAA(rd.result));
+    } catch (err) { setStatus('err', 'Could not read ' + f.name + ': ' + err.message); }
+  };
+  rd.readAsText(f); e.target.value = '';
+};
+$('#saveBtn').onclick = () => {
+  const m = S.model, lam = MM.lambdaOf(+m.freq);
+  const out = Object.assign({}, m, { wires: m.wires.map(w => {
+    const ev = v => { const x = MM.evalExpr(v, lam); return Number.isFinite(x) ? x : 0; };
+    return { x1: ev(w.x1), y1: ev(w.y1), z1: ev(w.z1), x2: ev(w.x2), y2: ev(w.y2), z2: ev(w.z2), r: ev(w.r) / 1000, seg: Math.round(ev(w.seg)) };
+  }) });
+  $('#saveTxt').value = MM.toMAA(out); $('#copyMsg').textContent = '';
+  $('#saveDlg').showModal(); $('#saveTxt').select();
+};
+$('#copyBtn').onclick = () => {
+  const t = $('#saveTxt');
+  navigator.clipboard.writeText(t.value).then(() => $('#copyMsg').textContent = 'Copied.', () => { t.focus(); t.select(); $('#copyMsg').textContent = 'Press Ctrl+C or ⌘C to copy the selected text.'; });
+};
+$('#closeDlg').onclick = () => $('#saveDlg').close();
+
+/* ---------------- boot ---------------- */
+startWorker().finally(() => {
+  loadModel(clone(EXAMPLES[0]));
+  let tab = 'geometry'; try { tab = localStorage.getItem('wm-tab') || 'geometry'; } catch (e) {}
+  showTab($('[data-panel="' + tab + '"]') ? tab : 'geometry');
+});
+})();
+</script>

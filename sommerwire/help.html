@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sommerwire Help</title>
+<style>
+:root {
+  --bg: #eef1f4; --panel: #ffffff; --ink: #18212b; --muted: #5b6876; --line: #d5dce3; --accent: #0d5c8c; --field: #f7f9fb;
+  --warn: #9a6a00; --good: #1f7a4a;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --accent: #4fa8dc; --field: #111921; --warn: #e5b74a; --good: #5cc28a; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --accent: #4fa8dc; --field: #111921; --warn: #e5b74a; --good: #5cc28a; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
+.helpdoc { max-width: 900px; margin: 0 auto; padding: 16px; }
+</style>
+</head>
+<body>
+<main class="helpdoc" id="helpdoc">
+<style>
+.helpdoc h1 { font-family: var(--f-display); font-size: 24px; font-weight: 600; margin: 4px 0 6px; }
+.helpdoc h2 { font-family: var(--f-display); font-size: 19px; font-weight: 600; margin: 30px 0 8px; padding-top: 10px; border-top: 1px solid var(--line); scroll-margin-top: 12px; }
+.helpdoc h3 { font-family: var(--f-display); font-size: 15.5px; font-weight: 600; margin: 20px 0 6px; scroll-margin-top: 12px; }
+.helpdoc p, .helpdoc li { max-width: 78ch; }
+.helpdoc p { margin: 6px 0; }
+.helpdoc ul, .helpdoc ol { margin: 6px 0; padding-left: 22px; }
+.helpdoc li { margin: 3px 0; }
+.helpdoc code, .helpdoc kbd { font-family: var(--f-mono); font-size: 12.5px; background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.helpdoc .lead { color: var(--muted); font-size: 15px; }
+.helpdoc .toc { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; columns: 2 220px; column-gap: 28px; }
+.helpdoc .toc a { display: block; padding: 2px 0; break-inside: avoid; }
+.helpdoc .toc a.sub { padding-left: 14px; font-size: 13px; }
+.helpdoc a { color: var(--accent); text-decoration: none; } .helpdoc a:hover { text-decoration: underline; }
+.helpdoc .box { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+.helpdoc .box.warn { border-left-color: var(--warn); }
+.helpdoc .tbl { overflow-x: auto; margin: 8px 0; }
+.helpdoc table { border-collapse: collapse; font-size: 13px; min-width: 520px; width: 100%; background: var(--panel); }
+.helpdoc th, .helpdoc td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+.helpdoc th { font-family: var(--f-display); font-weight: 600; background: var(--field); }
+.helpdoc .refs li { font-size: 13px; }
+</style>
+
+<h1>Sommerwire help</h1>
+<p class="lead">Sommerwire calculates wire antennas with the method of moments: feed impedance, SWR, gain and radiation pattern, over free space, perfect ground or real soil. It reads and writes MMANA-GAL <code>.maa</code> files. This page explains how to use every part of it, which physical models sit underneath, where they come from, and what is known, uncertain or still untested.</p>
+
+<nav class="toc" aria-label="Contents">
+  <a href="#h-start">Quick start</a>
+  <a href="#h-use">Using Sommerwire</a>
+  <a class="sub" href="#h-files">Examples, opening and exporting</a>
+  <a class="sub" href="#h-readout">The readout strip</a>
+  <a class="sub" href="#h-geometry">Geometry tab</a>
+  <a class="sub" href="#h-editor">3D editor</a>
+  <a class="sub" href="#h-calc">Calculate tab</a>
+  <a class="sub" href="#h-pattern">Far field tab</a>
+  <a class="sub" href="#h-sweep">Frequency sweep</a>
+  <a class="sub" href="#h-opt">Optimize</a>
+  <a href="#h-models">The models inside</a>
+  <a class="sub" href="#m-mom">Wires: method of moments</a>
+  <a class="sub" href="#m-seg">Segmentation</a>
+  <a class="sub" href="#m-ground">Ground models</a>
+  <a class="sub" href="#m-ff">Far field and gain</a>
+  <a class="sub" href="#m-loss">Wire loss and loads</a>
+  <a class="sub" href="#m-tl">Transmission lines</a>
+  <a class="sub" href="#m-house">Buildings</a>
+  <a class="sub" href="#m-opt">Optimizer</a>
+  <a class="sub" href="#m-maa">.maa files</a>
+  <a href="#h-valid">How it was checked</a>
+  <a class="sub" href="#v-nec">Comparison with NEC-2</a>
+  <a href="#h-limits">Limitations</a>
+  <a href="#h-open">Open questions</a>
+  <a href="#h-refs">Sources</a>
+  <a href="#h-licence">Author and licence</a>
+</nav>
+
+<h2 id="h-start">Quick start</h2>
+<ol>
+  <li>Pick a model from <b>Examples…</b> at the top, or open your own <code>.maa</code> file with <b>Open .maa</b>.</li>
+  <li>Press <b>Calculate</b>. The readout strip shows impedance, SWR, gain and the main-lobe angle at the calculation frequency.</li>
+  <li>Look at the antenna and its currents on the <b>3D editor</b> tab; drag a wire end and watch the pattern change.</li>
+  <li>Run a <b>Frequency sweep</b> to see SWR, impedance, gain and the Smith chart over a band or the whole HF range.</li>
+  <li>Use <b>Optimize</b> to let Sommerwire adjust lengths or positions toward an SWR, gain or F/B goal.</li>
+</ol>
+<div class="box">Units: coordinates in metres, wire radius in millimetres, frequency in MHz. Azimuth 0° is the +X axis, counting counter-clockwise seen from above; Z is height.</div>
+
+<h2 id="h-use">Using Sommerwire</h2>
+
+<h3 id="h-files">Examples, opening and exporting</h3>
+<ul>
+  <li><b>Examples…</b> loads a ready model: a Yagi, dipoles, an inverted V, a ground plane, a quad, a loaded dipole, several G3TXQ hexbeams (from your file, from the dimension table, with a coax centre line, tuned per band), three EFOC29 end-fed set-ups (one beside a house) and the DX Commander vertical (fed against ground, and with 16 radials).</li>
+  <li><b>Open .maa</b> reads an MMANA-GAL file: wires, sources, loads, segmentation, ground, frequency and comment. Sommerwire's own additions (transmission lines, houses) travel in the comment section, so MMANA-GAL still opens the file and simply ignores them.</li>
+  <li><b>Export .maa</b> shows the file text; copy it into a file ending in <code>.maa</code>.</li>
+</ul>
+
+<h3 id="h-readout">The readout strip</h3>
+<p>After every calculation the strip at the top shows the frequency, feed impedance R + jX of the first source, SWR against the reference impedance, maximum gain (dBi), F/B, the elevation of the main lobe and the dominant polarization. The status line underneath gives the number of segments and unknowns, the time taken and how many warnings were raised; warnings are listed on the Calculate tab and should be read, because they flag situations where the numbers are not trustworthy.</p>
+
+<h3 id="h-geometry">Geometry tab</h3>
+<p>The model as tables. Every cell accepts an expression with <code>+ − * / ( )</code> and the constants <code>R</code> (one wavelength at the design frequency), <code>I</code> (inch) and <code>F</code> (foot), for example <code>R/4</code> or <code>33*F</code>.</p>
+<ul>
+  <li><b>Wires</b>: begin point X1 Y1 Z1, end point X2 Y2 Z2, radius in mm, and Seg (segmentation, see <a href="#m-seg">Segmentation</a>). Wires are connected only where end points coincide (within 0.01 mm). A wire end at Z = 0 over ground is connected to the ground.</li>
+  <li><b>Sources</b>: a voltage source in a gap. Position <code>w3c</code> is wire 3 centre, <code>w3b</code> its begin, <code>w3e</code> its end. Phase and voltage matter when there are several sources (phased arrays). Impedance and SWR in the readout are those of the first source.</li>
+  <li><b>Loads</b>: a series L and C (µH, pF) with an optional Q for coil loss, or a fixed R + jX. Placed like sources.</li>
+  <li><b>Transmission lines</b>: an ideal line between two feed points, with Z0, velocity factor and length (empty = the straight distance). Each end is connected across the gap at that point, as NEC's TL card does. Put a source on one end to feed through the line. <i>Reversed</i> crosses the conductors at one end (a half twist). The line itself neither radiates nor picks up anything, which suits coax; currents on a coax shield must be drawn as a wire.</li>
+  <li><b>Buildings</b>: a house with footprint (centre X, Y, length along the ridge, width, rotation), wall and ridge height, roof (metal grid or not metal) with mesh size, rain gutters (metal or none), downpipes (0, 2 at opposite corners, or 4) and the earth resistance of each downpipe. See <a href="#m-house">Buildings</a>.</li>
+</ul>
+
+<h3 id="h-editor">3D editor</h3>
+<ul>
+  <li><b>Select</b> (<kbd>S</kbd>): click a wire or an end point to edit it in the panel on the right; drag to move it in the work plane. Connected ends move together, so joints stay intact.</li>
+  <li><b>Draw</b> (<kbd>D</kbd>): click to start a wire and click again to end it. Clicking on a wire end connects to it; clicking along a wire splits it there (centre feeds and loads stay where they were). <kbd>Esc</kbd> stops drawing.</li>
+  <li><b>Rotate</b> (<kbd>R</kbd>): drag to turn the view; the wheel or a pinch zooms. The view buttons give 3D, Top (X–Y), Front (X–Z) and Side (Y–Z).</li>
+  <li><b>Work plane</b>: the plane new points are placed in (X–Y horizontal, or a vertical plane), at the height or offset you set, with an optional grid snap and step. New wire radius sets the radius of drawn wires.</li>
+  <li><b>Segments</b> shows segment boundaries; <b>Currents</b> colours each segment from blue (low) to red (high) after a calculation; <b>Far field</b> draws the 3D lobe around the antenna. Two small plots show azimuth and elevation of the latest result.</li>
+  <li>While you drag, the model is recalculated live (one calculation at a time; the latest position wins), so you can see the pattern follow your changes.</li>
+  <li><b>Undo</b>/<b>Redo</b> (<kbd>⌘Z</kbd>/<kbd>Ctrl Z</kbd>), <kbd>Del</kbd> deletes the selection, <b>Fit</b> frames the model, <b>Add house</b> places a house beside the antenna.</li>
+  <li>Transmission lines are drawn dashed; house walls dashed and thin (they are not solved), metal roofs and drains as thin wires.</li>
+</ul>
+
+<h3 id="h-calc">Calculate tab</h3>
+<ul>
+  <li><b>Frequency</b>: the calculation frequency (the design frequency on the Geometry tab only sets λ for the <code>R</code> constant and segmentation defaults).</li>
+  <li><b>Ground</b>: free space, perfect ground, or real ground with relative permittivity εr and conductivity (mS/m). Typical values: average ground εr 13, 5 mS/m; poor/dry or city ground εr 5, 1 mS/m; very good/wet ground εr 20–30, 10–30 mS/m; sea water εr 81, 5000 mS/m.</li>
+  <li><b>Add height</b> lifts the whole model, buildings included, above the ground.</li>
+  <li><b>Impedance over real ground</b>: <b>Sommerfeld</b> (default; accurate at any height), <b>Complex image</b> (faster, fine above about 0.1 λ), or <b>Perfect mirror</b> (what MININEC and MMANA-GAL do). See <a href="#m-ground">Ground models</a>.</li>
+  <li><b>Wire material</b>: lossless, copper, aluminium or iron, for the skin-effect loss of every wire.</li>
+  <li><b>SWR reference</b>: the impedance SWR is measured against (50 Ω, or for example 200 Ω for an end-fed with an ideal 4:1 unun).</li>
+  <li><b>DM1, DM2, SC</b>: segmentation density, as in MMANA-GAL (see <a href="#m-seg">Segmentation</a>).</li>
+  <li><b>Recalculate on every edit</b> keeps results current while you type.</li>
+  <li><b>Results</b> keeps one row per calculation so you can compare changes; <b>Clear list</b> empties it.</li>
+</ul>
+
+<h3 id="h-pattern">Far field tab</h3>
+<ul>
+  <li>Azimuth and elevation plots in dB relative to the maximum (rings at −3, −6, −10, −20, −30 dB). The azimuth cut is at the elevation of maximum gain; the elevation cut is toward the azimuth of maximum gain.</li>
+  <li>Choose total, horizontal or vertical polarization, or all three. <b>Hold for comparison</b> keeps the current pattern on the plots as a reference; <b>Clear held</b> removes it.</li>
+  <li><b>3D pattern</b>: drag to rotate, wheel or pinch to zoom, sampled every 5°, down to −40 dB.</li>
+</ul>
+
+<h3 id="h-sweep">Frequency sweep</h3>
+<ul>
+  <li><b>Range</b>: a custom range with a number of points; <b>Whole HF, 1.8–30 MHz</b> with dense points inside every amateur band (points per band) and coarse steps in between; or one amateur band. Band edges follow the chosen IARU region (1, 2 or 3).</li>
+  <li><b>Run sweep</b> spreads the points over all processor cores; <b>Stop</b> ends it early. <b>Find resonance</b> searches for jX = 0 near the calculation frequency and makes that the calculation frequency.</li>
+  <li>Graphs: SWR, R and jX, gain and F/B, with amateur bands shaded, and a Smith chart (hover to read a point; the dashed circle is SWR 2). A table summarises each band: best SWR, SWR at the band edges, impedance and maximum gain and F/B.</li>
+</ul>
+
+<h3 id="h-opt">Optimize</h3>
+<ul>
+  <li><b>Variables</b>: what may change, with a minimum and maximum. <i>Length, centre fixed</i> (Yagi and dipole elements), <i>Length, begin fixed</i> (legs and radials from a feed point), <i>Move wire</i> along an axis, <i>Move wire end</i>, or a <i>Load value</i>. Moving an end also moves every end touching it. <b>Add all wire lengths</b> adds every wire at once.</li>
+  <li><b>Goals</b>, each with a weight (0 switches it off) and a target: SWR above the target is penalised; jX is pushed toward zero; gain is rewarded (3 dB per unit of weight); F/B is rewarded up to the target; elevation pulls the main lobe toward a target angle. Several frequencies (comma separated) are averaged, which is how you optimise for a whole band.</li>
+  <li><b>Start</b>, <b>Stop</b>, then <b>Apply best to model</b>. The graph shows the cost of the best design so far; the table compares start and best per frequency.</li>
+  <li>Gain, F/B and elevation goals need a pattern search at every step, so they are slower.</li>
+</ul>
+
+<h2 id="h-models">The models inside</h2>
+<p>This section says what each part of the calculation does, why it was chosen and what it is based on. Sommerwire was written from the published descriptions of these methods; no code from MMANA-GAL, MININEC or NEC was copied. The sources are listed at the <a href="#h-refs">end</a>.</p>
+
+<h3 id="m-mom">Wires: method of moments (MININEC style)</h3>
+<p>Each wire is cut into segments. The unknowns are the currents at the nodes between segments, each spread as a pulse over the two half segments around its node; the charge on each segment follows from the change of current (continuity). The electric field along the wire must cancel the source field; that condition is imposed at each node by integrating along the path from the middle of one segment to the middle of the next (point matching). Vector and scalar potentials use the reduced thin-wire kernel: the current is taken on the wire axis and the field point on the wire surface.</p>
+<ul>
+  <li>The kernel integral of e<sup>−jkR</sup>/R over a piece is done adaptively: midpoint rule far away, 4-point Gauss at medium distance, and close by the static part 1/R exactly (asinh) plus 8-point Gauss on the smooth rest.</li>
+  <li>Where k wires meet there are k − 1 current unknowns (current is conserved at the joint). A wire end on the ground gets its own unknown, so current can flow into the ground.</li>
+  <li>The matrix is solved by complex LU factorisation, reused for each source and transmission-line port.</li>
+  <li>This is the formulation of MININEC (Julian, Logan, Rockway, 1980s), the method MMANA-GAL also uses. NEC-2 uses a different current expansion (sinusoidal interpolation) and an electric-field formulation; for ordinary wire antennas both agree closely, and they differ most for very short segments, sharp angles and closely spaced wires.</li>
+</ul>
+
+<h3 id="m-seg">Segmentation</h3>
+<p>Segment lengths follow MMANA-GAL's scheme. DM2 sets the longest segment (λ/DM2); DM1 with SC sets the shortest, λ/(SC·DM1), used near wire ends, corners and feed points where current changes fastest. Seg per wire: <code>-1</code> tapers both ends (recommended), <code>-2</code> and <code>-3</code> taper one end only, <code>0</code> uses even segments, a positive number fixes the count. No segment is made shorter than two wire radii. Finer segmentation is more accurate and slower; the model is limited to 2500 unknowns.</p>
+
+<h3 id="m-ground">Ground models</h3>
+<div class="tbl"><table>
+<thead><tr><th>Setting</th><th>What it does</th><th>Use it for</th><th>Based on</th></tr></thead>
+<tbody>
+<tr><td>Free space</td><td>No ground at all.</td><td>Reference values, antennas far from the ground.</td><td>—</td></tr>
+<tr><td>Perfect ground</td><td>Infinite perfect conductor at Z = 0: every wire has a mirror image.</td><td>Ground planes over sea water or a large metal surface; comparisons with textbook values.</td><td>Image theory.</td></tr>
+<tr><td>Real ground, Sommerfeld (default)</td><td>Exact field of a current element above a flat homogeneous lossy ground, from Sommerfeld integrals: ground loss, near-field coupling to the soil and the change of resonance are all included, at any height.</td><td>Everything over real soil, especially radials, low dipoles and feed lines near the ground.</td><td>Sommerfeld's half-space solution, organised as NEC-2 does (quasi-static image plus tabulated remainder).</td></tr>
+<tr><td>Real ground, complex image</td><td>The soil acts like a mirror buried at a complex depth d = 1/(jk₀√(εc − 1)).</td><td>Quick work above about 0.1 λ. Below that it underestimates ground loss and can even give a negative feed resistance; Sommerwire warns below 0.01 λ.</td><td>Complex image theory (Wait, Bannister).</td></tr>
+<tr><td>Real ground, perfect mirror</td><td>Impedance over a perfect mirror; the pattern still uses real-ground reflection.</td><td>Reproducing MININEC or MMANA-GAL numbers.</td><td>MININEC practice.</td></tr>
+</tbody></table></div>
+
+<h4>How the Sommerfeld ground is computed</h4>
+<p>For a current element above ground, the reflected field is written with Hertz potentials as integrals over the spectral variable λ of Bessel functions times reflection factors: Rv = (k₁²u₀ − k₀²u₁)/(k₁²u₀ + k₀²u₁) for vertical currents, Rh = (u₀ − u₁)/(u₀ + u₁) for horizontal currents, and a coupling term P = 2(u₀ − u₁)/(k₁²u₀ + k₀²u₁) that turns horizontal currents into vertical fields, with u = √(λ² − k²). Sommerwire splits the reflected field in two:</p>
+<ol>
+  <li>a <b>quasi-static image</b>: the perfect mirror image scaled by Γ = (εc − 1)/(εc + 1). This part carries the near singularity and is integrated with the exact wire kernel;</li>
+  <li>a <b>remainder</b> that is only weakly singular. It is computed from the Sommerfeld integrals once per frequency on a grid of distance and angle around the image point (typically 600–2000 points, 20–70 ms), multiplied by R′e<sup>jkR′</sup> so that it varies smoothly, and interpolated while the matrix is filled.</li>
+</ol>
+<p>The integrals run along the real λ axis: substitutions remove the square-root singularity at λ = k₀, the subdivision is refined toward it, and the oscillating tail is summed per half period and accelerated with Wynn's ε-algorithm. The integrands are written in a form without cancellation (δ = u₀ − u₁ = (k₁² − k₀²)/(u₀ + u₁)), which matters for wires a few centimetres above the soil. This is the same organisation as NEC-2's ground routine; the formulas were derived here from the half-space boundary conditions, not taken from NEC code.</p>
+<div class="box warn">If any wire touches the ground (a ground-mounted vertical, a downpipe), the whole impedance is solved over the perfect mirror, as MMANA-GAL does, and a warning says so: mixing ground models in one solution is not energy-consistent, and current cannot flow into the soil in the image models. The ground loss of such a connection is then only the load you put at the base. Buried wires are not supported.</div>
+
+<h3 id="m-ff">Far field, gain and F/B</h3>
+<ul>
+  <li>The far field is the sum of the radiation of all half segments. Over ground, each contribution is reflected with the Fresnel coefficients for vertical and horizontal polarization at the angle of the ray (space wave). Over perfect ground the reflection is ±1.</li>
+  <li>Gain is in dBi, relative to the power delivered to the antenna, so wire loss, load loss and (with Sommerfeld) ground loss lower it. Power lost to the ground and to the surface wave does not show up in the sky-wave pattern.</li>
+  <li>The maximum is found on a 5° grid and refined down to 0.25°. F/B compares the maximum with the direction 180° away in azimuth at the same elevation.</li>
+  <li>Polarization is horizontal or vertical according to which component is larger toward the maximum.</li>
+</ul>
+
+<h3 id="m-loss">Wire loss and loads</h3>
+<ul>
+  <li>Wire loss uses the skin-effect surface resistance R<sub>s</sub> = √(ωμ₀/2σ) over the wire circumference (copper 5.8·10⁷, aluminium 3.5·10⁷, iron 1.0·10⁷ S/m; iron is treated as non-magnetic, so its real loss is higher).</li>
+  <li>A load is a lumped impedance in series at its position: series L and C, with the coil loss R = ωL/Q, or a fixed R + jX (the same at every frequency).</li>
+</ul>
+
+<h3 id="m-tl">Transmission lines</h3>
+<p>Lines are lossless and described by their admittance matrix: Y₁₁ = Y₂₂ = −j cot(βL)/Z0, Y₁₂ = ±j csc(βL)/Z0, with β = k/VF. The antenna is solved once with a unit voltage at each line end ("port"); the ports and lines then form a small network that is solved for the port voltages, and the currents follow by superposition. This is how NEC's TL card works. Checked against line theory within about 0.5%.</p>
+
+<h3 id="m-house">Buildings</h3>
+<ul>
+  <li><b>Metal roof</b>: replaced by a grid of wires along and across each roof plane, joined at every crossing. The wire radius follows the equal-area rule r = spacing/2π, the usual practice for wire grids that stand for solid sheets; checked against a perfect plane within 1–2 Ω. The mesh should be λ/10 or finer at the highest frequency (1 m suits HF).</li>
+  <li><b>Gutters</b>: 4 cm radius wires along both eaves, 15 cm out and 10 cm below the roof edge, not bonded to the roof (brackets on a wooden fascia usually make no contact).</li>
+  <li><b>Downpipes</b>: vertical wires from the gutter ends into the ground, with the earth resistance as a load at the foot (typically tens to hundreds of ohms at HF; 0 means a perfect connection; choose no downpipes if they end in plastic drains). Because they touch the ground, a house with downpipes switches the impedance to the perfect mirror (see the warning above).</li>
+  <li><b>Walls</b>: drawn for reference only. Stone, brick and wood are dielectrics, which a wire solver cannot model; wiring, a steel frame or reinforcement can be drawn as wires.</li>
+</ul>
+
+<h3 id="m-opt">Optimizer</h3>
+<p>A bounded Nelder–Mead simplex search: the variables are scaled to their min–max range, and the search restarts with smaller steps around the best point. It runs in its own background thread. Like every local search it can stop in a local optimum; try other start values or narrower ranges if the result is poor.</p>
+
+<h3 id="m-maa">.maa files</h3>
+<p>The layout was reconstructed from MMANA-GAL basic files. Sommerwire reads and writes the name, frequency, wires, sources, loads, segmentation and the ground/height/material line. Transmission lines and houses are stored as comment lines starting with <code>Sommerwire TL:</code> and <code>Sommerwire HOUSE:</code>. The impedance ground model (Sommerfeld, complex image or perfect mirror) is a Sommerwire setting and is not stored in the file.</p>
+
+<h2 id="h-valid">How it was checked</h2>
+<div class="tbl"><table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Half-wave dipole, free space, 14.05 MHz</td><td>71.35 − j3.0 Ω against MMANA-GAL's 71.5 − j1.9 Ω.</td></tr>
+<tr><td>λ/4 monopole over perfect ground</td><td>36.5 Ω (theory about 36 Ω).</td></tr>
+<tr><td>Transmission lines</td><td>Within about 0.5% of line theory.</td></tr>
+<tr><td>Complex image limits</td><td>Exact in the perfect-conductor and free-space limits.</td></tr>
+<tr><td>Wire-grid roof</td><td>Within 1–2 Ω of a perfect plane.</td></tr>
+<tr><td>Sommerfeld integrals, perfect-conductor limit</td><td>Equal to the exact mirror-image field to 6 digits.</td></tr>
+<tr><td>Sommerfeld integrals, far away (30 λ)</td><td>Equal to Fresnel reflection: 0.1% (horizontal), 1% (vertical polarization).</td></tr>
+<tr><td>Sommerfeld in the full solver, image test</td><td>Reproduces the perfect-ground solution (39.83 + j32.47 against 39.83 + j32.46 Ω).</td></tr>
+<tr><td>Sommerfeld reciprocity</td><td>Coupling between a horizontal and a vertical dipole near the ground agrees both ways within 1–5%, similar to the solver's own asymmetry.</td></tr>
+<tr><td>Sommerfeld high above ground</td><td>Agrees with the complex image (dipole at 10 m: 71.1 against 72.0 Ω).</td></tr>
+<tr><td>Sommerfeld energy balance</td><td>Radials 5 cm above average ground: sky-wave efficiency below the lossless reference (the complex image gave an impossible 69%).</td></tr>
+<tr><td>Interpolation table</td><td>Within 3·10⁻⁴ of direct evaluation of the integrals.</td></tr>
+</tbody></table></div>
+
+<h3 id="v-nec">Comparison with NEC-2 (nec2c)</h3>
+<p>Same geometry and segmentation in both programs, average ground (εr 13, 5 mS/m) unless noted, Sommerfeld ground in both. nec2c is the C translation of the public-domain NEC-2. Values at the finer of two segmentations.</p>
+<div class="tbl"><table>
+<thead><tr><th>Case</th><th>nec2c</th><th>Sommerwire</th><th>Complex image (old default)</th></tr></thead>
+<tbody>
+<tr><td>20 m dipole, free space</td><td>71.8 − j1.8 Ω</td><td>71.5 − j3.4 Ω</td><td>—</td></tr>
+<tr><td>20 m dipole at 3 m, perfect ground</td><td>40.0 + j32.5 Ω, 8.61 dBi</td><td>39.9 + j30.8 Ω, 8.60 dBi</td><td>—</td></tr>
+<tr><td>20 m dipole at 0.3 m</td><td>100.3 + j55.0 Ω, −5.77 dBi</td><td>100.1 + j53.4 Ω, −5.78 dBi</td><td>23.9 − j27.7 Ω, +0.17 dBi</td></tr>
+<tr><td>20 m dipole at 1 m</td><td>63.9 + j8.5 Ω, −0.76 dBi</td><td>63.7 + j7.0 Ω, −0.77 dBi</td><td>28.1 − j11.7 Ω, +2.74 dBi</td></tr>
+<tr><td>20 m dipole at 1 m, poor ground (εr 5, 1 mS/m)</td><td>78.1 + j11.0 Ω, −0.69 dBi</td><td>77.9 + j9.5 Ω, −0.69 dBi</td><td>42.3 − j15.0 Ω, +1.90 dBi</td></tr>
+<tr><td>20 m dipole at 3 m</td><td>60.1 + j16.6 Ω, 5.36 dBi</td><td>59.9 + j15.0 Ω, 5.36 dBi</td><td>51.2 + j16.5 Ω, 6.06 dBi</td></tr>
+<tr><td>20 m dipole at 10 m</td><td>71.2 − j12.7 Ω, 7.06 dBi</td><td>71.0 − j14.2 Ω, 7.06 dBi</td><td>72.0 − j14.4 Ω, 7.00 dBi</td></tr>
+<tr><td>Vertical dipole, bottom at 0.5 m</td><td>89.6 − j2.9 Ω, 0.27 dBi</td><td>89.3 − j4.6 Ω, 0.27 dBi</td><td>80.2 + j0.6 Ω, 0.77 dBi</td></tr>
+<tr><td>λ/4 vertical, 16 × 5 m radials at 5 cm, 7.1 MHz</td><td>44.9 − j35.9 Ω, −1.21 dBi</td><td>44.2 − j38.5 Ω, −1.18 dBi</td><td>13.6 − j54.8 Ω, +3.86 dBi</td></tr>
+<tr><td>Same, radials at 0.3 m</td><td>42.2 − j45.0 Ω, −1.04 dBi</td><td>41.3 − j48.6 Ω, −0.98 dBi</td><td>15.5 − j56.8 Ω, +3.21 dBi</td></tr>
+<tr><td>Same, radials at 2 m</td><td>32.4 − j65.3 Ω, −0.45 dBi</td><td>31.7 − j68.4 Ω, −0.40 dBi</td><td>21.7 − j66.8 Ω, +1.26 dBi</td></tr>
+</tbody></table></div>
+<p>Resistance agrees within 1–3% and gain within 0.1 dB; reactance differs by 1–4 Ω, the same offset the two codes show in free space (a known difference between the MININEC and NEC current expansions), and it shrinks with finer segmentation.</p>
+<p><b>DX Commander with 16 radials</b> is the exception: the two codes differ by 10–16 Ω in resistance on 40 and 20 m, and by the same amount in free space and over perfect ground, so the cause is the antenna's hub (0.8 mm wires, 6–12 cm long, many junctions), not the ground model. A power balance over perfect ground with lossless wires decides it: the gain integrated over the hemisphere must equal the input power. Sommerwire gives 1.000; nec2c gives 0.81 (40 m) and 0.78 (20 m), against 0.985 for a plain ground plane. NEC-2 is losing about a fifth of the power at that junction, so its feed resistance is too high there; NEC-2 is known to be sensitive to short segments and many-wire junctions. The change that real ground adds compared with perfect ground agrees within about 2 Ω between the codes.</p>
+
+<h2 id="h-limits">Limitations</h2>
+<ul>
+  <li><b>Thin wires only.</b> Wire radius must be much smaller than the segment length and the wavelength. Wires closer together than a few radii, very short segments next to long ones, sharp angles and joints of very different radii are less accurate (as in MININEC and NEC).</li>
+  <li><b>Ground connections.</b> A wire touching the ground forces the perfect mirror for the whole impedance. Buried radials and wires passing through the ground surface are not supported (that needs NEC-4-type integrals).</li>
+  <li><b>Flat, uniform ground only.</b> No layered soil, slopes, hills or nearby water boundaries.</li>
+  <li><b>No ground wave.</b> The pattern is the sky wave; gain right at the horizon and surface-wave range are not computed.</li>
+  <li><b>Dielectrics are not modelled</b>: insulated wire (its velocity factor shortens resonance by a few percent), stone or brick walls, trees, wet wood.</li>
+  <li><b>Lines and loads are ideal.</b> Transmission lines are lossless and do not radiate; common-mode current on a coax shield must be drawn as a wire. Loads are series L–C or fixed R + jX; a parallel trap has to be approximated. Baluns and ununs are not modelled (use the SWR reference for an ideal transformer ratio).</li>
+  <li><b>Iron</b> is treated as non-magnetic, so steel wire loss is underestimated.</li>
+  <li>SWR and the readout use the first source only.</li>
+  <li>Model size is limited to 2500 unknowns; large house grids at high frequencies are slow.</li>
+  <li>Numbers can differ slightly from MMANA-GAL and more from NEC; differences of a few percent in R and a few ohms in X are normal between codes.</li>
+</ul>
+
+<h2 id="h-open">Open questions and further investigation</h2>
+<ul>
+  <li><b>Sommerfeld against measurements.</b> The ground now matches NEC-2 (nec2c) closely (see <a href="#v-nec">the comparison</a>), but neither has been compared with measured impedances of a real radial field here.</li>
+  <li><b>Small, crowded junctions</b> such as the DX Commander hub: Sommerwire conserves power there and NEC-2 does not, but a third reference (NEC-4, or a measurement) would confirm which current distribution is right.</li>
+  <li><b>Buried radials (level 2).</b> Modelling wires in the soil needs the transmitted-field integrals NEC-4 has. Radials a few centimetres above the ground are usually a close stand-in, but how close has not been quantified here.</li>
+  <li><b>Ground-mounted verticals with real ground.</b> Today these fall back to the perfect mirror plus a base load. A proper treatment of a wire entering the soil is open.</li>
+  <li><b>Hexbeam: a resonance just below 10 m</b> in the tuned model remains unexplained (suspected interaction with the 20 m driver).</li>
+  <li><b>EFOC29: 80 m SWR</b> comes out higher than the installation guide (about 6.4 against below 3). Likely causes are the unmodelled unun, choke and coax losses and the routing of the coax; the product's exact wire gauge and coil details are unknown.</li>
+  <li><b>DX Commander file</b>: the 2.5 m element starts 0.05 mm above the hub corner, so in the original file it is not connected. Check whether that matches the real antenna.</li>
+  <li><b>House model assumptions</b>: gutter bonding, downpipe positions and earth resistance are guesses; measure or vary them to see how sensitive your antenna is.</li>
+  <li><b>Ground constants</b>: the default (εr 13, 5 mS/m) is an "average" value; real soil varies with moisture and season, and with Sommerfeld the results near the ground depend strongly on it.</li>
+  <li><b>Accuracy of the Sommerfeld table</b> for very large models (several wavelengths across) and very close wire–image distances has only been spot-checked.</li>
+</ul>
+
+<h2 id="h-refs">Sources</h2>
+<p>These are the publications the methods come from. They were not re-read while Sommerwire was written; the formulas were worked out from the methods as published and checked numerically (see <a href="#h-valid">How it was checked</a>). Please verify anything critical against the originals.</p>
+<ul class="refs">
+  <li>A. J. Julian, J. C. Logan, J. W. Rockway, <i>MININEC: A Mini-Numerical Electromagnetics Code</i>, NOSC TD 516, 1982; J. Rockway, J. Logan et al., <i>The MININEC System: Microcomputer Analysis of Wire Antennas</i>, Artech House, 1988. Pulse basis, reduced kernel, point matching, image ground.</li>
+  <li>G. J. Burke, A. J. Poggio, <i>Numerical Electromagnetics Code (NEC) — Method of Moments</i>, NOSC TD 116, 1981. Transmission-line ports (TL card), the organisation of the Sommerfeld ground (image plus interpolated remainder).</li>
+  <li>A. Sommerfeld, "Über die Ausbreitung der Wellen in der drahtlosen Telegraphie", <i>Annalen der Physik</i>, 1909; A. Baños, <i>Dipole Radiation in the Presence of a Conducting Half-Space</i>, Pergamon, 1966. Half-space Hertz potentials and reflection factors.</li>
+  <li>J. R. Wait and P. R. Bannister, complex image theory for antennas over lossy ground. The complex-depth image.</li>
+  <li>K. A. Michalski, "Extrapolation methods for Sommerfeld integral tails", <i>IEEE Trans. Antennas Propag.</i>, 1998; P. Wynn, "On a device for computing the e<sub>m</sub>(S<sub>n</sub>) transformation", 1956. Tail summation and acceleration.</li>
+  <li>W. H. Press et al., <i>Numerical Recipes</i>, 2nd ed., 1992. Rational approximations of the Bessel functions J₀ and J₁, Gauss–Legendre nodes.</li>
+  <li>A. C. Ludwig, "Wire grid modeling of surfaces", <i>IEEE Trans. Antennas Propag.</i>, 1987. Equal-area radius for wire grids.</li>
+  <li>J. A. Nelder, R. Mead, "A simplex method for function minimization", <i>The Computer Journal</i>, 1965. The optimizer.</li>
+  <li>Fresnel reflection coefficients and the skin-effect surface resistance: standard electromagnetics texts.</li>
+  <li>MMANA-GAL basic (gal-ana.de): the <code>.maa</code> layout and segmentation parameters, reconstructed from files.</li>
+  <li>G3TXQ broadband hexbeam: the dimension table and model file supplied by ON9PK.</li>
+  <li>rf.guru EFOC29 product page and installation guide: the EFOC29 set-ups.</li>
+  <li>IARU Region 1, 2 and 3 band plans: amateur band edges (from general knowledge; check the current plans).</li>
+</ul>
+
+<h2 id="h-licence">Author and licence</h2>
+<p>Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b>.</p>
+<p>It is free and unencumbered software released into the public domain under the <a href="https://unlicense.org">Unlicense</a>: anyone may copy, modify, publish, use, compile, sell or distribute it, in source or compiled form, for any purpose, commercial or not. It comes without any warranty. The full text is in the <code>LICENSE</code> file.</p>
+<p>nec2c, used for the NEC-2 comparison in <code>validation/nec2c</code>, is not part of Sommerwire and is not included: it belongs to its authors and is licensed under the GPL-3.0.</p>
+</main>
+</body>
+</html>
