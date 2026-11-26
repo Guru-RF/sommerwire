@@ -974,7 +974,15 @@
     });
 
     if (sourceResults.some(sr => sr.R < 0)) mesh.warnings.push('Negative feed resistance: this result is not physical. Usually a ground approximation is stretched too far (see any ground warning) or the segmentation is too coarse.');
-    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings };
+    let impedance = hasGround ? 'perfect mirror' : 'direct';
+    if (somm) impedance = gnd.nf === 'somm-pec-test' ? 'Sommerfeld PEC test' : 'Sommerfeld';
+    else if (wantComplex && !allPec) impedance = cdepth ? 'complex image' : 'direct';
+    const field = gnd.type === 2 ? 'Fresnel' : hasGround ? 'perfect image' : 'direct';
+    const groundMethods = { impedance, field };
+    const patternIssue = field === 'Fresnel' && (impedance === 'perfect mirror' || impedance === 'Sommerfeld PEC test')
+      ? 'Pattern unavailable. Perfect-mirror currents and real-soil Fresnel fields can predict more sky-wave power than the feed supplies.' : '';
+    if (patternIssue) mesh.warnings.push(patternIssue);
+    return { ground: { ...gnd }, groundMethods, patternIssue, f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings };
   }
 
   /* ---------- far field ---------- */
@@ -986,9 +994,13 @@
   }
   function divC(ar, ai, br, bi) { const d = br * br + bi * bi; return [(ar * br + ai * bi) / d, (ai * br - ar * bi) / d]; }
 
-  function makePattern(res, model) {
+  function makePattern(res) {
+    if (res.patternIssue) return {
+      gain: () => ({ tot: NaN, v: NaN, h: NaN }),
+      findMax: () => ({ g: NaN, el: NaN, az: NaN })
+    };
     const { mesh, k } = res;
-    const g = model.ground || { type: 0 };
+    const g = res.ground;
     const H = mesh.halves;
     const n = H.length;
     const X = new Float64Array(n), Y = new Float64Array(n), Z = new Float64Array(n);
@@ -1068,11 +1080,11 @@
     return { gain, findMax };
   }
 
-  const dB = x => (x > 1e-30 ? 10 * Math.log10(x) : -300);
+  const dB = x => Number.isNaN(x) ? NaN : (x > 1e-30 ? 10 * Math.log10(x) : -300);
 
   function analyze(model, f, opts) {
     const res = solve(model, f);
-    const pat = makePattern(res, model);
+    const pat = makePattern(res);
     const mx = pat.findMax();
     const front = pat.gain(mx.el, mx.az), back = pat.gain(mx.el, (mx.az + 180) % 360);
     const s0 = res.sources[0];
@@ -1083,7 +1095,7 @@
     return {
       res, pat, f, R: s0.R, X: s0.X, swr, z0,
       gain: dB(mx.g), el: mx.el, az: mx.az, fb: (fbRaw => (Math.abs(fbRaw) < 1e-9 ? 0 : fbRaw))(dB(front.tot) - dB(back.tot)),
-      pol: front.h >= front.v ? 'Horizontal' : 'Vertical',
+      pol: res.patternIssue ? '–' : front.h >= front.v ? 'Horizontal' : 'Vertical',
       gainH: dB(front.h), gainV: dB(front.v)
     };
   }
@@ -1216,14 +1228,18 @@
   }
 
   /* goals = { swr:{w,target}, jx:{w}, gain:{w}, fb:{w,cap}, el:{w,target} } — cost is minimised */
+  class PatternUnavailable extends Error {}
   function evalGoals(model, freqs, goals) {
     const needPat = goals.gain.w > 0 || goals.fb.w > 0 || goals.el.w > 0;
     const z0 = +model.z0 || 50;
     let cost = 0; const per = [];
     for (const f of freqs) {
       let r;
-      if (needPat) { const a = analyze(model, f); r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }; }
-      else {
+      if (needPat) {
+        const a = analyze(model, f);
+        if (a.res.patternIssue) throw new PatternUnavailable(a.res.patternIssue);
+        r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el };
+      } else {
         const s = solve(model, f).sources[0];
         const g = divC(s.R - z0, s.X, s.R + z0, s.X), gm = Math.hypot(g[0], g[1]);
         r = { f, R: s.R, X: s.X, swr: gm >= 1 ? Infinity : (1 + gm) / (1 - gm), gain: NaN, fb: NaN, el: NaN };
@@ -1252,7 +1268,10 @@
       const vals = toVals(x);
       let r;
       try { r = evalGoals(applyVars(model, vars, vals), freqs, goals); if (!Number.isFinite(r.cost)) r.cost = 1e6; }
-      catch (e) { r = { cost: 1e6, per: [] }; }
+      catch (e) {
+        if (e instanceof PatternUnavailable) throw e;
+        r = { cost: 1e6, per: [] };
+      }
       const pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
       const c = r.cost + pen;
       if (!st.start) st.start = { cost: c, vals, per: r.per };

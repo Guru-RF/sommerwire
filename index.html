@@ -289,7 +289,7 @@ footer a { color: var(--accent); }
         <label class="fld"><span>Add height (m)</span><input id="cHeight" inputmode="decimal"></label>
         <label class="fld"><span>Ground εr</span><input id="cEps" inputmode="decimal"></label>
         <label class="fld"><span>Conductivity (mS/m)</span><input id="cSig" inputmode="decimal"></label>
-        <label class="fld"><span>Impedance over real ground</span><select id="cNf"><option value="sommerfeld">Sommerfeld (accurate, as NEC-2)</option><option value="complex">Complex image (fast approximation)</option><option value="perfect">Perfect mirror (as MININEC)</option></select></label>
+        <label class="fld"><span>Impedance over real ground</span><select id="cNf"><option value="sommerfeld">Sommerfeld (elevated wires)</option><option value="complex">Complex image (fast approximation)</option><option value="perfect">Perfect mirror (as MININEC)</option></select></label>
         <label class="fld"><span>Wire material</span><select id="cMat"></select></label>
         <label class="fld"><span>SWR reference (Ω)</span><input id="cZ0" inputmode="decimal"></label>
       </div>
@@ -591,7 +591,7 @@ const EXAMPLES = [
       { x1: '10.56', y1: '10.56', z1: '0', x2: '10.56', y2: '10.56', z2: '10.13', r: '12.5', seg: '-1' }],
     sources: [{ pos: 'w2b', phase: -50.89, mag: 3.0118 }, { pos: 'w1b', phase: 0, mag: 1 }, { pos: 'w3b', phase: -50.89, mag: 3.0118 }, { pos: 'w4b', phase: -81.42, mag: 5.0628 }],
     loads: [{ pos: 'w1b', type: 1, L: 0, C: 0, Q: 0, R: 10, X: 0 }, { pos: 'w2b', type: 1, L: 0, C: 0, Q: 0, R: 10, X: 0 }, { pos: 'w3b', type: 1, L: 0, C: 0, Q: 0, R: 10, X: 0 }, { pos: 'w4b', type: 1, L: 0, C: 0, Q: 0, R: 10, X: 0 }], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 2, z0: 50,
-    comment: "Four 10.13 m verticals (25 mm aluminium) on a 10.56 m (quarter-wave) square, each with 10 ohm ground loss at the base. w1 is the back element, w2 and w3 the sides, w4 the front; beam toward 45 degrees. The source voltages are chosen so the currents are equal at 0, -90, -90 and -180 degrees, as a current-forcing phasing network does. Drive impedances: back about 8 - j15, sides 49 - j20, front 70 + j54 ohm. About 4.3 dBi at 24 degrees, F/B about 26 dB." },
+    comment: "Four 10.13 m verticals (25 mm aluminium) on a 10.56 m (quarter-wave) square, each with 10 ohm ground loss at the base. w1 is the back element, w2 and w3 the sides, w4 the front; beam toward 45 degrees. The source voltages are chosen so the currents are equal at 0, -90, -90 and -180 degrees, as a current-forcing phasing network does. Drive impedances: back about 8 - j15, sides 49 - j20, front 70 + j54 ohm. With real soil the ground contacts trigger the perfect-mirror impedance fallback." },
   { name: 'Magnetic loop, 20 m, 1.1 m diameter', freq: 14.1, wires: [
       { x1: '-0.1073', y1: '0', z1: '3.0394', x2: '-0.3056', y2: '0', z2: '2.9573', r: '11', seg: '4' },
       { x1: '-0.3056', y1: '0', z1: '2.9573', x2: '-0.4573', y2: '0', z2: '2.8056', r: '11', seg: '4' },
@@ -640,7 +640,7 @@ const EXAMPLES = [
       { x1: '150', y1: '0', z1: '2.5', x2: '150', y2: '0', z2: '0', r: '1', seg: '-1' }],
     sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [{ pos: 'w3e', type: 1, L: 0, C: 0, Q: 0, R: 470, X: 0 }],
     ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 450,
-    comment: "Receive-only wire: 150 m at 2.5 m height with a vertical drop to ground at each end, fed at the near end (SWR reference 450 ohm = a 9:1 transformer) and terminated with 470 ohm at the far end; it receives best toward +X, the terminated end. Approximate: because the wires touch the ground, the impedance and currents are solved over perfect ground, so the ground losses that shape a real Beverage are missing. Take its gain (about -10 dBi on 160 m) and F/B (about 10 dB on 160 m, more on 80 and 40 m) as indicative only." },
+    comment: "Receive-only wire: 150 m at 2.5 m height with a vertical drop to ground at each end, fed at the near end (SWR reference 450 ohm = a 9:1 transformer) and terminated with 470 ohm at the far end; it receives best toward +X, the terminated end. Approximate: because the wires touch the ground, the impedance and currents are solved over perfect ground, so the ground losses that shape a real Beverage are missing. Pattern and gain are unavailable for this ground treatment." },
   { name: 'G3TXQ hexbeam, tuned per band, 50 Ω coax centre', build: 'hextable', centre: 'coax', tuned: true },
   { name: 'EFOC29 end-fed, flat top at 8 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'EFOC29: 29 m radiator, end-fed through a 4:1 unun. Wire 2 is the outside of the coax shield, the first 12 m from the feedpoint up to the ferrite choke (modelled as an open end). SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 unun. Radiator radius 1 mm and shield radius 5 mm are assumptions.' },
   { name: 'EFHW-8010 end-fed half-wave, 80–10 m, inverted V', maa: "EFHW-8010\n*\n30.000\n***Wires***\n4\n0.0039,\t0,\t-1.1446,\t-0.2274,\t0,\t3.0794,\t8.000e-4,\t-1\n17.8791,\t0,\t11.1691,\t37.4889,\t0,\t2.9241,\t8.000e-4,\t-1\n-0.2446,\t0,\t2.8721,\t17.8791,\t0,\t11.1691,\t8.000e-4,\t-1\n-0.2274,\t0,\t3.0794,\t-0.2446,\t0,\t2.8721,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw4b,\t0.0,\t1.0\n*** Load ***\n2,\t1\nw4b,\t0,\t0,\t100,\t0\nw4c,\t0,\t1.5,\t0,\t0\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t10.00,\t1,\t2450.0,\t120,\t60,\t0\n### Comment ###\n" },
@@ -703,7 +703,7 @@ self.onmessage = (e) => {
       const pts = [];
       for (const fi of fl) {
         const a = MM.analyze(model, fi);
-        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el };
+        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, patternIssue: a.res.patternIssue, gain: a.gain, fb: a.fb, el: a.el };
         pts.push(pt); self.postMessage({ id, progress: { pt, done: pts.length, of: fl.length } });
       }
       self.postMessage({ id, ok: true, data: pts });
@@ -724,6 +724,10 @@ function pack(model, f) {
   const a = MM.analyze(model, f);
   const r = a.res, g = model.ground.type;
   const segs = r.mesh.segs.map((s, i) => [s.p0[0], s.p0[1], s.p0[2], s.p1[0], s.p1[1], s.p1[2], r.segCur[i].mag]);
+  const base = { f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, warnings: r.warnings, ground: g, height: model.ground.height,
+    groundMethods: r.groundMethods, patternIssue: r.patternIssue };
+  if (r.patternIssue) return { ...base, grid: null, cutAz: [], cutEl: [] };
   const az = [], el = [];
   const toDb = x => MM.dB(x);
   for (let d = 0; d <= 360; d += 1) { const G = a.pat.gain(a.el, d); az.push([d, toDb(G.tot), toDb(G.h), toDb(G.v)]); }
@@ -738,8 +742,7 @@ function pack(model, f) {
   for (let d = 0; d < 360; d += 5) gAzs.push(d);
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
   const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
-  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
-    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, ground: g, height: model.ground.height };
+  return { ...base, grid, cutAz: az, cutEl: el };
 }`;
 let worker = null, workerUrl = null;
 const pending = new Map();
@@ -782,7 +785,7 @@ function job(msg, onProgress, w) {
       if (msg.kind === 'calc') return resolve(fallback.pack(msg.model, msg.f));
       if (msg.kind === 'sweep') {
         const pts = [];
-        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }); }
+        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, patternIssue: a.res.patternIssue, gain: a.gain, fb: a.fb, el: a.el }); }
         return resolve(pts);
       }
       if (msg.kind === 'res') {
@@ -810,7 +813,7 @@ function renderReadout() {
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
   set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
-  set('#roG', fmt(r.gain, 2) + ' <small>dBi</small>');
+  set('#roG', r.patternIssue ? 'Unavailable' : fmt(r.gain, 2) + ' <small>dBi</small>');
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
   set('#roPol', r.pol);
@@ -982,7 +985,7 @@ $('#calcBtn').onclick = calculate;
 const GNAME = ['Free', 'Perfect', 'Real'];
 function renderResults() {
   $('#resTbl tbody').innerHTML = S.history.map((r, i) => '<tr class="' + (i === 0 ? 'latest' : '') + '"><td>' + (S.history.length - i) + '</td><td class="nm"></td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 2) + '</td><td>' + fmt(r.X, 2) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') +
-    '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
+    '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + ' · impedance ' + r.groundMethods.impedance + ' · field ' + r.groundMethods.field + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
   $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
   const r = S.last;
   if (r && r.sources.length > 1) {
@@ -1628,6 +1631,14 @@ function drawPatterns() {
   const az = $('#azPlot'); if (!az.offsetParent) return;
   const r = S.last;
   if (!r) { prep(az); prep($('#elPlot')); return; }
+  if (r.patternIssue) {
+    prep(az); prep($('#elPlot'));
+    $('#azTitle').textContent = r.patternIssue;
+    $('#elTitle').textContent = '';
+    $('#patLegend').textContent = '';
+    drawFF3D();
+    return;
+  }
   const mode = $('#polSel').value;
   const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
   const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
@@ -1658,7 +1669,7 @@ $('#polSel').onchange = drawPatterns;
 function drawEdPolar() {
   const az = $('#edAz'); if (!az || !az.offsetParent) return;
   const r = S.last;
-  if (!r) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = ''; return; }
+  if (!r || r.patternIssue) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = r?.patternIssue || ''; return; }
   const acc = css('--accent');
   drawPolar(az, [{ pts: r.cutAz.map(p => [p[0], p[1]]), color: acc }], false, r.gain);
   drawPolar($('#edEl'), [{ pts: r.cutEl.map(p => [p[0], p[1]]), color: acc }], r.ground > 0, r.gain);
@@ -1672,7 +1683,7 @@ function drawFF3D() {
   const cv = $('#ff3d'); if (!cv || !cv.offsetParent) return;
   const { c, w, h } = prep(cv);
   const r = S.last, muted = css('--muted'), ink = css('--ink'), grid = css('--grid'), panel = css('--panel');
-  if (!r || !r.grid) { c.fillStyle = muted; c.font = '13px ' + css('--f-body'); c.fillText('Calculate to see the 3D pattern.', 16, 24); $('#ffLegend').innerHTML = ''; return; }
+  if (!r || !r.grid) { c.fillStyle = muted; c.font = '13px ' + css('--f-body'); c.fillText(r?.patternIssue ? 'Pattern unavailable for this ground model.' : 'Calculate to see the 3D pattern.', 16, 24); $('#ffLegend').innerHTML = ''; return; }
   const G = r.grid, mode = $('#polSel').value;
   const arr = mode === 'h' ? G.h : mode === 'v' ? G.v : G.tot;
   const ref = r.gain, nE = G.els.length, nA = G.azs.length;
@@ -1752,7 +1763,7 @@ function drawFF3D() {
   $('#ffAnt').onchange = drawFF3D; $('#ffMesh').onchange = drawFF3D;
 })();
 
-$('#holdBtn').onclick = () => { if (!S.last) return; S.held = Object.assign({}, S.last, { label: (S.last.name || '') + ', ' + fmt(S.last.f, 3) + ' MHz, ' + fmt(S.last.gain, 2) + ' dBi' }); $('#dropHold').hidden = false; drawPatterns(); };
+$('#holdBtn').onclick = () => { if (!S.last || S.last.patternIssue) return; S.held = Object.assign({}, S.last, { label: (S.last.name || '') + ', ' + fmt(S.last.f, 3) + ' MHz, ' + fmt(S.last.gain, 2) + ' dBi' }); $('#dropHold').hidden = false; drawPatterns(); };
 $('#dropHold').onclick = () => { S.held = null; $('#dropHold').hidden = true; drawPatterns(); };
 
 /* ---------------- sweep charts ---------------- */
@@ -2066,7 +2077,8 @@ $('#swRun').onclick = async () => {
     S.sweepSegs = segs;
     const r = await runSweep(model, fl);
     S.sweep = r.pts;
-    $('#swStatus').textContent = n + ' points in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' + (r.K > 1 ? ' on ' + r.K + ' cores' : '');
+    const issue = r.pts.find(p => p.patternIssue)?.patternIssue;
+    $('#swStatus').textContent = n + ' points in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' + (r.K > 1 ? ' on ' + r.K + ' cores' : '') + (issue ? ' · ' + issue : '');
   } catch (e) {
     if (e.message === 'Stopped') { S.sweep = e.pts || S.sweep; $('#swStatus').textContent = 'Stopped after ' + (e.pts ? e.pts.length : 0) + ' of ' + n + ' points.'; }
     else $('#swStatus').textContent = e.message;
@@ -2219,7 +2231,7 @@ $('#optStart').onclick = async () => {
   Object.assign(S.opt, { running: true, stopFlag: false, best: null, start: null, history: [], specs, baseKey: JSON.stringify(S.model),
     key: JSON.stringify(specs.map(s => [s.type, s.idx, s.axis, s.end, s.field])) });
   $('#optStart').disabled = true; $('#optStop').disabled = false; $('#optApply').disabled = true;
-  renderVars(); optStatus('Starting…');
+  renderVars(); renderOptTable(); drawOpt(); optStatus('Starting…');
   S.opt.worker = workerUrl ? makeWorker() : null;
   try {
     const res = await job({ kind: 'opt', model, vars: specs, goals, freqs, maxEval }, optProgress, S.opt.worker);
