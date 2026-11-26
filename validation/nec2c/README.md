@@ -26,4 +26,14 @@ To build it from https://github.com/KJ7LNW/nec2c (GPL-3.0, version 1.3), in the 
 
     clang -O2 -w -DPACKAGE_STRING='"nec2c"' -o nec2c calculations.c fields.c geometry.c ground.c input.c main.c matrix.c misc.c network.c radiation.c somnec.c shared.c -lm
 
-nec2c refuses long file paths, so the scripts run it inside `decks/` with short file names. The scripts overwrite the files in `decks/` when run.
+Each invocation prints its new directory under `runs/`. Set `NEC2C_RUNS` to choose a different parent. The scripts launch nec2c in the run directory with short case-specific deck and output names. The versioned `decks/` contain historical evidence.
+
+For the impedance comparisons, both solvers now use lossless conductors and sample elevations 0° through 90° inclusive in the azimuth 0° cut. The archived comparisons sampled NEC elevations 1° through 90° and Sommerwire elevations 0° through 89°. The ordinary archived DX impedance comparison used copper in Sommerwire and lossless wires in NEC. The archived balance comparison used lossless conductors in both.
+
+The dipole center feeds use odd NEC and even Sommerwire segment counts. Two mesh densities measure sensitivity. Neither the mesh comparison nor a peak on one cut establishes full-pattern or current accuracy.
+
+For the lossless PEC balance test, both solvers now use the same 2° polar and 5° azimuth grid and trapezoidal polar weights. Integrating the retained 14.175 MHz DX NEC output yields approximately 0.782 of accepted power. Unity is the physical expectation subject to quadrature and solver error. This discrepancy does not identify dissipation at the hub or validate either current distribution.
+
+A fresh comparison on upstream base `b4ac07b` used nec2c 1.3 built from `KJ7LNW/nec2c` revision `55be1e0` with the command above. At 14.175 MHz over average soil, with a 0.1 m target segment length, the lossless DX case gave 50.7 + j10.2 Ω and −1.06 dBi in nec2c, versus 31.5 − j9.9 Ω and −0.03 dBi in Sommerwire. These are azimuth 0° cut peaks. NEC excites the single segment on wire 19, while Sommerwire places the source at its beginning node. The PEC DX balance run at the same frequency gave 0.782 and 1.000 respectively.
+
+The DX scripts assume the supplied model geometry and feed. Recheck the input mapping if the model gains loads, insulation, transmission lines or a feed transformer. Capture stdout to retain the Sommerwire side of the DX and balance comparisons alongside the generated NEC files.
