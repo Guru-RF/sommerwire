@@ -2318,7 +2318,18 @@ $('#saveBtn').onclick = async () => {
   // otherwise an ordinary download (Safari, Firefox)
   try { downloadMaa(f); } catch (err) { showMaaText(f); }
 };
-$('#dlBtn').onclick = () => { try { downloadMaa(maaFile()); $('#copyMsg').textContent = 'Download started (if your browser allows it here).'; } catch (e) { $('#copyMsg').textContent = 'Download is blocked here; use Copy.'; } };
+// inside the claude.ai artifact viewer, files go through its downloads capability (which does not allow .maa, so .maa.txt)
+let hostDownloads = null;
+try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { hostDownloads = d; }, () => {}); } catch (e) { /* not in the viewer */ }
+$('#dlBtn').onclick = async () => {
+  const f = maaFile(), msg = $('#copyMsg');
+  if (hostDownloads) {
+    try { await hostDownloads.save({ filename: f.name + '.txt', data: f.text }); msg.textContent = 'Saved as ' + f.name + '.txt: remove the .txt at the end of the name.'; }
+    catch (e) { msg.textContent = e && e.code === 'declined' ? 'Not saved.' : e && e.code === 'rate_limited' ? 'Another save is still open; try again in a moment.' : 'Saving is not available here; use Copy.'; }
+    return;
+  }
+  try { downloadMaa(f); msg.textContent = 'Download started (if your browser allows it here).'; } catch (e) { msg.textContent = 'Download is blocked here; use Copy.'; }
+};
 $('#copyBtn').onclick = () => {
   const t = $('#saveTxt');
   navigator.clipboard.writeText(t.value).then(() => $('#copyMsg').textContent = 'Copied.', () => { t.focus(); t.select(); $('#copyMsg').textContent = 'Press Ctrl+C or ⌘C to copy the selected text.'; });
