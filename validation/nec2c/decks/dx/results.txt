@@ -1,0 +1,15 @@
+# necdx.js: DX Commander over average ground (εr 13, 5 mS/m), lossless wires in both programs
+7.1 MHz, 0.15 m segments (756): nec2c 59.3 - j30.5, -2.16 dBi | Sommerwire 45.4 - j25.5, -1.07 dBi
+7.1 MHz, 0.1 m segments (1135): nec2c 56.7 - j27.2, -1.97 dBi | Sommerwire 45.6 - j24.8, -1.07 dBi
+14.175 MHz, 0.15 m segments (756): nec2c 52.7 + j9.6, -1.29 dBi | Sommerwire 28.7 - j16.1, -0.03 dBi
+14.175 MHz, 0.1 m segments (1135): nec2c 50.7 + j10.2, -1.06 dBi | Sommerwire 31.5 - j9.9, -0.03 dBi
+28.5 MHz, 0.15 m segments (756): nec2c 28.3 - j112.0, -0.17 dBi | Sommerwire 23.8 - j112.8, 0.25 dBi
+28.5 MHz, 0.1 m segments (1135): nec2c 24.7 - j103.3, 0.40 dBi | Sommerwire 22.5 - j106.3, 0.57 dBi
+
+# necdx2.js: free space, perfect ground, average ground
+free 7.1 MHz, 0.1 m segments (1135): nec2c 20.8 - j68.4, 0.90 dBi | Sommerwire 16.6 - j58.1, 1.81 dBi
+free 14.175 MHz, 0.1 m segments (1135): nec2c 31.5 + j7.3, 0.57 dBi | Sommerwire 19.1 - j13.4, 1.57 dBi
+pec 7.1 MHz, 0.1 m segments (1135): nec2c 46.5 - j13.8, 4.26 dBi | Sommerwire 37.3 - j13.9, 5.17 dBi
+pec 14.175 MHz, 0.1 m segments (1135): nec2c 58.0 + j22.8, 4.28 dBi | Sommerwire 38.4 + j3.9, 5.23 dBi
+real 7.1 MHz, 0.1 m segments (1135): nec2c 56.7 - j27.2, -1.97 dBi | Sommerwire 45.6 - j24.8, -1.07 dBi
+real 14.175 MHz, 0.1 m segments (1135): nec2c 50.7 + j10.2, -1.06 dBi | Sommerwire 31.5 - j9.9, -0.03 dBi

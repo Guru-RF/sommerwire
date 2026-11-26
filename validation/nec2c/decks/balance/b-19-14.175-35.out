@@ -1243,7 +1243,7 @@
 
 
                              ---------- MATRIX TIMING ----------
-                               FILL: 230 msec  FACTOR: 380 msec
+                               FILL: 230 msec  FACTOR: 370 msec
 
 
                         --------- ANTENNA INPUT PARAMETERS ---------
@@ -5770,4 +5770,4 @@
 
   DATA CARD No:   5 EN   0     0     0     0  0.00000E+00  0.00000E+00  0.00000E+00  0.00000E+00  0.00000E+00  0.00000E+00
 
-  TOTAL RUN TIME: 730 msec
+  TOTAL RUN TIME: 720 msec

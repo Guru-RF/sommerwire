@@ -8,7 +8,10 @@ Summary of the results: Help tab → "How it was checked" → "Comparison with N
 
 - `decks/` – the NEC input files (`*.nec`), nec2c output (`*.out`) and `results.json` (both programs, every case).
   - `c0d1` … `c10d2`: case 0–10 of `necmp.js`, `d1` normal and `d2` double segmentation.
-  - `dx.*`: DX Commander with 16 radials; `b.*`: power-balance run over perfect ground (last case run).
+  - `dx/`: DX Commander with 16 radials (rerun 2026-11-26, lossless wires in both programs): `real-<MHz>-<segment m>`
+    from `necdx.js`, `free-`, `pec-` and `real-` from `necdx2.js`, and `results.txt` with both programs' numbers.
+  - `balance/`: power balance over perfect ground from `necbal.js`: `b-1-*` the simple ground plane, `b-19-*` the
+    DX Commander, and `results.txt`.
 - `scripts/` – Node scripts that write the decks, run nec2c and Sommerwire on the same geometry, and print both.
   - `necmp.js`: dipoles at 0.3–10 m, low vertical dipole, λ/4 vertical with 16 radials at 5 cm, 0.3 m and 2 m.
   - `necdx.js`: DX Commander (models/DX Commander 16 radials.maa) on real ground, uniform segments.
