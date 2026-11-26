@@ -1,5 +1,5 @@
 # Sommerwire, by ON9PK Koen Van den Heuvel. Public domain (Unlicense).
-# Usage: python3 tools/make_logo.py sommerwire/brand
+# Usage: python3 tools/make_logo.py brand
 # Generates the Sommerwire logo SVGs: a vertical antenna on the ground with its radiated wavefronts,
 # and their faint mirror image below the ground (image theory / Sommerfeld ground).
 import math, os, sys

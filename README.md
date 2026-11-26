@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="sommerwire/brand/logo-dark.svg">
-    <img src="sommerwire/brand/logo-light.svg" alt="Sommerwire, Wire Antenna Modeler" width="300">
+    <source media="(prefers-color-scheme: dark)" srcset="brand/logo-dark.svg">
+    <img src="brand/logo-light.svg" alt="Sommerwire, Wire Antenna Modeler" width="300">
   </picture>
 </p>
 
@@ -50,11 +50,11 @@ Sommerwire is plain HTML and JavaScript with no build step and no dependencies. 
 Workers, so it must be served over HTTP rather than opened as a file:
 
 ```bash
-python3 -m http.server 8000 --directory sommerwire
+python3 -m http.server 8000
 ```
 
-then open <http://localhost:8000>. Any static web host works too, for example GitHub Pages pointed at the
-`sommerwire` folder.
+from the repository folder, then open <http://localhost:8000>. Any static web host works too, for example GitHub
+Pages serving the repository root.
 
 ## How it works
 
@@ -97,8 +97,8 @@ Help tab lists these and the open questions in full.
 ## Repository layout
 
 ```
-sommerwire/          the application (index.html, engine.js, structgen.js, hexgen.js, help.html)
-sommerwire/brand/    logo and icon (light, dark and auto-switching SVG)
+index.html           the application, with engine.js, structgen.js, hexgen.js and help.html beside it
+brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts

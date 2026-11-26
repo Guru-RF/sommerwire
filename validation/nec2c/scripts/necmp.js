@@ -1,4 +1,4 @@
-require(require('path').join(__dirname,'../../../sommerwire/engine.js')); const MM=globalThis.MM;
+require(require('path').join(__dirname,'../../../engine.js')); const MM=globalThis.MM;
 const {execFileSync}=require('child_process'), fs=require('fs'), path=require('path');
 const NEC=process.env.NEC2C||path.join(__dirname,'../bin/nec2c'), DIR=path.join(__dirname,'../decks');
 // case: {name, f, wires:[{a:[x,y,z], b:[...], r, n (segments)}], feed:{wire, end:'c'|'b'}, ground:'free'|'pec'|'real', eps, sig}
