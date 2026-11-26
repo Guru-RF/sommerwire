@@ -256,6 +256,7 @@ footer a { color: var(--accent); }
         <label class="fld chk"><input type="checkbox" id="showSeg" checked><span>Segments</span></label>
         <label class="fld chk"><input type="checkbox" id="showCur" checked><span>Currents</span></label>
         <label class="fld chk"><input type="checkbox" id="edLobe" checked><span>Far field</span></label>
+        <label class="fld chk" title="Turns the model slowly; stops while you point at it or edit, and starts again a few seconds after"><input type="checkbox" id="edSpin" checked><span>Auto-rotate</span></label>
       </div>
       <div class="edgrid">
         <div class="canvasbox view3d" id="viewBox"><canvas id="view3d"></canvas><div class="coord" id="edCoord" hidden></div></div>
@@ -1567,6 +1568,32 @@ function drawView() {
   });
   setPlane('xy'); setMode('select');
 })();
+/* auto-rotate: the 3D editor turns slowly while nobody is working in it */
+(function edSpin() {
+  const box = $('#viewBox'), panel = $('[data-panel="view"]'), cb = $('#edSpin');
+  const RATE = 2 * Math.PI / 45, IDLE = 5000;            // one turn in 45 s; restart 5 s after the last interaction
+  let reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* old browser */ }
+  let saved = null; try { saved = localStorage.getItem('sw-spin'); } catch (e) { /* storage blocked */ }
+  cb.checked = saved === null ? !reduce : saved === '1';
+  let lastAct = 0, over = false, last = 0;
+  cb.onchange = () => { try { localStorage.setItem('sw-spin', cb.checked ? '1' : '0'); } catch (e) { /* storage blocked */ } last = 0; lastAct = 0; };
+  const poke = () => { lastAct = performance.now(); };
+  const typing = () => panel.contains(document.activeElement) && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && document.activeElement !== cb;
+  const busy = () => over || ED.mode === 'draw' || ED.start || ED.drag || typing() || performance.now() - lastAct < IDLE;
+  box.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') over = true; });
+  box.addEventListener('pointerleave', () => { over = false; poke(); });
+  ['pointerdown', 'wheel'].forEach(t => box.addEventListener(t, poke, { passive: true }));
+  panel.addEventListener('pointerdown', e => { if (e.target !== cb) poke(); }); panel.addEventListener('input', e => { if (e.target !== cb) poke(); });
+  document.addEventListener('keydown', () => { if (!panel.hidden) poke(); });
+  function tick(t) {
+    requestAnimationFrame(tick);
+    if (!cb.checked || panel.hidden || document.hidden || busy()) { last = 0; return; }
+    if (last && t - last < 30) return;                     // about 30 frames a second is smooth enough
+    const dt = last ? Math.min(0.1, (t - last) / 1000) : 0; last = t;
+    if (dt) { V.yaw += RATE * dt; drawView(); }
+  }
+  requestAnimationFrame(tick);
+})();
 
 /* ---------------- polar plots ---------------- */
 function drawPolar(cv, series, half, ref) {
@@ -2339,8 +2366,10 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 /* ---------------- boot ---------------- */
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));
-  let tab = 'geometry'; try { tab = localStorage.getItem('wm-tab') || 'geometry'; } catch (e) {}
-  showTab($('[data-panel="' + tab + '"]') ? tab : 'geometry');
+  // first visit: the 3-element Yagi, calculated, turning slowly in the 3D editor; later visits reopen the last tab
+  let tab = null; try { tab = localStorage.getItem('wm-tab'); } catch (e) {}
+  showTab(tab && $('[data-panel="' + tab + '"]') ? tab : 'view');
+  $('#calcBtn').click();
 });
 })();
 </script>
