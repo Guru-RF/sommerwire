@@ -1,0 +1,3 @@
+const R=process.argv[2]; require(R+'/engine.js'); const fs=require('fs');
+const line=fs.readFileSync(R+'/index.html','utf8').split('\n')[646]; const m=line.match(/maa: "((?:[^"\\]|\\.)*)"/); const maa=JSON.parse('"'+m[1]+'"');
+const o=MM.parseMAA(maa); for(const w of o.wires) for(const k of Object.keys(w)) w[k]=Number(w[k]); for(const f of [7.15,14.175]){const r=MM.solve(o,f),p=MM.makePattern(r,o);let pk=-99;for(let e=1;e<90;e++)pk=Math.max(pk,10*Math.log10(p.gain(e,0).tot)); console.log('ground-fed example',f,r.sources[0].R.toFixed(2),r.sources[0].X.toFixed(2),'pk',pk.toFixed(2),'loads',JSON.stringify(o.loads),'ground',JSON.stringify(o.ground),'|',r.mesh.warnings.join(' | ').slice(0,200));}

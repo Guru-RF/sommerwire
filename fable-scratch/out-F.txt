@@ -1,0 +1,30 @@
+parsed keys name,wires,sources,loads,seg,ground,material,z0,comment,tls,objects,freq ground {"type":2,"height":0,"eps":13,"sigma":0.005} seg {"dm1":800,"dm2":80,"sc":2,"ec":2} material 1 src [{"pos":"w19b","phase":0,"mag":1}]
+F1 as shipped (auto segmentation -1), soil as in file / 13,0.005
+7.1 {"type":2,"height":0,"eps":13,"sigma":0.005} 46.65 -23.21 unk 419
+7.1 {"type":2,"height":0,"eps":13,"sigma":0.005} 46.65 -23.21 unk 419
+7.15 {"type":2,"height":0,"eps":13,"sigma":0.005} 48.52 -17.56 unk 419
+7.15 {"type":2,"height":0,"eps":13,"sigma":0.005} 48.52 -17.56 unk 419
+14.175 {"type":2,"height":0,"eps":13,"sigma":0.005} 41.73 5.90 unk 651
+14.175 {"type":2,"height":0,"eps":13,"sigma":0.005} 41.73 5.90 unk 651
+F2 uniform segs as dx.js, 16 radials, 13/0.005: f n R X unk
+7.1 8 44.83 -31.74 198
+7.1 16 45.49 -27.93 377
+7.1 32 46.05 -25.84 735
+7.1 64 46.35 -24.74 1456
+7.1 128 ERR Model too large (2917 unknowns, maximum 2500), even with long passive wires cut
+14.175 8 12.01 -80.13 198
+14.175 16 23.36 -37.80 377
+14.175 32 31.03 -18.47 735
+14.175 64 36.32 -6.93 1456
+14.175 128 ERR Model too large (2917 unknowns, maximum 2500), even with long passive wires cut
+F3 frequency scan n=32 & 64 around 20 m: f R X
+32 13.8 9.61 -91.25
+32 14 18.65 -52.23
+32 14.175 31.03 -18.47
+32 14.35 48.87 15.72
+32 14.6 88.52 65.69
+64 13.8 11.71 -80.36
+64 14 22.27 -41.09
+64 14.175 36.32 -6.93
+64 14.35 56.40 27.75
+64 14.6 100.94 78.12

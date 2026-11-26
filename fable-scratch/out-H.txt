@@ -1,0 +1,25 @@
+gap 0.5 horiz along y CENTRED (study case) |dZ| 0.07 max2 0.01 maxAllAz8 0.01
+gap 0.5 horiz along y, one end opposite tip |dZ| 0.61 max2 0.09 maxAllAz8 0.26
+gap 0.5 horiz along x, collinear beyond tip |dZ| 0.54 max2 0.06 maxAllAz8 0.15
+gap 0.5 horiz along x, parallel beside radial (y offset) |dZ| 2.25 max2 0.62 maxAllAz8 0.62
+gap 0.5 sloping 45deg in xz from tip side |dZ| 4.17 max2 1.75 maxAllAz8 2.94
+gap 2 horiz along y CENTRED (study case) |dZ| 0.02 max2 0.00 maxAllAz8 0.00
+gap 2 horiz along y, one end opposite tip |dZ| 0.32 max2 0.05 maxAllAz8 0.20
+gap 2 horiz along x, collinear beyond tip |dZ| 0.33 max2 0.12 maxAllAz8 0.12
+gap 2 horiz along x, parallel beside radial (y offset) |dZ| 1.27 max2 0.55 maxAllAz8 0.55
+gap 2 sloping 45deg in xz from tip side |dZ| 3.21 max2 0.84 maxAllAz8 2.49
+gap 5 horiz along y CENTRED (study case) |dZ| 0.00 max2 0.00 maxAllAz8 0.00
+gap 5 horiz along y, one end opposite tip |dZ| 0.15 max2 0.02 maxAllAz8 0.14
+gap 5 horiz along x, collinear beyond tip |dZ| 0.21 max2 0.18 maxAllAz8 0.18
+gap 5 horiz along x, parallel beside radial (y offset) |dZ| 1.00 max2 0.32 maxAllAz8 0.38
+gap 5 sloping 45deg in xz from tip side |dZ| 2.28 max2 1.21 maxAllAz8 1.80
+gap 10 horiz along y CENTRED (study case) |dZ| 0.00 max2 0.00 maxAllAz8 0.00
+gap 10 horiz along y, one end opposite tip |dZ| 0.06 max2 0.00 maxAllAz8 0.09
+gap 10 horiz along x, collinear beyond tip |dZ| 0.13 max2 0.04 maxAllAz8 0.13
+gap 10 horiz along x, parallel beside radial (y offset) |dZ| 0.66 max2 0.22 maxAllAz8 0.26
+gap 10 sloping 45deg in xz from tip side |dZ| 1.53 max2 1.48 maxAllAz8 1.92
+gap 20 horiz along y CENTRED (study case) |dZ| 0.00 max2 0.00 maxAllAz8 0.00
+gap 20 horiz along y, one end opposite tip |dZ| 0.01 max2 0.00 maxAllAz8 0.05
+gap 20 horiz along x, collinear beyond tip |dZ| 0.07 max2 0.02 maxAllAz8 0.08
+gap 20 horiz along x, parallel beside radial (y offset) |dZ| 0.06 max2 0.08 maxAllAz8 0.10
+gap 20 sloping 45deg in xz from tip side |dZ| 0.85 max2 1.06 maxAllAz8 1.46

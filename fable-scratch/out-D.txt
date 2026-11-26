@@ -1,0 +1,11 @@
+D: ground-contact switch. 4 radials at 48 in, soil 13/0.005, n=32
+isolated 33.01 - j17.51 g8 -3.40 pk -0.05
+detached 2 m rod touching z=0 at 50 m: 35.04 - j13.09 g8 -3.58 pk -0.24 | Wires touching the ground (w6): the impedance is solved over perfect g
+detached 2 m rod touching z=0 at 200 m: 35.04 - j13.09 g8 -3.58 pk -0.24 | Wires touching the ground (w6): the impedance is solved over perfect g
+detached 2 m rod touching z=0 at 1000 m: 35.04 - j13.09 g8 -3.58 pk -0.24 | Wires touching the ground (w6): the impedance is solved over perfect g
+same rod 1 cm above ground at 50 m: 33.01 - j17.51 g8 -3.40
+same rod 1 cm above ground at 200 m: 33.01 - j17.51 g8 -3.40
+same rod 1 cm above ground at 1000 m: 33.01 - j17.51 g8 -3.40
+nf=pec explicit: 35.04 - j13.09 g8 -3.58
+buried detached wire: 33.01 - j17.51 Wire 6 goes below ground.
+whole radial fan at -0.1 m: 38.29 + j10.48 g8 -4.09 Wire 1 goes below ground. / Wire 2 goes below ground. / Wire 3 goes below ground. / Wire 4 goes below ground. / Wire 5 goes below ground.

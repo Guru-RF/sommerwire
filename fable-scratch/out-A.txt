@@ -1,0 +1,36 @@
+A: Part3 elevated, mesh convergence (soil 30/0.015)
+6 in 16 40.05 - j1.20 g8 -1.60 unk 79 74ms
+6 in 32 40.28 + j3.97 g8 -1.60 unk 159 73ms
+6 in 64 40.43 + j6.55 g8 -1.60 unk 319 105ms
+6 in 128 40.54 + j7.80 g8 -1.60 unk 639 329ms
+6 in 256 40.62 + j8.43 g8 -1.60 unk 1279 1462ms
+12 in 16 38.68 - j9.19 g8 -1.48 unk 79 90ms
+12 in 32 38.90 - j3.72 g8 -1.48 unk 159 149ms
+12 in 64 39.04 - j1.11 g8 -1.47 unk 319 93ms
+12 in 128 39.14 + j0.15 g8 -1.47 unk 639 314ms
+12 in 256 39.20 + j0.78 g8 -1.47 unk 1279 1484ms
+48 in 16 34.21 - j21.58 g8 -1.08 unk 79 82ms
+48 in 32 34.38 - j15.94 g8 -1.08 unk 159 145ms
+48 in 64 34.49 - j13.28 g8 -1.08 unk 319 87ms
+48 in 128 34.56 - j12.01 g8 -1.08 unk 639 293ms
+48 in 256 34.61 - j11.38 g8 -1.08 unk 1279 1407ms
+A2: radiator segs fixed 32, radial segs vary / and vice versa (48 in)
+n_vert 32 n_rad 128 34.38 - j14.30
+n_vert 128 n_rad 32 34.57 - j13.64
+n_vert 64 n_rad 16 34.50 - j16.83
+n_vert 16 n_rad 64 34.20 - j18.02
+A3: radiator radius sensitivity 48 in n=64
+rv 0.0127 34.49 - j13.28
+rv 0.006 34.14 - j15.09
+rv 0.001 33.62 - j19.21
+rv 0.019 34.74 - j12.27
+A4: radiator length sensitivity 48 in n=64
+H ft 33.5 34.49 - j13.28
+H ft 33 32.91 - j21.33
+H ft 34 36.15 - j5.19
+H ft 34.5 37.88 + j2.95
+A5: soil sensitivity 48in n=64
+30 0.015 34.49 - j13.28 g8 -1.08
+30 0.02 34.80 - j13.10 g8 -0.68
+13 0.005 33.11 - j14.85 g8 -3.40
+20 0.01 34.13 - j13.92 g8 -2.05
