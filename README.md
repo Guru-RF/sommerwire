@@ -34,8 +34,8 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
   R/jX, gain and F/B charts, a Smith chart and a per-band summary. Runs on all processor cores.
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.
-- **Examples**: Yagi, dipoles, inverted V, ground plane, quad, loaded dipole, G3TXQ hexbeams, EFOC29 end-fed
-  set-ups (one beside a house) and the DX Commander vertical with 16 radials.
+- **Examples**: Yagi, dipoles, inverted V, ground plane, quad, loaded dipole, a G3TXQ 5-band hexbeam tuned per band,
+  an EFOC29 end-fed beside a house, and the DX Commander vertical with 16 radials.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 
@@ -105,8 +105,8 @@ validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 
 Sommerwire was written from published methods; no code from MMANA-GAL, MININEC or NEC was used. It builds on the
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
-MMANA-GAL, whose `.maa` format it shares. The hexbeam examples follow Steve Hunt G3TXQ's broadband design; the EFOC29
-examples follow rf.guru's installation guide.
+MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design; the EFOC29
+example follows rf.guru's installation guide.
 
 ## Licence
 
