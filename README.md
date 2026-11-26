@@ -42,7 +42,7 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
   elevation goals over several frequencies.
 - **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, ZS6BKW, delta loop, horizontal loop, Moxon,
   two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, 40/20 m trap vertical, 160 m Beverage, a G3TXQ 5-band hexbeam tuned per band,
-  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
+  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, RF.Guru EFHW16080 (160/80 m, 68:1) and EFHW8040 (80/40 m, 70:1) end-fed inverted-Ls, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
@@ -60,6 +60,31 @@ python3 -m http.server 8000
 
 from the repository folder, then open <http://localhost:8000>. Any static web host works too, for example GitHub
 Pages serving the repository root.
+
+## RF.Guru EFHW inverted-L examples: provenance and assumptions
+
+Built by [efhwgen.js](efhwgen.js); checked by `node --test tests/`. Sources (RF.Guru, retrieved 2026-11-26):
+[low-band inverted-L and 68:1 / 70:1 ratios](https://shop.rf.guru/pages/why-rf-guru-recommends-only-inverted-l-for-160-80m-and-80m-40m-with-68-70-1-transformers-for-end-fed-antennas),
+[EFHW16080 product](https://shop.rf.guru/products/2024-efhw16080-4000),
+[EFHW16080 technical overview](https://shop.rf.guru/pages/efhw16080-inverted-l-technical-overview),
+[EFHW8040 product](https://shop.rf.guru/products/2024-efhw8040-4000).
+
+| | EFHW16080, 160/80 m | EFHW8040, 80/40 m |
+|---|---|---|
+| Transformer (sourced) | 68:1 | 70:1 |
+| Wire (sourced) | ~82 m, 2 mm | 41 m, 2 mm |
+| Layout (sourced) | ~18–20 m vertical, rest horizontal, horizontal ≥ 15 m, feed ≥ 1 m | horizontal 10–15 m, feed ≥ 1 m (best 2–5 m) |
+| Return (sourced) | coax shield as counterpoise, choke ~8 m from the feed | choke ~4 m from the feed |
+| Modelled (representative) | feed 1 m, bend 20 m: 19 m vertical + 63 m horizontal | feed 3 m, bend 12 m: 9 m vertical + 32 m horizontal |
+| Return wire (representative) | 8 m shield exterior, feed down to 0.5 m, 5 mm radius | 4 m shield exterior, feed down to 1 m, 5 mm radius |
+
+The 68:1 and 70:1 values are impedance ratios, entered as the source's ideal *Balun n:1* (the ideal turns ratios,
+about 8.25:1 and 8.37:1, are not what the solver takes). The choke is ideal (open end of the shield wire). Average soil
+(εr 13, 5 mS/m), Sommerfeld ground; every wire is above the soil so the perfect-mirror fallback is not triggered, which
+is why the optional ground stake is left out. Not modelled: XLPE insulation (thickness not published), transformer loss
+and parasitics, choke impedance, sag and surroundings. The wire is the full supplied length, untrimmed: in the model the
+lowest dip falls below 160 m (EFHW16080) and at the bottom edge of 80 m (EFHW8040); RF.Guru advises fine-tuning on site.
+These are model results, not measurements; no SWR, loss or gain figure from RF.Guru is reproduced.
 
 ## How it works
 
@@ -114,10 +139,11 @@ Help tab lists these and the open questions in full.
 ## Repository layout
 
 ```
-index.html           the application, with engine.js, structgen.js, hexgen.js and help.html beside it
+index.html           the application, with engine.js, structgen.js, hexgen.js, efhwgen.js and help.html beside it
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L examples)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```
 
