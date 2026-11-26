@@ -1269,7 +1269,11 @@
       let r;
       try { r = evalGoals(applyVars(model, vars, vals), freqs, goals); if (!Number.isFinite(r.cost)) r.cost = 1e6; }
       catch (e) {
-        if (e instanceof PatternUnavailable) throw e;
+        if (e instanceof PatternUnavailable) {
+          if (!st.best || !st.best.per.length) throw e;
+          st.history.push(st.best.cost);
+          return Infinity;
+        }
         r = { cost: 1e6, per: [] };
       }
       const pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;

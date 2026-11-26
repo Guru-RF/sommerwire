@@ -100,3 +100,21 @@ function checkPatternViews(row) {
   for (const id of ['#azTitle', '#edPolTxt']) assert.match($(id).textContent, /pattern unavailable/i);
   assert.match($('#ff3d').label, /pattern unavailable/i);
 }
+
+test('gain search continues after a trial extends a passive wire to ground', () => {
+  const m = model(2, undefined, true);
+  Object.assign(m.wires[1], { z1: 0.15, z2: 1.85 });
+  const vars = [{ type: 'len-c', idx: 1, min: 0, max: 2 }];
+  const goals = { gain: { w: 1 }, swr: { w: 0 }, jx: { w: 0 }, fb: { w: 0 }, el: { w: 0 } };
+  const score = vals => MM.evalGoals(MM.applyVars(m, vars, vals), [frequency], goals).cost;
+  assert.throws(() => score([2]), /pattern unavailable/i);
+  const opt = MM.makeOptimizer(m, vars, goals, [frequency], 8);
+  opt.step(); // Elevated starting geometry.
+  assert.equal(opt.best.cost, score(opt.best.vals));
+  const start = opt.best;
+  opt.step(); // First simplex step reaches the upper bound at ground contact.
+  assert.equal(opt.best, start);
+  while (!opt.step()) {}
+  assert.ok(opt.evals > 2);
+  assert.equal(opt.best.cost, score(opt.best.vals));
+});
