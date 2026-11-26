@@ -11,9 +11,8 @@ A wire antenna modeler that runs in your browser. Sommerwire calculates feed imp
 patterns of wire antennas with the method of moments, over free space, perfect ground or real soil, and reads and
 writes MMANA-GAL `.maa` files.
 
-Its distinguishing feature is the real-ground model: the impedance over lossy soil is solved with Sommerfeld
-integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
-agree with NEC-2, ground loss included. That is where the name comes from.
+Sommerwire uses Sommerfeld integrals to solve wire impedance over lossy soil. The comparisons below cover
+feed impedance and sampled gain for elevated dipoles and a vertical with raised radials.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
@@ -76,8 +75,9 @@ The Help tab describes every model in detail, with references.
 
 ## Validation
 
-Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and segmentation, average ground
-(εr 13, 5 mS/m), Sommerfeld ground in both:
+The archived fine-mesh results below compare feed impedance and the sampled peak gain on the azimuth 0° elevation
+cut over average soil (εr 13, 5 mS/m), using Sommerfeld ground in both solvers. The meshes have comparable
+density. NEC places a center feed on a segment and Sommerwire places it at a node.
 
 | Case | nec2c | Sommerwire |
 |---|---|---|
@@ -87,10 +87,11 @@ Compared with nec2c (the C translation of the public-domain NEC-2), same geometr
 | Vertical dipole, bottom at 0.5 m | 89.6 − j2.9 Ω, 0.27 dBi | 89.3 − j4.6 Ω, 0.27 dBi |
 | λ/4 vertical, 16 × 5 m radials at 5 cm, 7.1 MHz | 44.9 − j35.9 Ω, −1.21 dBi | 44.2 − j38.5 Ω, −1.18 dBi |
 
-Resistance agrees within 1–3 %, gain within 0.1 dB; the reactance offset of 1–4 Ω is the usual difference between
-MININEC- and NEC-style current expansions. On the DX Commander's small, crowded hub the codes differ more; a power
-balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it,
-which points to NEC-2 but does not prove either result. These are comparisons between programs, not measurements.
+For the rows shown, gain differs by less than 0.1 dB. Two mesh densities give a sensitivity check. For example,
+with radials at 0.3 m the Sommerwire reactance moves from −52.93 to −48.60 Ω on refinement.
+For the separate lossless DX Commander case over perfect ground at 14.175 MHz, integrating the archived NEC gain
+over the hemisphere gives a radiated-to-accepted power ratio of 0.782. The discrepancy leaves the accuracy
+of the hub currents unresolved.
 The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 
 ## Limitations
