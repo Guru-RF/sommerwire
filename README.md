@@ -35,7 +35,8 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.
 - **Examples**: Yagi, dipoles, inverted V, ground plane, quad, loaded dipole, a G3TXQ 5-band hexbeam tuned per band,
-  an EFOC29 end-fed beside a house, and the DX Commander vertical with 16 radials.
+  an EFOC29 end-fed beside a house, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
+  on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 
