@@ -30,6 +30,8 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 
+**Try it online:** <https://koenvdh.github.io/sommerwire/>
+
 ## Running it
 
 Sommerwire is plain HTML and JavaScript with no build step and no dependencies. It loads its engine into Web
