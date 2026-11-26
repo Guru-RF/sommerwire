@@ -129,7 +129,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
   <li><b>Frequency</b>: the calculation frequency (the design frequency on the Geometry tab only sets λ for the <code>R</code> constant and segmentation defaults).</li>
   <li><b>Ground</b>: free space, perfect ground, or real ground with relative permittivity εr and conductivity (mS/m). Typical values: average ground εr 13, 5 mS/m; poor/dry or city ground εr 5, 1 mS/m; very good/wet ground εr 20–30, 10–30 mS/m; sea water εr 81, 5000 mS/m.</li>
   <li><b>Add height</b> lifts the whole model, buildings included, above the ground.</li>
-  <li><b>Impedance over real ground</b>: <b>Sommerfeld</b> (default; accurate at any height), <b>Complex image</b> (faster, fine above about 0.1 λ), or <b>Perfect mirror</b> (what MININEC and MMANA-GAL do). See <a href="#m-ground">Ground models</a>.</li>
+  <li><b>Impedance over real ground</b>: <b>Sommerfeld</b> (default for elevated wires), <b>Complex image</b> (faster, fine above about 0.1 λ), or <b>Perfect mirror</b> (what MININEC and MMANA-GAL do). See <a href="#m-ground">Ground models</a>.</li>
   <li><b>Wire material</b>: lossless, copper, aluminium or iron, for the skin-effect loss of every wire.</li>
   <li><b>SWR reference</b>: the impedance SWR is measured against (50 Ω, or for example 200 Ω for an end-fed with an ideal 4:1 unun).</li>
   <li><b>DM1, DM2, SC</b>: segmentation density, as in MMANA-GAL (see <a href="#m-seg">Segmentation</a>).</li>
@@ -168,7 +168,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
   <li>The kernel integral of e<sup>−jkR</sup>/R over a piece is done adaptively: midpoint rule far away, 4-point Gauss at medium distance, and close by the static part 1/R exactly (asinh) plus 8-point Gauss on the smooth rest.</li>
   <li>Where k wires meet there are k − 1 current unknowns (current is conserved at the joint). A wire end on the ground gets its own unknown, so current can flow into the ground.</li>
   <li>The matrix is solved by complex LU factorisation, reused for each source and transmission-line port.</li>
-  <li>This is the formulation of MININEC (Julian, Logan, Rockway, 1980s), the method MMANA-GAL also uses. NEC-2 uses a different current expansion (sinusoidal interpolation) and an electric-field formulation; for ordinary wire antennas both agree closely, and they differ most for very short segments, sharp angles and closely spaced wires.</li>
+  <li>This is the formulation of MININEC (Julian, Logan, Rockway, 1980s), the method MMANA-GAL also uses. NEC-2 uses a different current expansion (sinusoidal interpolation) and an electric-field formulation; the <a href="#v-nec">archived comparison</a> gives the differences for the tested geometries.</li>
 </ul>
 
 <h3 id="m-seg">Segmentation</h3>
@@ -181,7 +181,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 <tbody>
 <tr><td>Free space</td><td>No ground at all.</td><td>Reference values, antennas far from the ground.</td><td>—</td></tr>
 <tr><td>Perfect ground</td><td>Infinite perfect conductor at Z = 0: every wire has a mirror image.</td><td>Ground planes over sea water or a large metal surface; comparisons with textbook values.</td><td>Image theory.</td></tr>
-<tr><td>Real ground, Sommerfeld (default)</td><td>Exact field of a current element above a flat homogeneous lossy ground, from Sommerfeld integrals: ground loss, near-field coupling to the soil and the change of resonance are all included, at any height.</td><td>Everything over real soil, especially radials, low dipoles and feed lines near the ground.</td><td>Sommerfeld's half-space solution, organised as NEC-2 does (quasi-static image plus tabulated remainder).</td></tr>
+<tr><td>Real ground, Sommerfeld (default)</td><td>Numerical approximation to the reflected field for the impedance solve above flat, homogeneous soil. It accounts for coupling to the soil through a quasi-static image and an interpolated Sommerfeld remainder.</td><td>Elevated wires. The comparisons include 14.05 MHz dipoles at 0.3, 1, 3 and 10 m and a 7.1 MHz vertical with radials at 0.05, 0.3 and 2 m.</td><td>Sommerfeld's half-space solution, organised as NEC-2 does (quasi-static image plus tabulated remainder).</td></tr>
 <tr><td>Real ground, complex image</td><td>The soil acts like a mirror buried at a complex depth d = 1/(jk₀√(εc − 1)).</td><td>Quick work above about 0.1 λ. Below that it underestimates ground loss and can even give a negative feed resistance; Sommerwire warns below 0.01 λ.</td><td>Complex image theory (Wait, Bannister).</td></tr>
 <tr><td>Real ground, perfect mirror</td><td>Impedance over a perfect mirror; the pattern still uses real-ground reflection.</td><td>Reproducing MININEC or MMANA-GAL numbers.</td><td>MININEC practice.</td></tr>
 </tbody></table></div>
@@ -189,7 +189,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 <h4>How the Sommerfeld ground is computed</h4>
 <p>For a current element above ground, the reflected field is written with Hertz potentials as integrals over the spectral variable λ of Bessel functions times reflection factors: Rv = (k₁²u₀ − k₀²u₁)/(k₁²u₀ + k₀²u₁) for vertical currents, Rh = (u₀ − u₁)/(u₀ + u₁) for horizontal currents, and a coupling term P = 2(u₀ − u₁)/(k₁²u₀ + k₀²u₁) that turns horizontal currents into vertical fields, with u = √(λ² − k²). Sommerwire splits the reflected field in two:</p>
 <ol>
-  <li>a <b>quasi-static image</b>: the perfect mirror image scaled by Γ = (εc − 1)/(εc + 1). This part carries the near singularity and is integrated with the exact wire kernel;</li>
+  <li>a <b>quasi-static image</b>: the perfect mirror image scaled by Γ = (εc − 1)/(εc + 1). This part carries the near singularity and is integrated with the reduced wire kernel;</li>
   <li>a <b>remainder</b> that is only weakly singular. It is computed from the Sommerfeld integrals once per frequency on a grid of distance and angle around the image point (typically 600–2000 points, 20–70 ms), multiplied by R′e<sup>jkR′</sup> so that it varies smoothly, and interpolated while the matrix is filled.</li>
 </ol>
 <p>The integrals run along the real λ axis: substitutions remove the square-root singularity at λ = k₀, the subdivision is refined toward it, and the oscillating tail is summed per half period and accelerated with Wynn's ε-algorithm. The integrands are written in a form without cancellation (δ = u₀ − u₁ = (k₁² − k₀²)/(u₀ + u₁)), which matters for wires a few centimetres above the soil. This is the same organisation as NEC-2's ground routine; the formulas were derived here from the half-space boundary conditions, not taken from NEC code.</p>
@@ -200,12 +200,12 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
   <li>Radials lying on the ground (Z = 0) touch it, so the whole model is solved over the perfect mirror. They then behave like a perfect ground screen: no ground loss, too much gain, and a feed resistance that is too low.</li>
   <li>Changing the number or length of buried radials therefore shows none of the efficiency difference it makes in reality.</li>
 </ul>
-Two workable stand-ins: leave the radials out, put the vertical on the ground and add the ground loss as a resistance at its base (as in the 4-square example; roughly 2 Ω for about 120 quarter-wave radials, 5–15 Ω for 16–32, 30 Ω or more for a ground rod alone; these are rules of thumb, not calculations), or raise the radials a few centimetres above the ground, which the Sommerfeld ground does handle, although how close that comes to buried radials has not been checked here.</div>
+The 4-square example represents assumed ground loss with a resistance at the base of the vertical. Its value must be supplied for the installation. Raising the radials instead models an elevated radial system with different currents and soil coupling.</div>
 
 <h3 id="m-ff">Far field, gain and F/B</h3>
 <ul>
   <li>The far field is the sum of the radiation of all half segments. Over ground, each contribution is reflected with the Fresnel coefficients for vertical and horizontal polarization at the angle of the ray (space wave). Over perfect ground the reflection is ±1.</li>
-  <li>Gain is in dBi, relative to the power delivered to the antenna, so wire loss, load loss and (with Sommerfeld) ground loss lower it. Power lost to the ground and to the surface wave does not show up in the sky-wave pattern.</li>
+  <li>Gain in dBi uses 4π times radiation intensity divided by the net power accepted across all driven ports. Wire and load losses enter the solve. Over real soil the pattern shows only the sky wave. Realized gain at the transmitter also depends on mismatch and losses between the transmitter and those ports.</li>
   <li>The maximum is found on a 5° grid and refined down to 0.25°. F/B compares the maximum with the direction 180° away in azimuth at the same elevation.</li>
   <li>Polarization is horizontal or vertical according to which component is larger toward the maximum.</li>
 </ul>
@@ -217,7 +217,7 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 </ul>
 
 <h3 id="m-tl">Transmission lines</h3>
-<p>Lines are lossless and described by their admittance matrix: Y₁₁ = Y₂₂ = −j cot(βL)/Z0, Y₁₂ = ±j csc(βL)/Z0, with β = k/VF. The antenna is solved once with a unit voltage at each line end ("port"); the ports and lines then form a small network that is solved for the port voltages, and the currents follow by superposition. This is how NEC's TL card works. Checked against line theory within about 0.5%.</p>
+<p>An ideal line transfers differential power between two gaps without attenuation or radiation. Draw the shield exterior as a wire to include common-mode current. The line admittance matrix has Y₁₁ = Y₂₂ = −j cot(βL)/Z0, Y₁₂ = ±j csc(βL)/Z0, with β = k/VF. The antenna is solved once with a unit voltage at each line end ("port"); the ports and lines then form a small network that is solved for the port voltages, and the currents follow by superposition. This is how NEC's TL card works. Checked against line theory within about 0.5%.</p>
 
 <h3 id="m-house">Buildings</h3>
 <ul>
@@ -248,11 +248,11 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 <tr><td>Sommerfeld reciprocity</td><td>Coupling between a horizontal and a vertical dipole near the ground agrees both ways within 1–5%, similar to the solver's own asymmetry.</td></tr>
 <tr><td>Sommerfeld high above ground</td><td>Agrees with the complex image (dipole at 10 m: 71.1 against 72.0 Ω).</td></tr>
 <tr><td>Sommerfeld energy balance</td><td>Radials 5 cm above average ground: sky-wave efficiency below the lossless reference (the complex image gave an impossible 69%).</td></tr>
-<tr><td>Interpolation table</td><td>Within 3·10⁻⁴ of direct evaluation of the integrals.</td></tr>
+<tr><td>Interpolation table</td><td>A reported spot check against direct integration gave a difference within 3·10⁻⁴. The archive supplies no error bound across frequencies, soil properties, distances and angles.</td></tr>
 </tbody></table></div>
 
 <h3 id="v-nec">Comparison with NEC-2 (nec2c)</h3>
-<p>Same geometry and segmentation in both programs, average ground (εr 13, 5 mS/m) unless noted, Sommerfeld ground in both. nec2c is the C translation of the public-domain NEC-2. Values at the finer of two segmentations.</p>
+<p>Both solvers use the same wire geometry at two mesh densities. A centre feed needs an odd segment count in nec2c and an even count in Sommerwire. The table gives fine-mesh feed impedance and peak gain sampled on the azimuth 0° cut. Real-soil cases use Sommerfeld ground in both codes and average soil (εr 13, 5 mS/m) unless noted.</p>
 <div class="tbl"><table>
 <thead><tr><th>Case</th><th>nec2c</th><th>Sommerwire</th><th>Complex image (old default)</th></tr></thead>
 <tbody>
@@ -268,7 +268,7 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 <tr><td>Same, radials at 0.3 m</td><td>42.2 − j45.0 Ω, −1.04 dBi</td><td>41.3 − j48.6 Ω, −0.98 dBi</td><td>15.5 − j56.8 Ω, +3.21 dBi</td></tr>
 <tr><td>Same, radials at 2 m</td><td>32.4 − j65.3 Ω, −0.45 dBi</td><td>31.7 − j68.4 Ω, −0.40 dBi</td><td>21.7 − j66.8 Ω, +1.26 dBi</td></tr>
 </tbody></table></div>
-<p>Resistance agrees within 1–3% and gain within 0.1 dB; reactance differs by 1–4 Ω, the same offset the two codes show in free space (a known difference between the MININEC and NEC current expansions), and it shrinks with finer segmentation.</p>
+<p>For the 7.1 MHz vertical with radials at 0.3 m, Sommerwire reactance changes from −52.93 to −48.60 Ω on refinement. The cut peaks already agree closely. Two mesh densities leave the converged reactance and the cause of the residual difference uncertain.</p>
 <p><b>DX Commander with 16 radials</b> is the exception: the two codes differ by 10–16 Ω in resistance on 40 and 20 m, and by the same amount in free space and over perfect ground, so the cause is the antenna's hub (0.8 mm wires, 6–12 cm long, many junctions), not the ground model. A power balance over perfect ground with lossless wires decides it: the gain integrated over the hemisphere must equal the input power. Sommerwire gives 1.000; nec2c gives 0.81 (40 m) and 0.78 (20 m), against 0.985 for a plain ground plane. NEC-2 is losing about a fifth of the power at that junction, so its feed resistance is too high there; NEC-2 is known to be sensitive to short segments and many-wire junctions. The change that real ground adds compared with perfect ground agrees within about 2 Ω between the codes.</p>
 
 <h2 id="h-limits">Limitations</h2>
@@ -288,9 +288,9 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 
 <h2 id="h-open">Open questions and further investigation</h2>
 <ul>
-  <li><b>Sommerfeld against measurements.</b> The ground now matches NEC-2 (nec2c) closely (see <a href="#v-nec">the comparison</a>), but neither has been compared with measured impedances of a real radial field here.</li>
+  <li><b>Installed antennas.</b> The archived comparison covers impedance and sampled cut peaks. Calibrated measurements of installed impedance, conductor currents, efficiency and field strength are missing.</li>
   <li><b>Small, crowded junctions</b> such as the DX Commander hub: Sommerwire conserves power there and NEC-2 does not, but a third reference (NEC-4, or a measurement) would confirm which current distribution is right.</li>
-  <li><b>Buried radials (level 2).</b> Modelling wires in the soil needs the transmitted-field integrals NEC-4 has. Radials a few centimetres above the ground are usually a close stand-in, but how close has not been quantified here.</li>
+  <li><b>Buried radials (level 2).</b> Modelling wires in the soil needs the transmitted-field integrals NEC-4 has. Elevating the radials changes the geometry and their coupling to the soil. The difference from a buried installation has not been quantified here.</li>
   <li><b>Ground-mounted verticals with real ground.</b> Today these fall back to the perfect mirror plus a base load. A proper treatment of a wire entering the soil is open.</li>
   <li><b>Hexbeam: a resonance just below 10 m</b> in the tuned model remains unexplained (suspected interaction with the 20 m driver).</li>
   <li><b>EFOC29: 80 m SWR</b> is about 3.5–3.8 across 3.5–3.8 MHz, higher than the below 3 usually expected. Likely causes are the unmodelled unun, choke and coax losses and the routing of the coax; the product's exact wire gauge and coil details are unknown.</li>
