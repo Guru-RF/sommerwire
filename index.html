@@ -719,7 +719,7 @@ self.onmessage = (e) => {
   if (kind === 'opt') {
     try {
       const o = MM.makeOptimizer(model, e.data.vars, e.data.goals, e.data.freqs, e.data.maxEval);
-      const snap = () => ({ evals: o.evals, maxEval: e.data.maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+      const snap = () => ({ evals: o.evals, maxEval: e.data.maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history, switched: o.switched || 0 });
       let t = 0;
       while (!o.step()) { const now = Date.now(); if (now - t > 300) { t = now; self.postMessage({ id, progress: snap() }); } }
       self.postMessage({ id, ok: true, data: snap() });
@@ -733,7 +733,7 @@ self.onmessage = (e) => {
       const pts = [];
       for (const fi of fl) {
         const a = MM.analyze(model, fi);
-        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el };
+        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx };
         pts.push(pt); self.postMessage({ id, progress: { pt, done: pts.length, of: fl.length } });
       }
       self.postMessage({ id, ok: true, data: pts });
@@ -769,7 +769,7 @@ function pack(model, f) {
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
   const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
   return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
-    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, ground: g, height: model.ground.height };
+    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, earthed: r.earthed, ground: g, height: model.ground.height };
 }`;
 let worker = null, workerUrl = null;
 const pending = new Map();
@@ -788,7 +788,7 @@ async function startWorker() {
     worker.onerror = () => { worker = null; };
   } catch (e) { worker = null; workerUrl = null; }
 }
-const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history, switched: o.switched || 0 });
 // main-thread fallback mirrors the worker
 const fallback = (() => { const self = { postMessage: () => {} }; let fn; try { fn = new Function('self', 'MM', WORKER_SRC + '; return { pack };')(self, MM); } catch (e) { fn = null; } return fn; })();
 function job(msg, onProgress, w) {
@@ -812,7 +812,7 @@ function job(msg, onProgress, w) {
       if (msg.kind === 'calc') return resolve(fallback.pack(msg.model, msg.f));
       if (msg.kind === 'sweep') {
         const pts = [];
-        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }); }
+        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx }); }
         return resolve(pts);
       }
       if (msg.kind === 'res') {
@@ -1005,7 +1005,8 @@ async function calculate(opts) {
     S.dirty = now !== key;
     if (!live) { S.history.unshift(r); if (S.history.length > 40) S.history.pop(); renderResults(); }
     renderReadout(); drawView(); drawPatterns(); drawSmith(); drawEdPolar();
-    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
+    const mirrorNote = r.ground === 2 && r.earthed && r.earthed.length ? ' · impedance over the perfect mirror because ' + r.earthed.slice(0, 4).map(w => 'w' + (w + 1)).join(', ') + (r.earthed.length > 4 ? ' …' : '') + (r.earthed.length > 1 ? ' touch' : ' touches') + ' the ground' : '';
+    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + mirrorNote + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
     $('#warnList').innerHTML = r.warnings.map(w => '<li></li>').join('');
     $$('#warnList li').forEach((li, i) => li.textContent = r.warnings[i]);
   } catch (e) {
@@ -2007,7 +2008,7 @@ function renderBandTable() {
     const best = pts.reduce((a, b) => (b.swr < a.swr ? b : a));
     return '<tr><td>' + lab + '</td><td>' + fmt(lo, 3) + '–' + fmt(hi, 3) + '</td><td class="' + swrClass(best.swr) + '">' + sw(best.swr) + ' at ' + fmt(best.f, 3) + '</td>' +
       '<td>' + sw(pts[0].swr) + ' / ' + sw(pts[pts.length - 1].swr) + '</td><td>' + fmt(best.R, 1) + (best.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(best.X), 1) + '</td>' +
-      '<td>' + fmt(Math.max(...pts.map(p => p.gain)), 2) + '</td><td>' + fmt(Math.max(...pts.map(p => p.fb)), 1) + '</td><td>' + pts.length + '</td></tr>';
+      '<td>' + (pts.some(p => p.approx) ? '≈ ' : '') + fmt(Math.max(...pts.map(p => p.gain)), 2) + '</td><td>' + fmt(Math.max(...pts.map(p => p.fb)), 1) + '</td><td>' + pts.length + '</td></tr>';
   }).join('');
   box.innerHTML = rows ? '<h3>Per band</h3><div class="tscroll"><table class="results"><thead><tr><th>Band</th><th>MHz</th><th>Best SWR</th><th>SWR at band edges</th><th>Z at best SWR (Ω)</th><th>Max gain dBi</th><th>Max F/B dB</th><th>Points</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '';
 }
@@ -2248,7 +2249,7 @@ function readGoals() {
 function renderOptTable() {
   const st = S.opt.start, b = S.opt.best;
   if (!st || !b) { $('#optTbl tbody').innerHTML = '<tr><td colspan="8" style="color:var(--muted)">No run yet.</td></tr>'; return; }
-  const row = (lab, r) => '<tr><td>' + lab + '</td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 1) + '</td><td>' + fmt(r.X, 1) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 1) + '</td><td>' + fmt(r.el, 1) + '</td></tr>';
+  const row = (lab, r) => '<tr><td>' + lab + '</td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 1) + '</td><td>' + fmt(r.X, 1) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</td><td>' + (r.approx && Number.isFinite(r.gain) ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 1) + '</td><td>' + fmt(r.el, 1) + '</td></tr>';
   $('#optTbl tbody').innerHTML = st.per.map(r => row('Start', r)).join('') + b.per.map((r, i) => row('Best', r).replace('<tr>', '<tr class="latest">')).join('');
 }
 function drawOpt() {
@@ -2284,7 +2285,9 @@ $('#optStart').onclick = async () => {
   try {
     const res = await job({ kind: 'opt', model, vars: specs, goals, freqs, maxEval }, optProgress, S.opt.worker);
     S.opt.running = false; optProgress(res);
-    optStatus('Finished after ' + res.evals + ' steps · cost ' + fmt(res.start.cost, 3) + ' → ' + fmt(res.best.cost, 3) + '. Press "Apply best to model" to keep it.');
+    optStatus('Finished after ' + res.evals + ' steps · cost ' + fmt(res.start.cost, 3) + ' → ' + fmt(res.best.cost, 3) + '. Press "Apply best to model" to keep it.' +
+      (res.switched ? ' ' + res.switched + ' trial' + (res.switched > 1 ? 's' : '') + ' made a wire touch the ground, which switches the whole model to the approximate perfect mirror; ' + (res.switched > 1 ? 'they were' : 'it was') + ' ruled out.' : '') +
+      (res.start && res.start.approx ? ' Note: the model already touches the ground, so impedance and gain are approximate (≈) throughout.' : ''));
   } catch (e) {
     S.opt.running = false;
     if (e.message === 'Stopped') optStatus('Stopped' + (S.opt.best ? ' · best cost ' + fmt(S.opt.best.cost, 3) + '. You can still apply it.' : '.'));
@@ -2425,7 +2428,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.2.1', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.3.0', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));

@@ -736,7 +736,7 @@
       const gc = new Set(); nodes.forEach((nd, i) => { if (nd.ground) gc.add(find(i)); });
       if (gc.size) segs.forEach(sg => { if (gc.has(find(sg.n0))) earthed.add(sg.wire); });
     }
-    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, as MMANA does, because the complex image cannot carry current into the soil and mixing the two images is not energy-consistent. The far field still uses the real ground. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance).');
+    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, as MMANA does, because the complex image cannot carry current into the soil and mixing the two images is not energy-consistent. The far field still uses the real ground. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance). This applies even to a wire far away or not connected to the antenna: if such a wire is not part of what you want to model, raise it off the ground or remove it.');
     const cdepth = wantComplex ? complexDepth(+gnd.eps || 13, Number.isFinite(+gnd.sigma) && gnd.sigma !== '' ? +gnd.sigma : 0.005, mesh.lambda) : null;
     const noImage = wantComplex && !cdepth;
     const allPec = earthed.size > 0;
@@ -1017,7 +1017,7 @@
     // currents solved over a perfect mirror while the pattern uses real-ground (Fresnel) reflection, as MMANA does:
     // the two do not conserve energy, and close to the ground the gain comes out too high
     const mirrorMix = hasGround && gnd.type === 2 && (allPec || (!wantSomm && !wantComplex) || gnd.nf === 'somm-pec-test');
-    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings, mirrorMix };
+    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings, mirrorMix, earthed: [...earthed].sort((a, b) => a - b) };
   }
 
   /* ---------- far field ---------- */
@@ -1302,11 +1302,11 @@
     let cost = 0; const per = [];
     for (const f of freqs) {
       let r;
-      if (needPat) { const a = analyze(model, f); r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }; }
+      if (needPat) { const a = analyze(model, f); r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx }; }
       else {
-        const s = solve(model, f).sources[0];
+        const res = solve(model, f), s = res.sources[0];
         const g = divC(s.R - z0, s.X, s.R + z0, s.X), gm = Math.hypot(g[0], g[1]);
-        r = { f, R: s.R, X: s.X, swr: gm >= 1 ? Infinity : (1 + gm) / (1 - gm), gain: NaN, fb: NaN, el: NaN };
+        r = { f, R: s.R, X: s.X, swr: gm >= 1 ? Infinity : (1 + gm) / (1 - gm), gain: NaN, fb: NaN, el: NaN, approx: !!res.mirrorMix };
       }
       let c = 0;
       if (goals.swr.w) c += goals.swr.w * Math.max(0, Math.min(r.swr, 50) - goals.swr.target);
@@ -1316,7 +1316,7 @@
       if (goals.el.w) c += goals.el.w * Math.abs(r.el - goals.el.target) / 5;
       cost += c; per.push(r);
     }
-    return { cost: cost / freqs.length, per };
+    return { cost: cost / freqs.length, per, approx: per.some(r => r.approx) };
   }
 
   /* Bounded Nelder–Mead on variables scaled to [0,1], restarted with smaller steps. step() runs one evaluation. */
@@ -1337,9 +1337,13 @@
         if (!st.start) throw e;
         r = { cost: 1e6, per: [] };
       }
-      const pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
+      let pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
+      // A trial that makes a wire touch the ground switches the whole model to the perfect mirror (approximate
+      // impedance, and over real ground an approximate, often too high gain). That is a change of model, not an
+      // improvement, so when the start was a proper solve such trials are ruled out.
+      if (st.start && !st.start.approx && r.approx) { pen += 1000; st.switched = (st.switched || 0) + 1; }
       const c = r.cost + pen;
-      if (!st.start) st.start = { cost: c, vals, per: r.per };
+      if (!st.start) st.start = { cost: c, vals, per: r.per, approx: !!r.approx };
       if (!st.best || c < st.best.cost) st.best = { cost: c, vals, per: r.per, x: x.map(clamp) };
       st.history.push(st.best.cost);
       return c;
