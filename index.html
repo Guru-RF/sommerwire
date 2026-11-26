@@ -2233,7 +2233,7 @@ const EX_BANDS = ['160 m', '80 m', '40 m', '20 m', 'Multi-band HF', 'VHF / UHF']
 function exampleBand(n) {
   if (/^(Inverted-L|Beverage)/.test(n)) return '160 m';
   if (/^Horizontal loop/.test(n)) return '80 m';
-  if (/^(Inverted V|Elevated ground plane|Coil-loaded|Delta loop|4-square|DX Commander)/.test(n)) return '40 m';
+  if (/^(Inverted V|Elevated ground plane|Coil-loaded|Delta loop|4-square)/.test(n)) return '40 m';
   if (/^(3-element Yagi|Half-wave dipole|Quad loop|Moxon|Two-element|Magnetic loop)/.test(n)) return '20 m';
   if (/^Dual-band/.test(n)) return 'VHF / UHF';
   return 'Multi-band HF';
