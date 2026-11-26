@@ -657,13 +657,46 @@
     }
   }
 
-  function solve(model, f) {
+  /* If a model has more unknowns than the solver allows, long passive wires (longer than one wavelength,
+   * carrying no source, load or transmission line, such as a mast or a long boom) are cut into coarser
+   * segments, longest first: first lambda/20, then lambda/10. Their current varies slowly, so this changes the
+   * results very little, while the active parts keep their fine segmentation. Models that fit are untouched. */
+  const MAX_UNKNOWNS = 2500;
+  function fitMesh(model, f) {
     const mesh = buildMesh(model, f);
+    if (mesh.bases.length <= MAX_UNKNOWNS) return mesh;
+    const lambda = lambdaOf(f);
+    const active = new Set();
+    (model.sources || []).concat(model.loads || []).forEach(s => { const p = parsePos(s.pos); if (p) active.add(p.wire); });
+    (model.tls || []).forEach(t => [t.p1, t.p2].forEach(x => { const p = parsePos(x); if (p) active.add(p.wire); }));
+    const lenOf = w => Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1);
+    const cand = (model.wires || []).map((w, i) => ({ i, L: lenOf(w) })).filter(o => !active.has(o.i) && o.L > lambda).sort((a, b) => b.L - a.L);
+    if (!cand.length) return mesh;
+    const segs = (model.wires || []).map(w => w.seg), done = [];
+    for (const per of [20, 10]) {
+      for (const c of cand) {
+        segs[c.i] = Math.max(2, Math.ceil(c.L / (lambda / per)));
+        if (!done.includes(c.i)) done.push(c.i);
+        const m2 = Object.assign({}, model, { wires: model.wires.map((w, i) => (segs[i] === w.seg ? w : Object.assign({}, w, { seg: segs[i] }))) });
+        const mesh2 = buildMesh(m2, f);
+        if (mesh2.bases.length <= MAX_UNKNOWNS) {
+          mesh2.warnings.push('To stay within ' + MAX_UNKNOWNS + ' unknowns, the long passive wire' + (done.length > 1 ? 's ' : ' ') +
+            done.map(i => 'w' + (i + 1)).join(', ') + ' (no source, load or line on ' + (done.length > 1 ? 'them' : 'it') + ') ' + (done.length > 1 ? 'were' : 'was') +
+            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz. This changes the results very little; set Seg on those wires yourself to choose the count.');
+          return mesh2;
+        }
+      }
+    }
+    return mesh;
+  }
+
+  function solve(model, f) {
+    const mesh = fitMesh(model, f);
     const { segs, nodes, halves, bases, hasGround } = mesh;
     const N = bases.length;
     if (!segs.length) throw new Error('No wires defined.');
     if (!N) throw new Error('No connected current paths — every wire has two free ends and no source can drive it.');
-    if (N > 2500) throw new Error('Model too large (' + N + ' unknowns). Reduce segment density.');
+    if (N > MAX_UNKNOWNS) throw new Error('Model too large (' + N + ' unknowns, maximum ' + MAX_UNKNOWNS + '), even with long passive wires cut into λ/10 segments. Reduce segment density.');
     const k = 2 * Math.PI / mesh.lambda;
     const omega = 2 * Math.PI * f * 1e6;
     const S = segs.length, Hn = halves.length;

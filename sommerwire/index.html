@@ -1708,12 +1708,20 @@ const HAM_BANDS = {
   2: [[1.8, 2.0, '160m'], [3.5, 4.0, '80m'], [5.3305, 5.4065, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON),
   3: [[1.8, 2.0, '160m'], [3.5, 3.9, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON)
 };
-const bandsFor = () => HAM_BANDS[$('#swRegion').value] || HAM_BANDS[1];
+/* amateur VHF/UHF bands per IARU region (national allocations differ; check yours) */
+const VU_BANDS = {
+  1: [[50.0, 52.0, '6m'], [70.0, 70.5, '4m'], [144.0, 146.0, '2m'], [430.0, 440.0, '70cm'], [1240.0, 1300.0, '23cm']],
+  2: [[50.0, 54.0, '6m'], [144.0, 148.0, '2m'], [222.0, 225.0, '1.25m'], [420.0, 450.0, '70cm'], [902.0, 928.0, '33cm'], [1240.0, 1300.0, '23cm']],
+  3: [[50.0, 54.0, '6m'], [144.0, 148.0, '2m'], [430.0, 440.0, '70cm'], [1240.0, 1300.0, '23cm']]
+};
+const hfBands = () => HAM_BANDS[$('#swRegion').value] || HAM_BANDS[1];
+const vuBands = () => VU_BANDS[$('#swRegion').value] || VU_BANDS[1];
+const bandsFor = () => hfBands().concat(vuBands());
 // whole-HF plan: a coarse step between the bands, evenly spaced points inside each band (edges included)
 function hfPlan() {
   const per = Math.min(41, Math.max(3, Math.round(+$('#swPer').value) || 9));
   const step = Math.max(0.05, +$('#swStep').value || 0.25);
-  const B = bandsFor(), fl = [];
+  const B = hfBands(), fl = [];
   for (let i = 0; 1.8 + i * step <= 30 + 1e-9; i++) { const f = +(1.8 + i * step).toFixed(6); if (!B.some(([lo, hi]) => f >= lo && f <= hi)) fl.push(f); }
   B.forEach(([lo, hi]) => { for (let i = 0; i < per; i++) fl.push(+(lo + (hi - lo) * i / (per - 1)).toFixed(6)); });
   fl.sort((a, b) => a - b);
@@ -1738,12 +1746,14 @@ function renderBandTable() {
 function fillRangeOptions() {
   const sel = $('#swMode'), cur = sel.value;
   sel.querySelectorAll('optgroup').forEach(g => g.remove());
-  const g = document.createElement('optgroup'); g.label = 'Amateur band';
-  bandsFor().forEach(([lo, hi, lab]) => {
-    const o = document.createElement('option'); o.value = 'band:' + lab;
-    o.textContent = lab + ' band, ' + +lo.toFixed(4) + '–' + +hi.toFixed(4) + ' MHz'; g.appendChild(o);
+  [['HF band', hfBands()], ['VHF/UHF band', vuBands()]].forEach(([label, list]) => {
+    const g = document.createElement('optgroup'); g.label = label;
+    list.forEach(([lo, hi, lab]) => {
+      const o = document.createElement('option'); o.value = 'band:' + lab;
+      o.textContent = lab + ' band, ' + +lo.toFixed(4) + '–' + +hi.toFixed(4) + ' MHz'; g.appendChild(o);
+    });
+    sel.appendChild(g);
   });
-  sel.appendChild(g);
   sel.value = cur; if (sel.value !== cur) sel.value = 'custom';
 }
 function updateSweepControls() {
