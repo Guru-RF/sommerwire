@@ -36,6 +36,7 @@ header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px
 .brand-mark .sw-gnd { stroke: var(--logo-gnd); }
 .brand-text { display: grid; gap: 1px; }
 .brand h1 { font-family: var(--f-body); font-weight: 700; font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; line-height: 1.1; color: var(--logo-a); background: linear-gradient(100deg, var(--logo-a), var(--logo-b)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.brand .ver { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); letter-spacing: 0.04em; opacity: 0.85; }
 .brand span { color: var(--muted); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 500; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button, select, input { font: inherit; color: inherit; }
@@ -164,7 +165,7 @@ footer a { color: var(--accent); }
   <path class="sw-gnd" d="M2.00,86.00 L118.00,86.00" stroke-width="2.40" stroke-linecap="round"/>
   <g opacity="0.28" stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 0 52.50,103.46 M67.50,103.46 A19.00,19.00 0 0 0 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 0 52.50,115.05 M67.50,115.05 A30.00,30.00 0 0 0 90.00,86.00"/><path d="M60.00,90.00 L60.00,114.00" stroke-dasharray="4.00 5.00"/></g>
   <g stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 1 52.50,68.54 M67.50,68.54 A19.00,19.00 0 0 1 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 1 52.50,56.95 M67.50,56.95 A30.00,30.00 0 0 1 90.00,86.00 M19.00,86.00 A41.00,41.00 0 0 1 52.50,45.69 M67.50,45.69 A41.00,41.00 0 0 1 101.00,86.00 M8.00,86.00 A52.00,52.00 0 0 1 52.50,34.54 M67.50,34.54 A52.00,52.00 0 0 1 112.00,86.00"/><path d="M60.00,86.00 L60.00,30.00"/><circle cx="60.00" cy="23.50" r="6.00"/></g>
-</svg><div class="brand-text"><h1>Sommerwire</h1><span>Wire Antenna Modeler</span></div></div>
+</svg><div class="brand-text"><h1>Sommerwire</h1><span>Wire Antenna Modeler</span><small class="ver" id="swVer"></small></div></div>
     <div class="toolbar">
       <select id="exampleSel" aria-label="Load an example antenna">
         <option value="">Examples…</option>
@@ -414,7 +415,7 @@ footer a { color: var(--accent); }
   </section>
 
   <footer>
-    <p class="author">Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> with the help of Claude Opus 5.5 in November 2026 · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>)</p>
+    <p class="author">Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> with the help of Claude Opus 5.5 in November 2026 · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
     <p>Sommerwire is an independent thin-wire moment-method solver in the MININEC style (pulse currents at nodes, reduced kernel, image ground). It reads and writes the plain-text .maa layout used by MMANA-GAL so you can bring models across, but it is not MMANA-GAL and its numbers can differ slightly. The optimizer is a bounded Nelder–Mead search, restarted with smaller steps.</p>
   </footer>
 </div>
@@ -1575,14 +1576,13 @@ function drawView() {
   let reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* old browser */ }
   let saved = null; try { saved = localStorage.getItem('sw-spin'); } catch (e) { /* storage blocked */ }
   cb.checked = saved === null ? !reduce : saved === '1';
-  let lastAct = 0, over = false, last = 0;
+  let lastAct = 0, last = 0;
   cb.onchange = () => { try { localStorage.setItem('sw-spin', cb.checked ? '1' : '0'); } catch (e) { /* storage blocked */ } last = 0; lastAct = 0; };
   const poke = () => { lastAct = performance.now(); };
   const typing = () => panel.contains(document.activeElement) && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && document.activeElement !== cb;
-  const busy = () => over || ED.mode === 'draw' || ED.start || ED.drag || typing() || performance.now() - lastAct < IDLE;
-  box.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') over = true; });
-  box.addEventListener('pointerleave', () => { over = false; poke(); });
-  ['pointerdown', 'wheel'].forEach(t => box.addEventListener(t, poke, { passive: true }));
+  const busy = () => ED.mode === 'draw' || ED.start || ED.drag || typing() || performance.now() - lastAct < IDLE;
+  // moving the mouse over the view, clicking or zooming pauses it; a cursor left resting there does not
+  ['pointermove', 'pointerdown', 'wheel'].forEach(t => box.addEventListener(t, poke, { passive: true }));
   panel.addEventListener('pointerdown', e => { if (e.target !== cb) poke(); }); panel.addEventListener('input', e => { if (e.target !== cb) poke(); });
   document.addEventListener('keydown', () => { if (!panel.hidden) poke(); });
   function tick(t) {
@@ -2364,6 +2364,9 @@ $('#copyBtn').onclick = () => {
 $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
+// bump with every published change, so people can see which version their browser is showing
+const SW_VERSION = '1.0.1', SW_DATE = '2026-11-26';
+$('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));
   // first visit: the 3-element Yagi, calculated, turning slowly in the 3D editor; later visits reopen the last tab
