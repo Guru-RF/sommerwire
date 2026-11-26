@@ -108,8 +108,7 @@ validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 
 Sommerwire was written from published methods; no code from MMANA-GAL, MININEC or NEC was used. It builds on the
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
-MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design; the EFOC29
-example follows rf.guru's installation guide.
+MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design.
 
 ## Licence
 
