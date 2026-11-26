@@ -170,7 +170,7 @@ footer a { color: var(--accent); }
         <option value="">Examples…</option>
       </select>
       <label class="file"><input type="file" id="fileIn" accept=".maa,.MAA,.txt"><button type="button" id="openBtn">Open .maa</button></label>
-      <button type="button" id="saveBtn">Export .maa</button>
+      <button type="button" id="saveBtn">Save .maa</button>
       <button type="button" class="primary" id="calcBtn">Calculate</button>
     </div>
   </header>
@@ -420,10 +420,10 @@ footer a { color: var(--accent); }
 
 <dialog id="saveDlg">
   <div style="display:grid;gap:10px">
-    <h2 style="margin:0;font-family:var(--f-display);font-size:16px">Export .maa</h2>
-    <p class="hint" style="margin:0;color:var(--muted)">Copy this text into a file ending in <span class="mono">.maa</span>.</p>
+    <h2 style="margin:0;font-family:var(--f-display);font-size:16px">Save .maa</h2>
+    <p class="hint" style="margin:0;color:var(--muted)">Download the file, or copy this text into a file ending in <span class="mono">.maa</span>.</p>
     <textarea id="saveTxt" readonly></textarea>
-    <div class="row" style="justify-content:flex-end"><span id="copyMsg" style="color:var(--muted);font-size:12.5px"></span><button type="button" id="copyBtn" class="primary">Copy</button><button type="button" id="closeDlg">Close</button></div>
+    <div class="row" style="justify-content:flex-end"><span id="copyMsg" style="color:var(--muted);font-size:12.5px"></span><button type="button" id="dlBtn" class="primary">Download</button><button type="button" id="copyBtn">Copy</button><button type="button" id="closeDlg">Close</button></div>
   </div>
 </dialog>
 
@@ -499,6 +499,13 @@ const EXAMPLES = [
       { x1: '0', y1: '-0.05', z1: '1', x2: '0', y2: '0.05', z2: '1', r: '1', seg: '1' }],
     sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [], tls: [{ p1: 'w1c', p2: 'w2c', z0: 450, vf: 0.91, len: '9.8', rev: false }], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
     comment: "Classic G5RV flat top at 10 m. The 450 ohm ladder line (VF 0.91, 9.8 m) is an ideal transmission line from the dipole centre to a 10 cm bridge where the 50 ohm coax would connect. Good match on 20 m; the other bands need a tuner." },
+  { name: "ZS6BKW, 2 × 14.1 m with 450 Ω ladder line", freq: 14.175, wires: [
+      { x1: '0', y1: '-14.1', z1: '10', x2: '0', y2: '14.1', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '-0.05', z1: '1', x2: '0', y2: '0.05', z2: '1', r: '1', seg: '1' }],
+    sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [],
+    tls: [{ p1: 'w1c', p2: 'w2c', z0: 450, vf: 0.9, len: '12.1', rev: false }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: "ZS6BKW doublet: 28.2 m flat top at 10 m, 12.1 m of 450 ohm ladder line (VF 0.9) to a 10 cm bridge where the 50 ohm coax connects. SWR at band centre: 40 m 1.8, 20 m 1.1, 17 m 1.8, 12 m 1.4, 10 m 2.5 (1.9 at 29.1 MHz). Usable without a tuner on more bands than the G5RV." },
   { name: "Delta loop, 40 m, quarter-wave 75 Ω match", freq: 7.1, wires: [
       { x1: '-7.35', y1: '0', z1: '3', x2: '7.35', y2: '0', z2: '3', r: '1', seg: '-1' },
       { x1: '7.35', y1: '0', z1: '3', x2: '0', y2: '0', z2: '15.7306', r: '1', seg: '-1' },
@@ -611,6 +618,27 @@ const EXAMPLES = [
     sources: [{ pos: 'w17c', phase: 0, mag: 1 }], loads: [{ pos: 'w16c', type: 0, L: 0, C: 41.74, Q: 0, R: 0, X: 0 }],
     ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
     comment: "Small transmitting loop: 16-sided, 1.1 m across, 22 mm copper tube, standing vertically with its centre 2.5 m up, tuned by a lossless 41.74 pF capacitor at the top (w16). Fed by an 8-sided 16 cm coupling loop of 2 mm wire (w17-w24) just inside the bottom. SWR 1.1 at 14.100 MHz (best match, 51 ohm, at 14.1005); SWR below 2 over only about 10 kHz, so use a fine sweep. About 0.45 dBi in free space (roughly 74% efficient). Main loop sides keep 4 segments each: shorter segments than about 4 tube radii break the thin-wire approximation and pull the resonance down." },
+  { name: "Trap vertical, 40 + 20 m, elevated radials", freq: 7.1, wires: [
+      { x1: '0', y1: '0', z1: '8', x2: '0', y2: '0', z2: '12.96', r: '15', seg: '-1' },
+      { x1: '0', y1: '0', z1: '12.96', x2: '0', y2: '0', z2: '16.29', r: '10', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '6.024', y2: '6.024', z2: '2.0348', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '-6.024', y2: '6.024', z2: '2.0348', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '-6.024', y2: '-6.024', z2: '2.0348', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '6.024', y2: '-6.024', z2: '2.0348', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '4.2596', y2: '0', z2: '5.0174', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '0', y2: '4.2596', z2: '5.0174', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '-4.2596', y2: '0', z2: '5.0174', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-4.2596', z2: '5.0174', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [{ pos: 'w2b', type: 2, L: 4.7, C: 27, Q: 150, R: 0, X: 0 }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 2, z0: 50,
+    comment: "Ground-plane vertical with its base 8 m up: 4.96 m aluminium tube (30 mm), a parallel trap of 4.7 uH (Q 150) across 27 pF resonant at 14.13 MHz, then 3.33 m of 20 mm tube. Four 10.4 m (40 m) and four 5.2 m (20 m) radials drooping at 35 degrees, which raises the feed resistance to about 50 ohm. SWR 1.05 at 7.1 MHz and 1.2 at 14.175 MHz." },
+  { name: "Beverage receive antenna, 150 m", freq: 1.83, wires: [
+      { x1: '0', y1: '0', z1: '0', x2: '0', y2: '0', z2: '2.5', r: '1', seg: '-1' },
+      { x1: '0', y1: '0', z1: '2.5', x2: '150', y2: '0', z2: '2.5', r: '1', seg: '-1' },
+      { x1: '150', y1: '0', z1: '2.5', x2: '150', y2: '0', z2: '0', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [{ pos: 'w3e', type: 1, L: 0, C: 0, Q: 0, R: 470, X: 0 }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 450,
+    comment: "Receive-only wire: 150 m at 2.5 m height with a vertical drop to ground at each end, fed at the near end (SWR reference 450 ohm = a 9:1 transformer) and terminated with 470 ohm at the far end; it receives best toward +X, the terminated end. Approximate: because the wires touch the ground, the impedance and currents are solved over perfect ground, so the ground losses that shape a real Beverage are missing. Take its gain (about -10 dBi on 160 m) and F/B (about 10 dB on 160 m, more on 80 and 40 m) as indicative only." },
   { name: 'G3TXQ hexbeam, tuned per band, 50 Ω coax centre', build: 'hextable', centre: 'coax', tuned: true },
   { name: 'EFOC29 end-fed, flat top at 8 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'EFOC29: 29 m radiator, end-fed through a 4:1 unun. Wire 2 is the outside of the coax shield, the first 12 m from the feedpoint up to the ferrite choke (modelled as an open end). SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 unun. Radiator radius 1 mm and shield radius 5 mm are assumptions.' },
   { name: 'EFHW-8010 end-fed half-wave, 80–10 m, inverted V', maa: "EFHW-8010\n*\n30.000\n***Wires***\n4\n0.0039,\t0,\t-1.1446,\t-0.2274,\t0,\t3.0794,\t8.000e-4,\t-1\n17.8791,\t0,\t11.1691,\t37.4889,\t0,\t2.9241,\t8.000e-4,\t-1\n-0.2446,\t0,\t2.8721,\t17.8791,\t0,\t11.1691,\t8.000e-4,\t-1\n-0.2274,\t0,\t3.0794,\t-0.2446,\t0,\t2.8721,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw4b,\t0.0,\t1.0\n*** Load ***\n2,\t1\nw4b,\t0,\t0,\t100,\t0\nw4c,\t0,\t1.5,\t0,\t0\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t10.00,\t1,\t2450.0,\t120,\t60,\t0\n### Comment ###\n" },
@@ -2203,7 +2231,7 @@ $('#optApply').onclick = () => {
 // the Examples menu, grouped by band (the option value stays the index into EXAMPLES)
 const EX_BANDS = ['160 m', '80 m', '40 m', '20 m', 'Multi-band HF', 'VHF / UHF'];
 function exampleBand(n) {
-  if (/^Inverted-L/.test(n)) return '160 m';
+  if (/^(Inverted-L|Beverage)/.test(n)) return '160 m';
   if (/^Horizontal loop/.test(n)) return '80 m';
   if (/^(Inverted V|Elevated ground plane|Coil-loaded|Delta loop|4-square|DX Commander)/.test(n)) return '40 m';
   if (/^(3-element Yagi|Half-wave dipole|Quad loop|Moxon|Two-element|Magnetic loop)/.test(n)) return '20 m';
@@ -2260,15 +2288,37 @@ $('#fileIn').onchange = e => {
   };
   rd.readAsText(f); e.target.value = '';
 };
-$('#saveBtn').onclick = () => {
+function maaFile() {
   const m = S.model, lam = MM.lambdaOf(+m.freq);
   const out = Object.assign({}, m, { wires: m.wires.map(w => {
     const ev = v => { const x = MM.evalExpr(v, lam); return Number.isFinite(x) ? x : 0; };
     return { x1: ev(w.x1), y1: ev(w.y1), z1: ev(w.z1), x2: ev(w.x2), y2: ev(w.y2), z2: ev(w.z2), r: ev(w.r) / 1000, seg: Math.round(ev(w.seg)) };
   }) });
-  $('#saveTxt').value = MM.toMAA(out); $('#copyMsg').textContent = '';
-  $('#saveDlg').showModal(); $('#saveTxt').select();
+  const name = (String(m.name || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'antenna') + '.maa';
+  return { text: MM.toMAA(out), name };
+}
+function downloadMaa(f) {
+  const url = URL.createObjectURL(new Blob([f.text], { type: 'application/octet-stream' }));
+  const a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+function showMaaText(f) { $('#saveTxt').value = f.text; $('#copyMsg').textContent = ''; $('#saveDlg').showModal(); $('#saveTxt').select(); }
+$('#saveBtn').onclick = async () => {
+  const f = maaFile();
+  // inside an embedded page (for example a preview frame) saving may be blocked: show the text with Download and Copy
+  let framed = false; try { framed = window.top !== window; } catch (e) { framed = true; }
+  if (framed) { showMaaText(f); return; }
+  // a real "Save as" dialog where the browser offers one (Chrome, Edge)
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName: f.name, types: [{ description: 'MMANA-GAL model', accept: { 'text/plain': ['.maa'] } }] });
+      const w = await h.createWritable(); await w.write(f.text); await w.close(); return;
+    } catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  // otherwise an ordinary download (Safari, Firefox)
+  try { downloadMaa(f); } catch (err) { showMaaText(f); }
 };
+$('#dlBtn').onclick = () => { try { downloadMaa(maaFile()); $('#copyMsg').textContent = 'Download started (if your browser allows it here).'; } catch (e) { $('#copyMsg').textContent = 'Download is blocked here; use Copy.'; } };
 $('#copyBtn').onclick = () => {
   const t = $('#saveTxt');
   navigator.clipboard.writeText(t.value).then(() => $('#copyMsg').textContent = 'Copied.', () => { t.focus(); t.select(); $('#copyMsg').textContent = 'Press Ctrl+C or ⌘C to copy the selected text.'; });

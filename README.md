@@ -35,8 +35,8 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
   R/jX, gain and F/B charts, a Smith chart and a per-band summary. Runs on all processor cores.
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.
-- **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, delta loop, horizontal loop, Moxon,
-  two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, a G3TXQ 5-band hexbeam tuned per band,
+- **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, ZS6BKW, delta loop, horizontal loop, Moxon,
+  two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, 40/20 m trap vertical, 160 m Beverage, a G3TXQ 5-band hexbeam tuned per band,
   an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
