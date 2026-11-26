@@ -17,6 +17,7 @@ w4c,	0,	1.5,	0,	0
 *** Segmentation ***
 800,	80,	2,	2
 *** G/H/M/R/AzEl/X ***
-2,	10.00,	1,	2450.0,	120,	60,	0
+2,	10.00,	1,	50.0,	120,	60,	0
 ### Comment ###
-
+EFHW-8010 end-fed half-wave for 80-10 m as an inverted V, fed through a 49:1 unun: the source's Balun 49 (ideal, lossless), so the impedance and SWR shown are those the 50 ohm coax sees. The unun's own loss, often 0.5-1 dB, is not included.
+Sommerwire SRC: 1, 49
