@@ -30,7 +30,8 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
 - **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern.
 - **HF, VHF and UHF**: the same solver from 160 m to 23 cm; long passive wires such as masts are coarsened automatically
   when a VHF/UHF model would otherwise exceed the 2500-unknown limit.
-- **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, or the whole HF range (IARU Region 1, 2 or 3), with SWR,
+- **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, both 2 m and 70 cm at once (split axis), or the whole
+  HF range (IARU Region 1, 2 or 3), with SWR,
   R/jX, gain and F/B charts, a Smith chart and a per-band summary. Runs on all processor cores.
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.

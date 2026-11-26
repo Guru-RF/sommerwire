@@ -143,7 +143,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 
 <h3 id="h-sweep">Frequency sweep</h3>
 <ul>
-  <li><b>Range</b>: a custom range with a number of points; <b>Whole HF, 1.8–30 MHz</b> with dense points inside every amateur band (points per band) and coarse steps in between; or one amateur band: the HF bands, and the VHF/UHF bands 6 m, 4 m (Region 1), 2 m, 1.25 m (Region 2), 70 cm, 33 cm (Region 2) and 23 cm. Band edges follow the chosen IARU region (1, 2 or 3); national allocations can be narrower or wider, so check yours.</li>
+  <li><b>Range</b>: a custom range with a number of points; <b>Whole HF, 1.8–30 MHz</b> with dense points inside every amateur band (points per band) and coarse steps in between; <b>2 m + 70 cm</b>, points per band in both bands and none in between, for dual-band antennas, drawn on a split frequency axis (one panel per band); or one amateur band: the HF bands, and the VHF/UHF bands 6 m, 4 m (Region 1), 2 m, 1.25 m (Region 2), 70 cm, 33 cm (Region 2) and 23 cm. Band edges follow the chosen IARU region (1, 2 or 3); national allocations can be narrower or wider, so check yours.</li>
   <li><b>Run sweep</b> spreads the points over all processor cores; <b>Stop</b> ends it early. <b>Find resonance</b> searches for jX = 0 near the calculation frequency and makes that the calculation frequency.</li>
   <li>Graphs: SWR, R and jX, gain and F/B, with amateur bands shaded, and a Smith chart (hover to read a point; the dashed circle is SWR 2). A table summarises each band: best SWR, SWR at the band edges, impedance and maximum gain and F/B.</li>
 </ul>
