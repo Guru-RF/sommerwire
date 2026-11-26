@@ -475,6 +475,16 @@ const EXAMPLES = [
     sources: [{ pos: 'w3c', phase: 0, mag: 1 }], loads: [{ pos: 'w2b', type: 2, L: 8.2, C: 60, Q: 100, R: 0, X: 0 }, { pos: 'w4e', type: 2, L: 8.2, C: 60, Q: 100, R: 0, X: 0 }],
     ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
     comment: '34.5 m dipole at 10 m with a parallel trap (8.2 µH, Q 100, across 60 pF, resonant at 7.17 MHz) 10.33 m each side of the feed, then 6.9 m of wire beyond each trap. On 40 m the traps block the outer wires; on 80 m they act as loading coils, so the antenna is about 7 m shorter than a plain 80 m dipole. Resonant at 3.70 MHz (about 51 ohm) and 7.10 MHz (about 96 ohm, SWR 1.9 on 50 ohm coax).' },
+  { name: 'Fan dipole, 80 + 40 + 20 m', freq: 3.65, wires: [
+      { x1: '0', y1: '-0.1', z1: '10', x2: '0', y2: '0.1', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '-0.1', z1: '10', x2: '0', y2: '-19.7', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '0.1', z1: '10', x2: '0', y2: '19.7', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '-0.1', z1: '10', x2: '0', y2: '-10.5529', z2: '8.5', r: '1', seg: '-1' },
+      { x1: '0', y1: '0.1', z1: '10', x2: '0', y2: '10.5529', z2: '8.5', r: '1', seg: '-1' },
+      { x1: '0', y1: '-0.1', z1: '10', x2: '0', y2: '-4.4206', z2: '7', r: '1', seg: '-1' },
+      { x1: '0', y1: '0.1', z1: '10', x2: '0', y2: '4.4206', z2: '7', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: 'Three dipoles on one 50 ohm feed point at 10 m. Arms (from the feed): 80 m 19.6 m, horizontal; 40 m 10.56 m, ends 1.5 m lower; 20 m 5.26 m, ends 3 m lower. The wires couple: the 40 m arms are about 5% longer than in a single dipole. Resonant at 3.65, 7.12 and 14.18 MHz, SWR below 1.4 on all three.' },
   { name: "Off-centre-fed dipole (OCF, FD4 type), 80–10 m", freq: 7.1, wires: [
       { x1: '-13.9', y1: '0', z1: '10', x2: '-0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
       { x1: '-0.1', y1: '0', z1: '10', x2: '0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
@@ -493,6 +503,15 @@ const EXAMPLES = [
       { x1: '-0.05', y1: '3', z1: '1', x2: '0.05', y2: '3', z2: '1', r: '1', seg: '1' }],
     sources: [{ pos: 'w4c', phase: 0, mag: 1 }], loads: [], tls: [{ p1: 'w1c', p2: 'w4c', z0: 75, vf: 0.66, len: '6.967', rev: false }], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
     comment: "Equilateral delta loop, 14.7 m sides, apex up at 15.7 m, bottom side 3 m high, fed at the middle of the bottom (horizontal polarization). About 110 ohm at resonance, matched to 50 ohm with a quarter-wave of 75 ohm coax (VF 0.66, 6.97 m), modelled as a transmission line to a 10 cm bridge." },
+  { name: 'Horizontal loop (sky loop), 80 m, 84 m around', freq: 3.65, wires: [
+      { x1: '-0.05', y1: '-10.5', z1: '10', x2: '0.05', y2: '-10.5', z2: '10', r: '1', seg: '-1' },
+      { x1: '0.05', y1: '-10.5', z1: '10', x2: '10.5', y2: '-10.5', z2: '10', r: '1', seg: '-1' },
+      { x1: '10.5', y1: '-10.5', z1: '10', x2: '10.5', y2: '10.5', z2: '10', r: '1', seg: '-1' },
+      { x1: '10.5', y1: '10.5', z1: '10', x2: '-10.5', y2: '10.5', z2: '10', r: '1', seg: '-1' },
+      { x1: '-10.5', y1: '10.5', z1: '10', x2: '-10.5', y2: '-10.5', z2: '10', r: '1', seg: '-1' },
+      { x1: '-10.5', y1: '-10.5', z1: '10', x2: '-0.05', y2: '-10.5', z2: '10', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200,
+    comment: 'Square full-wave loop, 21 m sides, flat at 10 m, fed at the middle of one side. About 100 ohm at resonance (3.65 MHz) and 200-400 ohm on the higher bands. SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 balun; most bands still need a tuner (often it is fed with ladder line instead). Mostly high-angle radiation on 80 and 40 m.' },
   { name: "Moxon rectangle, 20 m", freq: 14.175, wires: [
       { x1: '1.167', y1: '-3.858', z1: '12', x2: '0', y2: '-3.858', z2: '12', r: '0.8', seg: '-1' },
       { x1: '0', y1: '-3.858', z1: '12', x2: '0', y2: '3.858', z2: '12', r: '0.8', seg: '-1' },
