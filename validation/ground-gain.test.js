@@ -3,6 +3,11 @@ const { test } = require('node:test');
 const fs = require('node:fs');
 require('../engine.js');
 const { MM } = globalThis;
+// Run the historical engine in an isolated context. Requires this commit in local Git history.
+const baselineRevision = '776e9595c05da2e512c71a6d6bec268186a9332c';
+const baselineSource = require('node:child_process').execFileSync(
+  'git', ['show', baselineRevision + ':engine.js'], { cwd: __dirname, encoding: 'utf8' });
+const baseline = require('node:vm').runInNewContext(baselineSource + '\nMM');
 const frequency = 14.05;
 const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
 const worker = html.match(/const WORKER_SRC = `([\s\S]*?)`;/)[1];
@@ -23,6 +28,20 @@ function powerRatio(pattern, type, step) {
   return sum * (step * rad) ** 2 / (4 * Math.PI);
 }
 
+for (const [name, nf, contact] of [
+  ['explicit mirror', 'perfect', false],
+  ['isolated contact', undefined, true],
+]) test('pre-guard excess power: ' + name, () => {
+  const a = baseline.analyze(model(2, nf, contact), frequency);
+  const coarse = powerRatio(a.pat, 2, 6);
+  const fine = powerRatio(a.pat, 2, 3);
+  console.log(name, { resistance: a.R, acceptedPower: a.res.Pin, peak: a.gain, coarse, fine });
+  assert.ok(a.res.Pin > 0 && Math.abs(a.R - 4.895) < 0.005);
+  assert.ok(Math.abs(a.gain - 10.30) < 0.02);
+  assert.ok(coarse > 1.5 && fine > 1.5);
+  assert.ok(Math.abs(coarse - fine) < 0.005);
+});
+
 for (const [name, type, nf, contact, impedance, field, blocked] of [
   ['free', 0, undefined, false, 'direct', 'direct', false],
   ['PEC', 1, undefined, false, 'perfect mirror', 'perfect image', false],
@@ -32,12 +51,11 @@ for (const [name, type, nf, contact, impedance, field, blocked] of [
 ]) test(name, () => {
   const m = model(type, nf, contact);
   const a = MM.analyze(m, frequency);
-  if (Number.isFinite(a.gain)) {
+  if (!blocked) {
     const coarse = powerRatio(a.pat, type, 6), fine = powerRatio(a.pat, type, 3);
     console.log(name, { R: a.R, X: a.X, peak: a.gain, coarse, fine });
     assert.ok(Math.abs(coarse - fine) < 0.005);
-    if (blocked) assert.ok(fine > 1.5);
-    else if (type === 2) assert.ok(fine > 0 && fine < 1);
+    if (type === 2) assert.ok(fine > 0 && fine < 1);
     else assert.ok(Math.abs(1 - fine) < 0.01);
   }
   // Numerical fingerprints of this fixed mesh, independent of the availability flag.
