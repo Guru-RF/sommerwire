@@ -26,4 +26,4 @@ To build it from https://github.com/KJ7LNW/nec2c (GPL-3.0, version 1.3), in the 
 
     clang -O2 -w -DPACKAGE_STRING='"nec2c"' -o nec2c calculations.c fields.c geometry.c ground.c input.c main.c matrix.c misc.c network.c radiation.c somnec.c shared.c -lm
 
-nec2c refuses long file paths, so the scripts run it inside `decks/` with short file names. The scripts overwrite the files in `decks/` when run.
+Each run writes its decks, outputs and (for `necmp.js`) `results.json` to a new folder under `runs/` (git-ignored; set `NEC2C_RUNS` for another place), so the archived files in `decks/` stay as they were. nec2c refuses long file paths, so the scripts run it inside that folder with short file names. Both programs sample the elevation cut from 0° to 90° inclusive, the comparisons use lossless wires in both, and the power balance in `necbal.js` integrates Sommerwire on the same 2° × 5° grid as the NEC pattern. These script fixes follow suggestions by Joeri van Dooren.

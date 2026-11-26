@@ -64,7 +64,7 @@ Pages serving the repository root.
   segment, reduced kernel, point matching, k − 1 unknowns at a k-wire junction, tapered segmentation as in
   MMANA-GAL.
 - **Real ground**: the reflected field is split into a quasi-static image (the perfect mirror scaled by
-  (εc − 1)/(εc + 1), integrated with the exact kernel) and a smooth remainder from the Sommerfeld half-space
+  (εc − 1)/(εc + 1), integrated with the same reduced kernel as the wires) and a smooth remainder from the Sommerfeld half-space
   integrals, tabulated once per frequency and interpolated during the matrix fill: the same organisation as NEC-2,
   with the formulas derived independently and written without numerical cancellation.
 - **Far field**: sum over all segments with Fresnel reflection; gain relative to input power, so wire, load and
@@ -74,8 +74,9 @@ The Help tab describes every model in detail, with references.
 
 ## Validation
 
-Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and segmentation, average ground
-(εr 13, 5 mS/m), Sommerfeld ground in both:
+Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and comparable segmentation (NEC-2
+feeds the centre of an odd segment, Sommerwire a node between even ones), average ground (εr 13, 5 mS/m), Sommerfeld
+ground in both. The gains are the peaks of one elevation cut:
 
 | Case | nec2c | Sommerwire |
 |---|---|---|

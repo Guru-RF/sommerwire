@@ -663,8 +663,9 @@
 
   /* If a model has more unknowns than the solver allows, long passive wires (longer than one wavelength,
    * carrying no source, load or transmission line, such as a mast or a long boom) are cut into coarser
-   * segments, longest first: first lambda/20, then lambda/10. Their current varies slowly, so this changes the
-   * results very little, while the active parts keep their fine segmentation. Models that fit are untouched. */
+   * segments, longest first: first lambda/20, then lambda/10. Their current usually varies slowly, so this
+   * mostly changes the results little, but a passive wire close to the antenna carries induced current and
+   * the effect depends on that coupling; the warning gives the counts so it can be checked. Models that fit are untouched. */
   const MAX_UNKNOWNS = 2500;
   function fitMesh(model, f) {
     const mesh = buildMesh(model, f);
@@ -686,7 +687,7 @@
         if (mesh2.bases.length <= MAX_UNKNOWNS) {
           mesh2.warnings.push('To stay within ' + MAX_UNKNOWNS + ' unknowns, the long passive wire' + (done.length > 1 ? 's ' : ' ') +
             done.map(i => 'w' + (i + 1)).join(', ') + ' (no source, load or line on ' + (done.length > 1 ? 'them' : 'it') + ') ' + (done.length > 1 ? 'were' : 'was') +
-            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz. This changes the results very little; set Seg on those wires yourself to choose the count.');
+            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz (' + done.map(i => 'w' + (i + 1) + ': ' + mesh2.wireSegs[i].length + ' segments').join(', ') + '). This usually changes the results little, but a passive wire close to the antenna carries induced current. To check, set Seg on those wires to these counts, then try finer counts on one wire at a time and compare impedance and gain.');
           return mesh2;
         }
       }
@@ -748,9 +749,10 @@
       gR = sctx.G[0]; gI = sctx.G[1];
     }
     if (cdepth && !allPec) {
-      // the single complex image is an approximation that degrades for wires very close to lossy soil
-      const lowW = new Set(); segs.forEach(sg => { if (Math.min(sg.p0[2], sg.p1[2]) < 0.01 * mesh.lambda) lowW.add(sg.wire); });
-      if (lowW.size) mesh.warnings.push('Wires ' + [...lowW].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (lowW.size > 6 ? ' …' : '') + ' run less than 0.01 λ (' + (0.01 * mesh.lambda).toFixed(2) + ' m) above real ground. The complex image is unreliable this close to lossy soil: it tends to underestimate ground loss, so the feed resistance comes out too low and the gain too high, and can even go negative. Choose Sommerfeld for the impedance over real ground.');
+      // the single complex image is an approximation that degrades toward the soil: for a 20 m dipole it reads
+      // 0.7 dB too high at 0.14 lambda, 3.5 dB at 0.05 lambda and 5.9 dB at 0.014 lambda (against Sommerfeld)
+      const lowW = new Set(); segs.forEach(sg => { if (Math.min(sg.p0[2], sg.p1[2]) < 0.2 * mesh.lambda) lowW.add(sg.wire); });
+      if (lowW.size) mesh.warnings.push('Wires ' + [...lowW].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (lowW.size > 6 ? ' …' : '') + ' run less than 0.2 λ (' + (0.2 * mesh.lambda).toFixed(1) + ' m) above real ground. The complex image underestimates ground loss there, so the feed resistance comes out too low and the gain too high (for a 20 m dipole about 0.7 dB at 3 m, 3.5 dB at 1 m), and very close to the soil the resistance can even go negative. Choose Sommerfeld for the impedance over real ground.');
     }
     const halfM0 = halves.map(h => mirror(h.p0)), halfM1 = halves.map(h => mirror(h.p1));
     let hNode = -1;

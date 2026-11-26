@@ -314,7 +314,7 @@ footer a { color: var(--accent); }
         <label class="fld"><span>SC</span><input id="sSc" inputmode="decimal"></label>
         <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px;align-self:center"><input type="checkbox" id="autoCalc" checked style="width:auto"><span>Recalculate on every edit</span></label>
       </div>
-      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that is good above about 0.1 λ but underestimates ground loss close to the soil. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
+      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that underestimates ground loss closer to the soil than about 0.2 λ. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
       <ul class="warns" id="warnList"></ul>
     </div>
     <div class="card">
@@ -2425,7 +2425,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.1.2', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.2.0', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));
