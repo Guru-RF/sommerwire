@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 112" width="440" height="112" role="img" aria-label="Sommerwire, Wire Antenna Modeler">
+  <defs><linearGradient id="swg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="420" y2="110"><stop offset="0" class="sw-a"/><stop offset="1" class="sw-b"/></linearGradient></defs>
+  <style>.sw-a{stop-color:#3b82f6} .sw-b{stop-color:#22d3ee} .sw-gnd{stroke:#56677a} .sw-name{fill:url(#swg)} .sw-sub{fill:#93a1b0}</style>
+  <path class="sw-gnd" d="M1.86,79.98 L109.74,79.98" stroke-width="2.23" stroke-linecap="round"/>
+  <g opacity="0.28" stroke="url(#swg)" stroke-width="4.65" stroke-linecap="round" fill="none"><path d="M38.13,79.98 A17.67,17.67 0 0 0 48.83,96.22 M62.78,96.22 A17.67,17.67 0 0 0 73.47,79.98 M27.90,79.98 A27.90,27.90 0 0 0 48.83,106.99 M62.78,106.99 A27.90,27.90 0 0 0 83.70,79.98"/><path d="M55.80,83.70 L55.80,106.02" stroke-dasharray="3.72 4.65"/></g>
+  <g stroke="url(#swg)" stroke-width="4.65" stroke-linecap="round" fill="none"><path d="M38.13,79.98 A17.67,17.67 0 0 1 48.83,63.74 M62.78,63.74 A17.67,17.67 0 0 1 73.47,79.98 M27.90,79.98 A27.90,27.90 0 0 1 48.83,52.97 M62.78,52.97 A27.90,27.90 0 0 1 83.70,79.98 M17.67,79.98 A38.13,38.13 0 0 1 48.83,42.49 M62.78,42.49 A38.13,38.13 0 0 1 93.93,79.98 M7.44,79.98 A48.36,48.36 0 0 1 48.83,32.13 M62.78,32.13 A48.36,48.36 0 0 1 104.16,79.98"/><path d="M55.80,79.98 L55.80,27.90"/><circle cx="55.80" cy="21.86" r="5.58"/></g>
+  <text class="sw-name" x="124" y="62" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="35" font-weight="700" textLength="306" lengthAdjust="spacing">SOMMERWIRE</text>
+  <text class="sw-sub" x="125" y="90" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="500" textLength="304" lengthAdjust="spacing">WIRE ANTENNA MODELER</text>
+</svg>

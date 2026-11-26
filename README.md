@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="sommerwire/brand/logo-dark.svg">
+    <img src="sommerwire/brand/logo-light.svg" alt="Sommerwire, Wire Antenna Modeler" width="300">
+  </picture>
+</p>
+
 # Sommerwire
 
 A wire antenna modeler that runs in your browser. Sommerwire calculates feed impedance, SWR, gain and radiation
@@ -86,6 +93,8 @@ Help tab lists these and the open questions in full.
 
 ```
 sommerwire/          the application (index.html, engine.js, structgen.js, hexgen.js, help.html)
+sommerwire/brand/    logo and icon (light, dark and auto-switching SVG)
+tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```

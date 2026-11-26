@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Sommerwire">
+  <defs><linearGradient id="swg" gradientUnits="userSpaceOnUse" x1="10" y1="10" x2="110" y2="100"><stop offset="0" class="sw-a"/><stop offset="1" class="sw-b"/></linearGradient></defs>
+  <style>.sw-a{stop-color:#3b82f6} .sw-b{stop-color:#22d3ee} .sw-gnd{stroke:#56677a} .sw-name{fill:url(#swg)} .sw-sub{fill:#93a1b0}</style>
+  <path class="sw-gnd" d="M2.00,85.00 L118.00,85.00" stroke-width="2.40" stroke-linecap="round"/>
+  <g opacity="0.28" stroke="url(#swg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,85.00 A19.00,19.00 0 0 0 52.50,102.46 M67.50,102.46 A19.00,19.00 0 0 0 79.00,85.00 M30.00,85.00 A30.00,30.00 0 0 0 52.50,114.05 M67.50,114.05 A30.00,30.00 0 0 0 90.00,85.00"/><path d="M60.00,89.00 L60.00,113.00" stroke-dasharray="4.00 5.00"/></g>
+  <g stroke="url(#swg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,85.00 A19.00,19.00 0 0 1 52.50,67.54 M67.50,67.54 A19.00,19.00 0 0 1 79.00,85.00 M30.00,85.00 A30.00,30.00 0 0 1 52.50,55.95 M67.50,55.95 A30.00,30.00 0 0 1 90.00,85.00 M19.00,85.00 A41.00,41.00 0 0 1 52.50,44.69 M67.50,44.69 A41.00,41.00 0 0 1 101.00,85.00 M8.00,85.00 A52.00,52.00 0 0 1 52.50,33.54 M67.50,33.54 A52.00,52.00 0 0 1 112.00,85.00"/><path d="M60.00,85.00 L60.00,29.00"/><circle cx="60.00" cy="22.50" r="6.00"/></g>
+</svg>
