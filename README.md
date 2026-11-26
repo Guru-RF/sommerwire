@@ -75,7 +75,7 @@ Built by [efhwgen.js](efhwgen.js); checked by `node --test tests/`. Sources (RF.
 | Wire (sourced) | ~82 m, 2 mm | 41 m, 2 mm |
 | Layout (sourced) | ~18–20 m vertical, rest horizontal, horizontal ≥ 15 m, feed ≥ 1 m | horizontal 10–15 m, feed ≥ 1 m (best 2–5 m) |
 | Return (sourced) | coax shield as counterpoise, choke ~8 m from the feed | choke ~4 m from the feed |
-| Modelled (representative) | feed 1 m, bend 27 m: 26 m vertical + 56 m horizontal (custom vertical length above the published ~18–20 m range) | feed 3 m, bend 19 m: 16 m vertical + 25 m horizontal (custom height above the published 10–15 m range) |
+| Modelled (representative) | feed 1 m, bend 17 m: 16 m vertical + 66 m horizontal (custom vertical length below the published ~18–20 m range) | feed 3 m, bend 19 m: 16 m vertical + 25 m horizontal (custom height above the published 10–15 m range) |
 | Return wire (representative) | 8 m shield exterior, feed down to 0.5 m, 5 mm radius | 4 m shield exterior, feed down to 1 m, 5 mm radius |
 
 The 68:1 and 70:1 values are impedance ratios, entered as the source's ideal *Balun n:1* (the ideal turns ratios,

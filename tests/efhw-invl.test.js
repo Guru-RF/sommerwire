@@ -43,7 +43,7 @@ for (const c of CASES) {
     assert.equal(m.z0, 50);
     const n = numeric(m);
     const rad = n.wires.filter((_, i) => rfGuruEfhwInvL.ROLES[i] === 'radiator'), sh = n.wires.filter((_, i) => rfGuruEfhwInvL.ROLES[i] === 'return');
-    assert.equal(rad[0].z2 - rad[0].z1, c.key === '8040' ? 16 : 26, 'vertical wire length');
+    assert.equal(rad[0].z2 - rad[0].z1, 16, 'vertical wire length');
     assert.ok(Math.abs(rad.reduce((a, w) => a + len(w), 0) - c.radiator) < 1e-3, 'radiator length');
     assert.equal(sh.length, 1, 'one finite return conductor (coax shield exterior up to the choke)');
     assert.ok(Math.abs(len(sh[0]) - c.shield) < 1e-3, 'return path length = choke distance');

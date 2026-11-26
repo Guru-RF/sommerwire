@@ -27,9 +27,9 @@
   };
   // total: radiator wire length; feed/bend: heights (m); choke: shield length to the choke; drop: height lost by the coax to the choke
   const RFGURU_EFHW = {
-    '16080': { name: 'RF.Guru EFHW16080 inverted-L, 160/80 m, 68:1', freq: 1.85, ratio: 68, total: 82, feed: 1, bend: 27, choke: 8, chokeZ: 0.5,
+    '16080': { name: 'RF.Guru EFHW16080 inverted-L, 160/80 m, 68:1', freq: 1.85, ratio: 68, total: 82, feed: 1, bend: 17, choke: 8, chokeZ: 0.5,
       sourced: '68:1 unun, ~82 m 2 mm wire, ~18–20 m vertical with the remainder horizontal and high (horizontal at least 15 m), feedpoint at least 1 m, coax shield as the counterpoise with a high-CMR choke about 8 m from the feedpoint (' + SRC.p16080 + ', ' + SRC.o16080 + ')',
-      chosen: 'feedpoint 1 m and bend 27 m (26 m vertical, 56 m horizontal at 27 m); this custom vertical length is above the published ~18–20 m range' },
+      chosen: 'feedpoint 1 m and bend 17 m (16 m vertical, 66 m horizontal at 17 m); this custom vertical length is below the published ~18–20 m range' },
     '8040': { name: 'RF.Guru EFHW8040 inverted-L, 80/40 m, 70:1', freq: 3.65, ratio: 70, total: 41, feed: 3, bend: 19, choke: 4, chokeZ: 1,
       sourced: '70:1 unun, 41 m 2 mm wire, horizontal 10–15 m above ground, feedpoint at least 1 m and best 2–5 m, common-mode choke about 4 m from the feedpoint (' + SRC.p8040 + ')',
       chosen: 'feedpoint 3 m and bend 19 m (16 m vertical, 25 m horizontal at 19 m); this custom height is above the published 10–15 m range for the horizontal wire' }
