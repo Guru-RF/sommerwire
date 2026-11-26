@@ -662,8 +662,8 @@
 
   /* If a model has more unknowns than the solver allows, long passive wires (longer than one wavelength,
    * carrying no source, load or transmission line, such as a mast or a long boom) are cut into coarser
-   * segments, longest first: first lambda/20, then lambda/10. Their current varies slowly, so this changes the
-   * results very little, while the active parts keep their fine segmentation. Models that fit are untouched. */
+   * segments, longest first: first lambda/20, then lambda/10. The effect on impedance and pattern depends
+   * on coupling to the rest of the model. Models that fit are untouched. */
   const MAX_UNKNOWNS = 2500;
   function fitMesh(model, f) {
     const mesh = buildMesh(model, f);
@@ -685,7 +685,7 @@
         if (mesh2.bases.length <= MAX_UNKNOWNS) {
           mesh2.warnings.push('To stay within ' + MAX_UNKNOWNS + ' unknowns, the long passive wire' + (done.length > 1 ? 's ' : ' ') +
             done.map(i => 'w' + (i + 1)).join(', ') + ' (no source, load or line on ' + (done.length > 1 ? 'them' : 'it') + ') ' + (done.length > 1 ? 'were' : 'was') +
-            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz. This changes the results very little; set Seg on those wires yourself to choose the count.');
+            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz. Set Seg on every listed wire to its reported count, then refine one wire at a time. Compare feed impedance and pattern at counts that fit the limit. Effective counts: ' + done.map(i => 'w' + (i + 1) + '=' + mesh2.wireSegs[i].length).join(', ') + '.');
           return mesh2;
         }
       }
