@@ -703,9 +703,80 @@
     if (buried !== -1) throw new Error('Wire ' + (buried + 1) + ' extends below ground after the height offset. Buried wires and wires crossing the ground plane beyond the contact tolerance are unsupported.');
   }
 
+  /* ---------- boom correction ----------
+   * An element mounted through a metal boom resonates as if it were shorter than it is, so it must be cut longer
+   * than its free-space length. DL6WU's measurements, curve-fitted by G3SEK: for a round boom bonded to the element,
+   * the correction to the total element length is BC * boom diameter with
+   *   BC = 733 B (0.055 - B) - 504 B (0.03 - B),  B = boom diameter in wavelengths (valid up to about 0.055),
+   * and about half of that for an element insulated from the boom. The element length is not a parameter.
+   * Sommerwire takes the entered lengths as built (through the boom) and shortens each element electrically by the
+   * correction, so the boom itself is not drawn. Elements are straight open chains of wires square to the boom. */
+  function straightGroups(wires) {
+    const key = (x, y, z) => Math.round(x / 1e-5) + ',' + Math.round(y / 1e-5) + ',' + Math.round(z / 1e-5);
+    const ends = new Map(), add = (k, i, e) => { if (!ends.has(k)) ends.set(k, []); ends.get(k).push([i, e]); };
+    const ok = wires.map(w => Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1) > 0);
+    wires.forEach((w, i) => { if (!ok[i]) return; add(key(w.x1, w.y1, w.z1), i, 0); add(key(w.x2, w.y2, w.z2), i, 1); });
+    const dirOf = w => { const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1); return [(w.x2 - w.x1) / L, (w.y2 - w.y1) / L, (w.z2 - w.z1) / L]; };
+    const seen = new Set(), groups = [];
+    wires.forEach((w0, i0) => {
+      if (!ok[i0] || seen.has(i0)) return;
+      const d0 = dirOf(w0), members = [i0]; seen.add(i0); let straight = true;
+      const queue = [i0];
+      while (queue.length) {
+        const i = queue.pop(), w = wires[i];
+        for (const k of [key(w.x1, w.y1, w.z1), key(w.x2, w.y2, w.z2)]) {
+          const at = ends.get(k);
+          if (at.length > 2) straight = false;
+          for (const [j] of at) if (!seen.has(j)) {
+            seen.add(j); members.push(j); queue.push(j);
+            const d = dirOf(wires[j]); if (Math.abs(Math.abs(d[0] * d0[0] + d[1] * d0[1] + d[2] * d0[2]) - 1) > 1e-6) straight = false;
+          }
+        }
+      }
+      if (straight) groups.push({ members, dir: d0 });
+    });
+    return groups;
+  }
+  function boomFraction(B) { return 733 * B * (0.055 - B) - 504 * B * (0.03 - B); }
+  function applyBoom(model, f) {
+    const bm = model.boom;
+    if (!bm || !(+bm.d > 0) || !(bm.mount === 'bonded' || bm.mount === 'insulated')) return model;
+    const lambda = lambdaOf(f), D = +bm.d / 1000, B = D / lambda;
+    const axis = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[bm.axis] || [1, 0, 0];
+    const notes = [];
+    let frac = boomFraction(Math.min(B, 0.055));
+    if (B > 0.055) notes.push('The boom is ' + B.toFixed(3) + ' λ thick, beyond the 0.055 λ the DL6WU/G3SEK correction covers; the correction for 0.055 λ was used.');
+    if (bm.mount === 'insulated') frac *= 0.5;
+    const corr = Math.max(0, frac * D);          // metres off the total element length
+    if (!(corr > 0)) return model;
+    const m = Object.assign({}, model, { wires: model.wires.map(w => Object.assign({}, w)) });
+    const done = [];
+    for (const g of straightGroups(model.wires)) {
+      if (Math.abs(g.dir[0] * axis[0] + g.dir[1] * axis[1] + g.dir[2] * axis[2]) > 0.05) continue;   // not square to the boom
+      // the two outer ends of the chain: the extreme projections on its direction
+      let lo = Infinity, hi = -Infinity;
+      const proj = (x, y, z) => x * g.dir[0] + y * g.dir[1] + z * g.dir[2];
+      g.members.forEach(i => { const w = model.wires[i]; for (const t of [proj(w.x1, w.y1, w.z1), proj(w.x2, w.y2, w.z2)]) { lo = Math.min(lo, t); hi = Math.max(hi, t); } });
+      if (hi - lo <= 2 * corr) continue;
+      const moveEnd = (w, e, sgn) => { const k = e ? ['x2', 'y2', 'z2'] : ['x1', 'y1', 'z1']; k.forEach((c, q) => { w[c] += sgn * g.dir[q] * corr / 2; }); };
+      g.members.forEach(i => {
+        const w0 = model.wires[i], w = m.wires[i];
+        if (Math.abs(proj(w0.x1, w0.y1, w0.z1) - lo) < 1e-6) moveEnd(w, 0, 1); else if (Math.abs(proj(w0.x1, w0.y1, w0.z1) - hi) < 1e-6) moveEnd(w, 0, -1);
+        if (Math.abs(proj(w0.x2, w0.y2, w0.z2) - lo) < 1e-6) moveEnd(w, 1, 1); else if (Math.abs(proj(w0.x2, w0.y2, w0.z2) - hi) < 1e-6) moveEnd(w, 1, -1);
+      });
+      done.push(g.members.slice().sort((a, b) => a - b)[0]);
+    }
+    if (done.length) notes.push('Boom correction (' + (bm.mount === 'insulated' ? 'insulated' : 'bonded') + ' through a ' + (+bm.d) + ' mm boom): ' + done.length + ' element' + (done.length > 1 ? 's' : '') + ' (starting at ' + done.slice(0, 6).map(i => 'w' + (i + 1)).join(', ') + (done.length > 6 ? ' …' : '') + ') solved ' + (corr * 1000).toFixed(1) + ' mm shorter than drawn, so the lengths you entered are the lengths to cut.');
+    else notes.push('Boom correction is on, but no straight element square to the ' + (bm.axis || 'x').toUpperCase() + ' axis was found.');
+    m._boomNotes = notes;
+    return m;
+  }
+
   function solve(model, f) {
     checkGroundGeometry(model);
+    model = applyBoom(model, f);
     const mesh = fitMesh(model, f);
+    if (model._boomNotes) mesh.warnings.push(...model._boomNotes);
     const { segs, nodes, halves, bases, hasGround } = mesh;
     const N = bases.length;
     if (!segs.length) throw new Error('No wires defined.');
@@ -1202,7 +1273,7 @@
             model.objects.push({ type: 'house', x: +v[0] || 0, y: +v[1] || 0, len: +v[2] || 10, wid: +v[3] || 8, eave: +v[4] || 0, ridge: +v[5] || 0, rot: +v[6] || 0, roof: v[7] === 'metal' ? 'metal' : 'none', grid: +v[8] || 1, gutters: v[9] === 'metal' ? 'metal' : 'none', pipes: +v[10] || 0, rEarth: v[11] !== undefined ? +v[11] || 0 : 50 });
             return;
           }
-          const ex = /^\s*Sommerwire (SRC|LOAD|INS|MAT):\s*(.*)$/i.exec(line);
+          const ex = /^\s*Sommerwire (SRC|LOAD|INS|MAT|BOOM):\s*(.*)$/i.exec(line);
           if (ex) { extra.push([ex[1].toUpperCase(), ex[2].split(/[,\t]+/).map(x => x.trim())]); return; }
           const mm = /^\s*(?:Sommerwire|WireModel) TL:\s*(.*)$/i.exec(line);
           if (!mm) { keep.push(line); return; }
@@ -1215,6 +1286,7 @@
           if (kind === 'SRC') { const s = model.sources[(+v[0] || 0) - 1]; if (s) s.ratio = +v[1] > 0 ? +v[1] : 1; }
           else if (kind === 'LOAD') { const d = model.loads[(+v[0] || 0) - 1]; if (d) { d.Qc = +v[1] || 0; d.Cp = +v[2] || 0; } }
           else if (kind === 'INS') model.ins = { t: +v[0] || 0, er: +v[1] || 1, tand: +v[2] || 0, wires: v.slice(3).join(',') };
+          else if (kind === 'BOOM') model.boom = { d: +v[0] || 0, mount: ['bonded', 'insulated'].includes(v[1]) ? v[1] : 'none', axis: ['x', 'y', 'z'].includes(v[2]) ? v[2] : 'x' };
           else if (kind === 'MAT') { const m = parseInt(v[0], 10); if (m >= 0 && m < MATERIALS.length) model.material = m; }
         });
       }
@@ -1241,6 +1313,7 @@
     if (mat > 3) ext.push('Sommerwire MAT: ' + mat);
     model.sources.forEach((s, i) => { if (+s.ratio > 0 && +s.ratio !== 1) ext.push('Sommerwire SRC: ' + (i + 1) + ', ' + +s.ratio); });
     model.loads.forEach((d, i) => { if (d.type !== 1 && (+d.Qc > 0 || +d.Cp > 0)) ext.push('Sommerwire LOAD: ' + (i + 1) + ', ' + (+d.Qc || 0) + ', ' + (+d.Cp || 0)); });
+    const bm = model.boom; if (bm && +bm.d > 0 && (bm.mount === 'bonded' || bm.mount === 'insulated')) ext.push('Sommerwire BOOM: ' + [+bm.d, bm.mount, bm.axis || 'x'].join(', '));
     const ins = model.ins; if (ins && +ins.t > 0) ext.push('Sommerwire INS: ' + [+ins.t, +ins.er || 1, +ins.tand || 0].join(', ') + (ins.wires && String(ins.wires).trim() ? ', ' + String(ins.wires).trim() : ''));
     const ho = (model.objects || []).filter(o => o.type === 'house').map(o => 'Sommerwire HOUSE: ' + [o.x, o.y, o.len, o.wid, o.eave, o.ridge, o.rot, o.roof, o.grid, o.gutters || 'none', +o.pipes || 0, +o.rEarth || 0].map(v => (typeof v === 'number' ? +(+v).toFixed(4) : v)).join(', '));
     L.push('### Comment ###', [model.comment || ''].concat(tl, ho, ext).filter(x => x !== '').join('\r\n'));
@@ -1392,6 +1465,6 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+  root.MM = { boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
     varValue, applyVars, evalGoals, makeOptimizer };
 })(typeof globalThis !== 'undefined' ? globalThis : self);

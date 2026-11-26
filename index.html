@@ -46,6 +46,9 @@ header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px
 .brand-text { display: grid; gap: 1px; }
 .brand h1 { font-family: var(--f-body); font-weight: 700; font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; line-height: 1.1; color: var(--logo-a); background: linear-gradient(100deg, var(--logo-a), var(--logo-b)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .brand .ver { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); letter-spacing: 0.04em; opacity: 0.85; }
+.tube { margin: 4px 0 10px; }
+.tube summary { cursor: pointer; color: var(--accent); font-size: 13px; padding: 4px 0; }
+.tube .row { align-items: end; }
 .brand span { color: var(--muted); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 500; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button, select, input { font: inherit; color: inherit; }
@@ -219,6 +222,16 @@ footer a { color: var(--accent); }
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Wires</h2><button type="button" id="addWire">Add wire</button></div>
+      <details class="tube"><summary>Add a tube element (telescoping sections)</summary>
+        <p class="hint">Builds a straight element along Y from tube sections, centre outward: each section as half-length in metres × diameter in mm, for example <span class="mono">1.2x32, 1.2x25, 1.5x20, 1.55x16</span>. The centre section becomes one wire across the middle (feed it at its centre, <span class="mono">c</span>), the others one wire per side. Sommerwire calculates the steps in diameter directly; see Help, Tube elements.</p>
+        <div class="row">
+          <label class="fld"><span>Position X (m)</span><input id="tbX" inputmode="decimal" value="0"></label>
+          <label class="fld"><span>Height Z (m)</span><input id="tbZ" inputmode="decimal" value="10"></label>
+          <label class="fld" style="flex:1 1 300px;max-width:420px"><span>Sections, centre outward</span><input id="tbS" style="width:100%" spellcheck="false" autocomplete="off" value="1.2x32, 1.2x25, 1.5x20, 1.55x16"></label>
+          <button type="button" id="tbAdd" style="align-self:end">Add element</button>
+        </div>
+        <p class="hint" id="tbMsg"></p>
+      </details>
       <div class="tscroll"><table id="wireTbl"><thead><tr><th>#</th><th>X1</th><th>Y1</th><th>Z1</th><th>X2</th><th>Y2</th><th>Z2</th><th>R mm</th><th>Seg</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="grid2">
@@ -307,6 +320,11 @@ footer a { color: var(--accent); }
         <label class="fld"><span>Insulation εr</span><input id="iEr" inputmode="decimal" title="PVC about 3–3.5, polyethylene 2.3, PTFE 2.1"></label>
         <label class="fld"><span>Loss tangent</span><input id="iTd" inputmode="decimal" title="PVC about 0.01–0.05, PE and PTFE below 0.001"></label>
         <label class="fld"><span>Insulated wires</span><input id="iW" placeholder="all" spellcheck="false" autocomplete="off" title="Empty for all wires, or a list such as 1-3, 5"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>Boom correction</span><select id="bMount"><option value="none">None (elements in free space)</option><option value="bonded">Through a metal boom, bonded</option><option value="insulated">Through a metal boom, insulated</option></select></label>
+        <label class="fld"><span>Boom diameter (mm)</span><input id="bD" inputmode="decimal"></label>
+        <label class="fld"><span>Boom along</span><select id="bAx"><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>
       </div>
       <div class="row">
         <label class="fld"><span>DM1 (fine)</span><input id="sDm1" inputmode="decimal"></label>
@@ -670,6 +688,7 @@ function normalize(m) {
   m.loads = m.loads || []; m.sources = m.sources || []; m.tls = m.tls || []; m.objects = m.objects || [];
   m.material = m.material | 0; m.z0 = +m.z0 || 50; m.comment = m.comment || '';
   m.ins = Object.assign({ t: 0, er: 3.5, tand: 0.02, wires: '' }, m.ins || {});
+  m.boom = Object.assign({ d: 50, mount: 'none', axis: 'x' }, m.boom || {});
   return m;
 }
 
@@ -706,6 +725,7 @@ function numericModel() {
   return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag, ratio: +s.ratio > 0 ? +s.ratio : 1 })),
     loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, Qc: +l.Qc || 0, Cp: +l.Cp || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
     tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev, loss: +t.loss > 0 ? +t.loss : 0, lossF: +t.lossF > 0 ? +t.lossF : 0 }; }),
+    boom: m.boom && m.boom.mount !== 'none' && +m.boom.d > 0 ? { d: +m.boom.d, mount: m.boom.mount, axis: m.boom.axis || 'x' } : null,
     ins: m.ins && +m.ins.t > 0 ? { t: +m.ins.t, er: Math.max(1, +m.ins.er || 1), tand: Math.max(0, +m.ins.tand || 0), wires: insWires(m.ins.wires, base) } : null,
     seg: { dm1: +m.seg.dm1 || 400, dm2: +m.seg.dm2 || 40, sc: +m.seg.sc || 2, ec: +m.seg.ec || 1 },
     ground: { type: +m.ground.type | 0, height: +m.ground.height || 0, eps: +m.ground.eps || 13, sigma: Number.isFinite(+m.ground.sigma) && m.ground.sigma !== '' ? +m.ground.sigma : 0.005, nf: NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld' },
@@ -892,6 +912,7 @@ function renderModelFields() {
   $('#cGround').value = m.ground.type; $('#cHeight').value = m.ground.height;
   $('#cEps').value = m.ground.eps; $('#cSig').value = +(m.ground.sigma * 1000).toFixed(3); $('#cNf').value = NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld'; $('#cNf').disabled = m.ground.type !== 2;
   $('#cMat').value = m.material; $('#cZ0').value = m.z0;
+  $('#bMount').value = m.boom.mount; $('#bD').value = m.boom.d; $('#bAx').value = m.boom.axis; $('#bD').disabled = $('#bAx').disabled = m.boom.mount === 'none';
   $('#iT').value = m.ins.t || 0; $('#iEr').value = m.ins.er; $('#iTd').value = m.ins.tand; $('#iW').value = m.ins.wires || '';
   $('#sDm1').value = m.seg.dm1; $('#sDm2').value = m.seg.dm2; $('#sSc').value = m.seg.sc;
   const gOn = m.ground.type > 0; $('#cHeight').disabled = !gOn; $('#cEps').disabled = m.ground.type !== 2; $('#cSig').disabled = m.ground.type !== 2;
@@ -976,6 +997,26 @@ $('#cSig').oninput = e => { S.model.ground.sigma = (+e.target.value || 0) / 1000
 $('#cNf').onchange = e => { S.model.ground.nf = e.target.value; changed(); };
 $('#cMat').onchange = e => { S.model.material = +e.target.value; changed(); };
 $('#cZ0').oninput = e => { S.model.z0 = +e.target.value || 50; changed(); };
+$('#bMount').onchange = e => { S.model.boom.mount = e.target.value; renderModelFields(); changed(); };
+$('#bD').oninput = e => { const v = +e.target.value; if (v > 0) { S.model.boom.d = v; changed(); } };
+$('#bAx').onchange = e => { S.model.boom.axis = e.target.value; changed(); };
+$('#tbAdd').onclick = () => {
+  const msg = $('#tbMsg'), x = +$('#tbX').value || 0, z = +$('#tbZ').value || 0;
+  const secs = $('#tbS').value.split(/[,;]+/).map(t => t.trim()).filter(Boolean).map(t => t.split(/\s*[x×*]\s*/i).map(Number));
+  if (!secs.length || secs.some(p => p.length !== 2 || !(p[0] > 0) || !(p[1] > 0))) { msg.textContent = 'Write each section as half-length × diameter, for example 1.2x32 (metres × millimetres).'; return; }
+  pushUndo();
+  const f = v => String(+v.toFixed(4)), first = S.model.wires.length + 1;
+  let y = secs[0][0];
+  S.model.wires.push({ x1: f(x), y1: f(-y), z1: f(z), x2: f(x), y2: f(y), z2: f(z), r: String(secs[0][1] / 2), seg: '-1' });
+  for (let i = 1; i < secs.length; i++) {
+    const y2 = y + secs[i][0], r = String(secs[i][1] / 2);
+    S.model.wires.push({ x1: f(x), y1: f(y), z1: f(z), x2: f(x), y2: f(y2), z2: f(z), r, seg: '-1' });
+    S.model.wires.push({ x1: f(x), y1: f(-y), z1: f(z), x2: f(x), y2: f(-y2), z2: f(z), r, seg: '-1' });
+    y = y2;
+  }
+  msg.textContent = 'Added wires w' + first + '–w' + S.model.wires.length + ', total length ' + (2 * y).toFixed(3) + ' m. The centre is w' + first + 'c.';
+  renderTables(); changed(); edFit();
+};
 $('#iT').oninput = e => { S.model.ins.t = Math.max(0, +e.target.value || 0); changed(); };
 $('#iEr').oninput = e => { const v = +e.target.value; if (v >= 1) { S.model.ins.er = v; changed(); } };
 $('#iTd').oninput = e => { const v = +e.target.value; if (v >= 0) { S.model.ins.tand = v; changed(); } };
@@ -2428,7 +2469,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.3.0', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.4.0', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));

@@ -25,6 +25,8 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
   capacitor loss and coil self-capacitance, or R + jX) and **transmission lines** across feed gaps, like NEC's TL card, with
   velocity factor and cable loss, for example a coax centre line in a hexbeam.
 - **Insulated wire** (thin-sheath approximation, as NEC-4) and wire materials from copper to magnetic steel.
+- **Tube elements**: build telescoping Yagi elements from their sections; steps in diameter are solved directly (no
+  NEC-2-style substitution needed), and the DL6WU/G3SEK boom correction handles elements through a metal boom.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
