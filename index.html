@@ -224,19 +224,19 @@ footer a { color: var(--accent); }
     <div class="grid2">
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center"><h2>Sources</h2><button type="button" id="addSrc">Add source</button></div>
-        <p class="hint">Position <span class="mono">w1c</span> = wire 1 centre, <span class="mono">w1b</span> = begin, <span class="mono">w1e</span> = end. Voltage sources.</p>
-        <div class="tscroll"><table id="srcTbl"><thead><tr><th>#</th><th>Position</th><th>Phase °</th><th>Volts</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="hint">Position <span class="mono">w1c</span> = wire 1 centre, <span class="mono">w1b</span> = begin, <span class="mono">w1e</span> = end. Voltage sources. Balun n:1 puts an ideal transformer at the feed point (4 for a 4:1 unun, 49 for an EFHW's 49:1): the impedance and SWR are then those the feed line sees.</p>
+        <div class="tscroll"><table id="srcTbl"><thead><tr><th>#</th><th>Position</th><th>Phase °</th><th>Volts</th><th>Balun n:1</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center"><h2>Loads</h2><button type="button" id="addLoad">Add load</button></div>
-        <p class="hint">Series L/C, a parallel L/C trap (Q is the coil's), or a fixed R + jX. Leave L or C at 0 to leave it out.</p>
-        <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="hint">Series L/C, a parallel L/C trap, or a fixed R + jX. Leave L or C at 0 to leave it out. Q is the coil's, Q C the capacitor's (empty = lossless); Cp is the coil's own self-capacitance, across the coil.</p>
+        <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>Q C</th><th>Cp pF</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Transmission lines</h2><button type="button" id="addTl">Add line</button></div>
-      <p class="hint">An ideal, lossless line between two feed points, connected across the gap at each end like NEC's TL card. It does not radiate or couple to the wires, so it suits coax. Leave Length empty for the straight distance between the ends; the velocity factor makes the line electrically longer. Reversed swaps the two conductors at the far end. A source on a line end drives the line and the wire gap together.</p>
-      <div class="tscroll"><table id="tlTbl"><thead><tr><th>#</th><th>End 1</th><th>End 2</th><th>Z0 Ω</th><th>VF</th><th>Length m</th><th>Reversed</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="hint">A line between two feed points, connected across the gap at each end like NEC's TL card. It does not radiate or couple to the wires, so it suits coax. Leave Length empty for the straight distance between the ends; the velocity factor makes the line electrically longer. Loss is the matched loss in dB per 100 m from the cable's data sheet; with "at MHz" it is scaled to other frequencies with √f, without it the same loss is used at every frequency. Reversed swaps the two conductors at the far end. A source on a line end drives the line and the wire gap together.</p>
+      <div class="tscroll"><table id="tlTbl"><thead><tr><th>#</th><th>End 1</th><th>End 2</th><th>Z0 Ω</th><th>VF</th><th>Length m</th><th>Loss dB/100 m</th><th>at MHz</th><th>Reversed</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Buildings</h2><button type="button" id="addHouse">Add house</button></div>
@@ -301,6 +301,12 @@ footer a { color: var(--accent); }
         <label class="fld"><span>Impedance over real ground</span><select id="cNf"><option value="sommerfeld">Sommerfeld (accurate, as NEC-2)</option><option value="complex">Complex image (fast approximation)</option><option value="perfect">Perfect mirror (as MININEC)</option></select></label>
         <label class="fld"><span>Wire material</span><select id="cMat"></select></label>
         <label class="fld"><span>SWR reference (Ω)</span><input id="cZ0" inputmode="decimal"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>Insulation (mm, 0 = bare)</span><input id="iT" inputmode="decimal"></label>
+        <label class="fld"><span>Insulation εr</span><input id="iEr" inputmode="decimal" title="PVC about 3–3.5, polyethylene 2.3, PTFE 2.1"></label>
+        <label class="fld"><span>Loss tangent</span><input id="iTd" inputmode="decimal" title="PVC about 0.01–0.05, PE and PTFE below 0.001"></label>
+        <label class="fld"><span>Insulated wires</span><input id="iW" placeholder="all" spellcheck="false" autocomplete="off" title="Empty for all wires, or a list such as 1-3, 5"></label>
       </div>
       <div class="row">
         <label class="fld"><span>DM1 (fine)</span><input id="sDm1" inputmode="decimal"></label>
@@ -663,6 +669,7 @@ function normalize(m) {
   m.ground = Object.assign({ type: 0, height: 0, eps: 13, sigma: 0.005, nf: 'sommerfeld' }, m.ground || {});
   m.loads = m.loads || []; m.sources = m.sources || []; m.tls = m.tls || []; m.objects = m.objects || [];
   m.material = m.material | 0; m.z0 = +m.z0 || 50; m.comment = m.comment || '';
+  m.ins = Object.assign({ t: 0, er: 3.5, tand: 0.02, wires: '' }, m.ins || {});
   return m;
 }
 
@@ -672,6 +679,19 @@ const S = { opt: { vars: [], running: false, best: null, start: null, history: [
 function numObjects() {
   const lam = MM.lambdaOf(+S.model.freq || 14), ev = v => MM.evalExpr(v, lam);
   return (S.model.objects || []).map(o => ({ type: 'house', x: ev(o.x) || 0, y: ev(o.y) || 0, len: ev(o.len) || 10, wid: ev(o.wid) || 8, eave: ev(o.eave) || 0, ridge: ev(o.ridge) || 0, rot: ev(o.rot) || 0, roof: o.roof === 'metal' ? 'metal' : 'none', grid: ev(o.grid) || 1, gutters: o.gutters === 'metal' ? 'metal' : 'none', pipes: +o.pipes || 0, rEarth: Math.max(0, ev(o.rEarth) || 0) }));
+}
+// "1-3, 5" -> [0, 1, 2, 4]; empty or "all" -> every wire of the model (not the house wires)
+function insWires(spec, n) {
+  const t = String(spec || '').trim();
+  if (!t || /^all$/i.test(t)) return Array.from({ length: n }, (_, i) => i);
+  const out = new Set();
+  for (const part of t.split(/[,;\s]+/).filter(Boolean)) {
+    const m = /^w?(\d+)(?:\s*-\s*w?(\d+))?$/i.exec(part);
+    if (!m) throw new Error('Insulated wires: "' + part + '" is not a wire number or range such as 1-3.');
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let k = Math.min(a, b); k <= Math.max(a, b); k++) if (k >= 1 && k <= n) out.add(k - 1);
+  }
+  return [...out];
 }
 function numericModel() {
   const m = S.model, lam = MM.lambdaOf(+m.freq || 14);
@@ -683,9 +703,10 @@ function numericModel() {
   // earth resistance of each downpipe: a resistor at its foot (where it meets the ground)
   const objLoads = exp.earth.filter(e => e.R > 0).map(e => ({ pos: 'w' + (base + e.index + 1) + 'b', type: 1, L: 0, C: 0, Q: 0, R: e.R, X: 0 }));
   if (bad >= 0) throw new Error('Wire ' + (bad + 1) + ' has a value that is not a number or valid expression.');
-  return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag })),
-    loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
-    tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev }; }),
+  return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag, ratio: +s.ratio > 0 ? +s.ratio : 1 })),
+    loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, Qc: +l.Qc || 0, Cp: +l.Cp || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
+    tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev, loss: +t.loss > 0 ? +t.loss : 0, lossF: +t.lossF > 0 ? +t.lossF : 0 }; }),
+    ins: m.ins && +m.ins.t > 0 ? { t: +m.ins.t, er: Math.max(1, +m.ins.er || 1), tand: Math.max(0, +m.ins.tand || 0), wires: insWires(m.ins.wires, base) } : null,
     seg: { dm1: +m.seg.dm1 || 400, dm2: +m.seg.dm2 || 40, sc: +m.seg.sc || 2, ec: +m.seg.ec || 1 },
     ground: { type: +m.ground.type | 0, height: +m.ground.height || 0, eps: +m.ground.eps || 13, sigma: Number.isFinite(+m.ground.sigma) && m.ground.sigma !== '' ? +m.ground.sigma : 0.005, nf: NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld' },
     material: +m.material | 0, z0: +m.z0 || 50 };
@@ -834,12 +855,12 @@ function renderTables() {
     WCOLS.map(c => '<td>' + cellInput(w[c], 'id="w' + i + c + '" data-t="w" data-i="' + i + '" data-c="' + c + '" aria-label="Wire ' + (i + 1) + ' ' + c + '"') + '</td>').join('') +
     '<td class="x"><button type="button" data-del="w" data-i="' + i + '" aria-label="Delete wire ' + (i + 1) + '">×</button></td></tr>').join('');
   $('#srcTbl tbody').innerHTML = m.sources.map((s, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
-    ['pos', 'phase', 'mag'].map(c => '<td>' + cellInput(s[c], 'id="s' + i + c + '" data-t="s" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
+    ['pos', 'phase', 'mag', 'ratio'].map(c => '<td>' + cellInput(s[c], 'id="s' + i + c + '" data-t="s" data-i="' + i + '" data-c="' + c + '"' + (c === 'ratio' ? ' placeholder="1"' : '')) + '</td>').join('') +
     '<td class="x"><button type="button" data-del="s" data-i="' + i + '" aria-label="Delete source">×</button></td></tr>').join('');
   $('#loadTbl tbody').innerHTML = m.loads.map((l, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
     '<td>' + cellInput(l.pos, 'id="l' + i + 'pos" data-t="l" data-i="' + i + '" data-c="pos"') + '</td>' +
     '<td><select id="l' + i + 'type" data-t="l" data-i="' + i + '" data-c="type"><option value="0"' + (l.type == 0 ? ' selected' : '') + '>Series L / C</option><option value="2"' + (l.type == 2 ? ' selected' : '') + '>Parallel L / C (trap)</option><option value="1"' + (l.type == 1 ? ' selected' : '') + '>R + jX</option></select></td>' +
-    ['L', 'C', 'Q', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
+    ['L', 'C', 'Q', 'Qc', 'Cp', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q', 'Qc', 'Cp'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
     '<td class="x"><button type="button" data-del="l" data-i="' + i + '" aria-label="Delete load">×</button></td></tr>').join('');
   $('#objTbl tbody').innerHTML = (m.objects || []).map((o, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
     ['x', 'y', 'len', 'wid', 'eave', 'ridge', 'rot'].map(c => '<td>' + cellInput(o[c], 'id="o' + i + c + '" data-t="o" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
@@ -850,7 +871,7 @@ function renderTables() {
     '<td>' + cellInput(o.rEarth ?? 50, 'id="o' + i + 'rEarth" data-t="o" data-i="' + i + '" data-c="rEarth" title="0 = perfect earth connection"') + '</td>' +
     '<td class="x"><button type="button" data-del="o" data-i="' + i + '" aria-label="Delete house ' + (i + 1) + '">×</button></td></tr>').join('');
   $('#tlTbl tbody').innerHTML = (m.tls || []).map((t, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
-    ['p1', 'p2', 'z0', 'vf', 'len'].map(c => '<td>' + cellInput(t[c], 'id="t' + i + c + '" data-t="t" data-i="' + i + '" data-c="' + c + '"' + (c === 'len' ? ' placeholder="straight"' : '')) + '</td>').join('') +
+    ['p1', 'p2', 'z0', 'vf', 'len', 'loss', 'lossF'].map(c => '<td>' + cellInput(t[c], 'id="t' + i + c + '" data-t="t" data-i="' + i + '" data-c="' + c + '"' + (c === 'len' ? ' placeholder="straight"' : c === 'loss' ? ' placeholder="0"' : '')) + '</td>').join('') +
     '<td><input type="checkbox" id="t' + i + 'rev" data-t="t" data-i="' + i + '" data-c="rev"' + (t.rev ? ' checked' : '') + ' aria-label="Line ' + (i + 1) + ' reversed"></td>' +
     '<td class="x"><button type="button" data-del="t" data-i="' + i + '" aria-label="Delete line ' + (i + 1) + '">×</button></td></tr>').join('');
   validateCells();
@@ -870,6 +891,7 @@ function renderModelFields() {
   $('#cGround').value = m.ground.type; $('#cHeight').value = m.ground.height;
   $('#cEps').value = m.ground.eps; $('#cSig').value = +(m.ground.sigma * 1000).toFixed(3); $('#cNf').value = NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld'; $('#cNf').disabled = m.ground.type !== 2;
   $('#cMat').value = m.material; $('#cZ0').value = m.z0;
+  $('#iT').value = m.ins.t || 0; $('#iEr').value = m.ins.er; $('#iTd').value = m.ins.tand; $('#iW').value = m.ins.wires || '';
   $('#sDm1').value = m.seg.dm1; $('#sDm2').value = m.seg.dm2; $('#sSc').value = m.seg.sc;
   const gOn = m.ground.type > 0; $('#cHeight').disabled = !gOn; $('#cEps').disabled = m.ground.type !== 2; $('#cSig').disabled = m.ground.type !== 2;
   $('#swFrom').value = $('#swFrom').value || '';
@@ -952,6 +974,10 @@ $('#cSig').oninput = e => { S.model.ground.sigma = (+e.target.value || 0) / 1000
 $('#cNf').onchange = e => { S.model.ground.nf = e.target.value; changed(); };
 $('#cMat').onchange = e => { S.model.material = +e.target.value; changed(); };
 $('#cZ0').oninput = e => { S.model.z0 = +e.target.value || 50; changed(); };
+$('#iT').oninput = e => { S.model.ins.t = Math.max(0, +e.target.value || 0); changed(); };
+$('#iEr').oninput = e => { const v = +e.target.value; if (v >= 1) { S.model.ins.er = v; changed(); } };
+$('#iTd').oninput = e => { const v = +e.target.value; if (v >= 0) { S.model.ins.tand = v; changed(); } };
+$('#iW').oninput = e => { S.model.ins.wires = e.target.value; changed(); };
 ['dm1', 'dm2', 'sc'].forEach(k => { $('#s' + k[0].toUpperCase() + k.slice(1)).oninput = e => { const v = +e.target.value; if (v > 0) { S.model.seg[k] = v; changed(); } }; });
 MM.MATERIALS.forEach((m, i) => { const o = document.createElement('option'); o.value = i; o.textContent = m.name; $('#cMat').appendChild(o); });
 
@@ -994,9 +1020,11 @@ function renderResults() {
     '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
   $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
   const r = S.last;
-  if (r && r.sources.length > 1) {
-    $('#srcRes').innerHTML = '<div class="tscroll"><table class="results"><thead><tr><th>Source</th><th>R Ω</th><th>jX Ω</th><th>|I| A</th><th>Power W</th></tr></thead><tbody>' +
-      r.sources.map(s => '<tr><td>' + s.spec.replace(/</g, '') + '</td><td>' + fmt(s.R, 2) + '</td><td>' + fmt(s.X, 2) + '</td><td>' + fmt(Math.hypot(s.Ir, s.Ii), 4) + '</td><td>' + fmt(s.P, 4) + '</td></tr>').join('') + '</tbody></table></div>';
+  if (r && (r.sources.length > 1 || r.sources.some(s => s.ratio !== 1))) {
+    const xf = r.sources.some(s => s.ratio !== 1), z = (R, X) => fmt(R, 1) + (X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(X), 1);
+    const sw = s => { const g = Math.hypot(s.R - r.z0, s.X) / Math.hypot(s.R + r.z0, s.X), v = (1 + g) / (1 - g); return g < 1 && v < 100 ? fmt(v, 2) : '> 99'; };
+    $('#srcRes').innerHTML = '<div class="tscroll"><table class="results"><thead><tr><th>Source</th><th>R Ω</th><th>jX Ω</th><th>SWR ' + (+r.z0).toFixed(0) + ' Ω</th>' + (xf ? '<th>Balun</th><th>At the antenna Ω</th>' : '') + '<th>|I| A</th><th>Power W</th></tr></thead><tbody>' +
+      r.sources.map(s => '<tr><td>' + s.spec.replace(/</g, '') + '</td><td>' + fmt(s.R, 2) + '</td><td>' + fmt(s.X, 2) + '</td><td>' + sw(s) + '</td>' + (xf ? '<td>' + (s.ratio !== 1 ? +s.ratio.toFixed(3) + ':1' : '–') + '</td><td>' + z(s.Rant, s.Xant) + '</td>' : '') + '<td>' + fmt(Math.hypot(s.Ir, s.Ii), 4) + '</td><td>' + fmt(s.P, 4) + '</td></tr>').join('') + '</tbody></table></div>';
   } else $('#srcRes').innerHTML = '';
 }
 $('#clearRes').onclick = () => { S.history = S.last ? [S.last] : []; renderResults(); };
@@ -2374,7 +2402,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.0.2', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.1.0', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));

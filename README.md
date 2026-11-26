@@ -21,8 +21,10 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
 
 - **Geometry** as editable tables (with expressions such as `R/4` or `33*F`) or drawn in a **3D editor** with snapping,
   wire splitting, undo/redo and live recalculation while you drag.
-- **Sources, loads** (series L–C with Q, parallel L–C traps, or R + jX) and **transmission lines** (ideal lines across feed gaps, like
-  NEC's TL card), for example a coax centre line in a hexbeam.
+- **Sources** with an optional ideal balun or unun (4:1, 49:1…), **loads** (series L–C or parallel L–C traps with coil and
+  capacitor loss and coil self-capacitance, or R + jX) and **transmission lines** across feed gaps, like NEC's TL card, with
+  velocity factor and cable loss, for example a coax centre line in a hexbeam.
+- **Insulated wire** (thin-sheath approximation, as NEC-4) and wire materials from copper to magnetic steel.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
@@ -91,7 +93,8 @@ The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 ## Limitations
 
 Thin wires only; a wire touching the ground switches the impedance to the perfect mirror; no buried wires, layered
-soil or ground wave; dielectrics (insulated wire, walls) and baluns are not modelled; at most 2500 unknowns. The
+soil or ground wave; walls and other dielectrics apart from wire insulation are not modelled; baluns are ideal
+transformers; at most 2500 unknowns. The
 Help tab lists these and the open questions in full.
 
 ## Repository layout

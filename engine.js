@@ -255,7 +255,10 @@
     { name: 'Lossless', sigma: Infinity },
     { name: 'Copper', sigma: 5.8e7 },
     { name: 'Aluminium', sigma: 3.5e7 },
-    { name: 'Iron', sigma: 1.0e7 }
+    { name: 'Iron (as MMANA, non-magnetic)', sigma: 1.0e7 },
+    { name: 'Steel, galvanised (µr 100)', sigma: 6.0e6, mu: 100 },
+    { name: 'Stainless steel', sigma: 1.4e6 },
+    { name: 'Brass', sigma: 1.5e7 }
   ];
 
   const lambdaOf = f => C0 / f;
@@ -810,14 +813,34 @@
     if (somm) sommerfeldFill(mesh, sctx, k, pre, Zr, Zi);
 
     // conductor loss (skin effect) on shared halves
+    let hMap = null;
+    const byHalf = () => {
+      if (hMap) return hMap; hMap = new Map();
+      bases.forEach((b, i) => [b.a, b.b].forEach(pp => { if (pp) { if (!hMap.has(pp.half)) hMap.set(pp.half, []); hMap.get(pp.half).push([i, pp.d]); } }));
+      return hMap;
+    };
     const mat = MATERIALS[model.material | 0] || MATERIALS[0];
     if (isFinite(mat.sigma)) {
-      const Rs = Math.sqrt(omega * MU0 / (2 * mat.sigma));
-      const byHalf = new Map();
-      bases.forEach((b, i) => [b.a, b.b].forEach(pp => { if (pp) { if (!byHalf.has(pp.half)) byHalf.set(pp.half, []); byHalf.get(pp.half).push([i, pp.d]); } }));
-      byHalf.forEach((list, hi) => {
-        const h = halves[hi]; const r = Rs / (2 * Math.PI * h.seg.a) * h.len;
-        for (const [i, di] of list) for (const [j, dj] of list) Zr[i * N + j] += r * dot(di, dj);
+      const Rs = Math.sqrt(omega * MU0 * (mat.mu || 1) / (2 * mat.sigma));
+      // a magnetic wire also has internal inductance equal to its skin resistance
+      const Xs = mat.mu > 1 ? Rs : 0;
+      byHalf().forEach((list, hi) => {
+        const h = halves[hi]; const r = Rs / (2 * Math.PI * h.seg.a) * h.len, x = Xs / (2 * Math.PI * h.seg.a) * h.len;
+        for (const [i, di] of list) for (const [j, dj] of list) { const d = dot(di, dj); Zr[i * N + j] += r * d; Zi[i * N + j] += x * d; }
+      });
+    }
+    // insulated wire: a distributed series impedance per metre (the thin-sheath approximation NEC-4 also uses)
+    //   Z' = j omega mu0/(2 pi) (1 - 1/eps*) ln(b/a),  eps* = eps_r (1 - j tan d)
+    const ins = model.ins;
+    if (ins && +ins.t > 0 && +ins.er >= 1) {
+      const er = +ins.er, td = +ins.tand > 0 ? +ins.tand : 0, dd = er * (1 + td * td);
+      const A = 1 - 1 / dd, B = td / dd, set = Array.isArray(ins.wires) ? new Set(ins.wires) : null;
+      byHalf().forEach((list, hi) => {
+        const h = halves[hi]; if (set && !set.has(h.seg.wire)) return;
+        const a = h.seg.a, b = a + ins.t / 1000;
+        const X0 = omega * MU0 / (2 * Math.PI) * Math.log(b / a) * h.len;
+        const r = X0 * B, x = X0 * A;
+        for (const [i, di] of list) for (const [j, dj] of list) { const d = dot(di, dj); Zr[i * N + j] += r * d; Zi[i * N + j] += x * d; }
       });
     }
 
@@ -827,23 +850,19 @@
       const loc = locate(mesh, ld.pos); if (!loc) return;
       let zr, zi;
       if (ld.type === 1) { zr = +ld.R || 0; zi = +ld.X || 0; }
-      else if (ld.type === 2) {
-        // parallel L-C trap: coil (with loss omega*L/Q in series with it) across the capacitor
-        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
-        const ar = ld.Q > 0 ? omega * L / ld.Q : 0, ai = omega * L;      // coil branch
-        if (!(Cc > 0)) { zr = ar; zi = ai; }
-        else if (!(L > 0)) { zr = 0; zi = -1 / (omega * Cc); }
-        else {
-          // Z = Zl / (1 + j*omega*C*Zl)
-          const dr = 1 - omega * Cc * ai, di = omega * Cc * ar, dd = dr * dr + di * di;
-          zr = (ar * dr + ai * di) / dd; zi = (ai * dr - ar * di) / dd;
-        }
-        if (+ld.R) zr += +ld.R;
-      }
       else {
-        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
-        zr = 0; zi = omega * L - (Cc > 0 ? 1 / (omega * Cc) : 0);
-        if (ld.Q > 0 && L > 0) zr = omega * L / ld.Q;
+        // coil: omega*L/Q in series with jwL, optionally across its own self-capacitance Cp;
+        // capacitor: -j/(wC) with loss 1/(wC Qc) in series. Type 0 puts them in series, type 2 in parallel (trap).
+        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12, Cp = (+ld.Cp || 0) * 1e-12;
+        const par = (ar, ai, br, bi) => { const nr = ar * br - ai * bi, ni = ar * bi + ai * br, [qr, qi] = divC(nr, ni, ar + br, ai + bi); return [qr, qi]; };
+        let lr = L > 0 && ld.Q > 0 ? omega * L / ld.Q : 0, li = omega * L;
+        if (L > 0 && Cp > 0) [lr, li] = par(lr, li, 0, -1 / (omega * Cp));
+        const cr = Cc > 0 && ld.Qc > 0 ? 1 / (omega * Cc * ld.Qc) : 0, ci = Cc > 0 ? -1 / (omega * Cc) : 0;
+        if (ld.type === 2) {
+          if (!(Cc > 0)) { zr = lr; zi = li; }
+          else if (!(L > 0)) { zr = cr; zi = ci; }
+          else [zr, zi] = par(lr, li, cr, ci);
+        } else { zr = lr + cr; zi = li + ci; }
         if (+ld.R) zr += +ld.R;
       }
       const sg = bases.map(b => partSign(b, loc.half, loc.dir));
@@ -881,7 +900,9 @@
       const a = portIndex(ga), b = portIndex(gb);
       const L = +t.len > 0 ? +t.len : len(sub(ga.pt, gb.pt));
       if (!(L > 0)) { mesh.warnings.push('Transmission line ' + (ti + 1) + ' has zero length. It was left out.'); return; }
-      lines.push({ a, b, z0: +t.z0 > 0 ? +t.z0 : 50, vf: +t.vf > 0 ? Math.min(1, +t.vf) : 1, L, rev: !!t.rev });
+      // matched loss in dB per 100 m, given at lossF MHz and scaled with sqrt(f) (skin effect), or as is without lossF
+      const dbm = +t.loss > 0 ? +t.loss / 100 * (+t.lossF > 0 ? Math.sqrt(f / +t.lossF) : 1) : 0;
+      lines.push({ a, b, z0: +t.z0 > 0 ? +t.z0 : 50, vf: +t.vf > 0 ? Math.min(1, +t.vf) : 1, L, rev: !!t.rev, alpha: dbm / (20 / Math.LN10) });
     });
 
     // ---- sources: on a line port they drive the network, elsewhere they are series gap sources ----
@@ -894,12 +915,12 @@
       if (portByHalf.has(loc.half)) {
         const k = portByHalf.get(loc.half);
         if (ports[k].src) { mesh.warnings.push('Two sources on the same feed point ' + sc.pos + '; only the first is used.'); return; }
-        ports[k].src = { vr, vi }; srcs.push({ spec: sc.pos, vr, vi, port: k }); return;
+        ports[k].src = { vr, vi }; srcs.push({ spec: sc.pos, vr, vi, port: k, ratio: +sc.ratio > 0 ? +sc.ratio : 1 }); return;
       }
       const sg = bases.map(b => partSign(b, loc.half, loc.dir));
       if (!sg.some(x => x)) { mesh.warnings.push('Source ' + sc.pos + ' sits on a free wire end and cannot be fed.'); return; }
       sg.forEach((sv, i) => { if (sv) { br[i] += sv * vr; bi[i] += sv * vi; } });
-      srcs.push({ spec: sc.pos, vr, vi, sg });
+      srcs.push({ spec: sc.pos, vr, vi, sg, ratio: +sc.ratio > 0 ? +sc.ratio : 1 });
     });
     if (!srcs.length) throw new Error('No valid source. Add a source such as "w1c" (wire 1 centre).');
 
@@ -916,13 +937,19 @@
         for (let b = 0; b < P; b++) { const [yr, yi] = dotS(ports[a].sg, Xr[b], Xi[b]); Ytr[a * P + b] = yr; Yti[a * P + b] = yi; }
         const [gr, gi] = dotS(ports[a].sg, x0r, x0i); g0r[a] = gr; g0i[a] = gi;
       }
-      // lossless line: Y11 = Y22 = -j cot(bl)/Z0, Y12 = Y21 = +j csc(bl)/Z0 (sign flipped when reversed)
+      // line with gamma = alpha + j beta: Y11 = Y22 = coth(gamma l)/Z0, Y12 = Y21 = -csch(gamma l)/Z0
+      // (sign flipped when reversed); lossless this is -j cot(bl)/Z0 and +j csc(bl)/Z0
       const k0 = 2 * Math.PI * f / C0;
       lines.forEach(l => {
-        let th = k0 / l.vf * l.L; if (Math.abs(Math.sin(th)) < 1e-9) th += 1e-6;
-        const cot = Math.cos(th) / Math.sin(th), csc = 1 / Math.sin(th), y12 = (l.rev ? -1 : 1) * csc / l.z0;
-        Yti[l.a * P + l.a] -= cot / l.z0; Yti[l.b * P + l.b] -= cot / l.z0;
-        Yti[l.a * P + l.b] += y12; Yti[l.b * P + l.a] += y12;
+        const al = l.alpha * l.L;
+        let th = k0 / l.vf * l.L; if (al < 1e-9 && Math.abs(Math.sin(th)) < 1e-9) th += 1e-6;
+        const shr = Math.sinh(al) * Math.cos(th), shi = Math.cosh(al) * Math.sin(th);
+        const chr = Math.cosh(al) * Math.cos(th), chi = Math.sinh(al) * Math.sin(th);
+        const [ctr, cti] = divC(chr, chi, shr, shi), [csr, csi] = divC(1, 0, shr, shi), sg = l.rev ? -1 : 1;
+        Ytr[l.a * P + l.a] += ctr / l.z0; Yti[l.a * P + l.a] += cti / l.z0;
+        Ytr[l.b * P + l.b] += ctr / l.z0; Yti[l.b * P + l.b] += cti / l.z0;
+        Ytr[l.a * P + l.b] -= sg * csr / l.z0; Yti[l.a * P + l.b] -= sg * csi / l.z0;
+        Ytr[l.b * P + l.a] -= sg * csr / l.z0; Yti[l.b * P + l.a] -= sg * csi / l.z0;
       });
       const U = [], F = [];
       ports.forEach((pt, kk) => { if (pt.src) { F.push(kk); Vr[kk] = pt.src.vr; Vi[kk] = pt.src.vi; } else U.push(kk); });
@@ -958,7 +985,8 @@
       const zr = (sr.vr * ir + sr.vi * ii) / den, zi = (sr.vi * ir - sr.vr * ii) / den;
       const pw = 0.5 * (sr.vr * ir + sr.vi * ii);
       Pin += pw;
-      return { spec: sr.spec, R: zr, X: zi, Ir: ir, Ii: ii, V: Math.hypot(sr.vr, sr.vi), P: pw };
+      // an ideal feed transformer (balun / unun, impedance ratio n:1) divides the impedance seen by the feeder
+      return { spec: sr.spec, R: zr / sr.ratio, X: zi / sr.ratio, Rant: zr, Xant: zi, ratio: sr.ratio, Ir: ir, Ii: ii, V: Math.hypot(sr.vr, sr.vi), P: pw };
     });
 
     // half currents along segment direction
@@ -1110,7 +1138,7 @@
         }
       } else if (/source/.test(h)) {
         const n = parseInt(nums(next() || '0')[0], 10) || 0;
-        for (let k = 0; k < n; k++) { const v = nums(next() || ''); model.sources.push({ pos: v[0], phase: +v[1] || 0, mag: v[2] !== undefined ? +v[2] : 1 }); }
+        for (let k = 0; k < n; k++) { const v = nums(next() || ''); model.sources.push({ pos: v[0], phase: +v[1] || 0, mag: v[2] !== undefined ? +v[2] : 1, ratio: 1 }); }
       } else if (/load/.test(h)) {
         const n = parseInt(nums(next() || '0')[0], 10) || 0;
         for (let k = 0; k < n; k++) {
@@ -1126,11 +1154,13 @@
         const v = nums(next() || '');
         model.ground.type = Math.min(2, Math.max(0, parseInt(v[0], 10) || 0));
         model.ground.height = +v[1] || 0;
-        model.material = parseInt(v[2], 10) || 0;
+        // MMANA material numbers above 3 have no match here and were always lossless; Sommerwire's own
+        // materials 4 and up come from a 'Sommerwire MAT' line instead
+        model.material = (m => (m >= 0 && m <= 3 ? m : 0))(parseInt(v[2], 10) || 0);
         model.z0 = +v[3] || 50;
       } else if (/comment/.test(h)) {
         const rest = []; let c; while ((c = next()) !== null) rest.push(c);
-        const keep = [];
+        const keep = [], extra = [];
         rest.forEach(line => {
           const hh = /^\s*(?:Sommerwire|WireModel) HOUSE:\s*(.*)$/i.exec(line);
           if (hh) {
@@ -1138,12 +1168,21 @@
             model.objects.push({ type: 'house', x: +v[0] || 0, y: +v[1] || 0, len: +v[2] || 10, wid: +v[3] || 8, eave: +v[4] || 0, ridge: +v[5] || 0, rot: +v[6] || 0, roof: v[7] === 'metal' ? 'metal' : 'none', grid: +v[8] || 1, gutters: v[9] === 'metal' ? 'metal' : 'none', pipes: +v[10] || 0, rEarth: v[11] !== undefined ? +v[11] || 0 : 50 });
             return;
           }
+          const ex = /^\s*Sommerwire (SRC|LOAD|INS|MAT):\s*(.*)$/i.exec(line);
+          if (ex) { extra.push([ex[1].toUpperCase(), ex[2].split(/[,\t]+/).map(x => x.trim())]); return; }
           const mm = /^\s*(?:Sommerwire|WireModel) TL:\s*(.*)$/i.exec(line);
           if (!mm) { keep.push(line); return; }
           const v = mm[1].split(/[,\t]+/).map(x => x.trim());
-          model.tls.push({ p1: v[0], p2: v[1], z0: +v[2] || 50, vf: +v[3] || 1, len: +v[4] > 0 ? +v[4] : '', rev: v[5] === '1' });
+          model.tls.push({ p1: v[0], p2: v[1], z0: +v[2] || 50, vf: +v[3] || 1, len: +v[4] > 0 ? +v[4] : '', rev: v[5] === '1', loss: +v[6] > 0 ? +v[6] : '', lossF: +v[7] > 0 ? +v[7] : '' });
         });
         model.comment = keep.join('\n').trim();
+        // Sommerwire extensions that MMANA's own sections have no room for
+        extra.forEach(([kind, v]) => {
+          if (kind === 'SRC') { const s = model.sources[(+v[0] || 0) - 1]; if (s) s.ratio = +v[1] > 0 ? +v[1] : 1; }
+          else if (kind === 'LOAD') { const d = model.loads[(+v[0] || 0) - 1]; if (d) { d.Qc = +v[1] || 0; d.Cp = +v[2] || 0; } }
+          else if (kind === 'INS') model.ins = { t: +v[0] || 0, er: +v[1] || 1, tand: +v[2] || 0, wires: v.slice(3).join(',') };
+          else if (kind === 'MAT') { const m = parseInt(v[0], 10); if (m >= 0 && m < MATERIALS.length) model.material = m; }
+        });
       }
     }
     if (!model.freq) model.freq = 14.0;
@@ -1160,10 +1199,17 @@
     L.push('*** Load ***', model.loads.length + ',\t1');
     model.loads.forEach(d => L.push(d.type === 1 ? d.pos + ',\t1,\t' + d.R + ',\t' + d.X : d.pos + ',\t' + (d.type === 2 ? 2 : 0) + ',\t' + d.L + ',\t' + d.C + ',\t' + (d.Q || 0)));
     L.push('*** Segmentation ***', [model.seg.dm1, model.seg.dm2, model.seg.sc, model.seg.ec].join(',\t'));
-    L.push('*** G/H/M/R/AzEl/X ***', [model.ground.type, (+model.ground.height).toFixed(2), model.material | 0, (+model.z0).toFixed(1), 120, 60, 0.0].join(',\t'));
-    const tl = (model.tls || []).map(t => 'Sommerwire TL: ' + [t.p1, t.p2, +t.z0 || 50, +t.vf || 1, +t.len > 0 ? +t.len : 0, t.rev ? 1 : 0].join(', '));
+    // MMANA gets its nearest material (steel as iron, brass as copper); Sommerwire's own is named in a separate line
+    const mat = model.material | 0;
+    L.push('*** G/H/M/R/AzEl/X ***', [model.ground.type, (+model.ground.height).toFixed(2), [0, 1, 2, 3, 3, 3, 1][mat] ?? 0, (+model.z0).toFixed(1), 120, 60, 0.0].join(',\t'));
+    const tl = (model.tls || []).map(t => 'Sommerwire TL: ' + [t.p1, t.p2, +t.z0 || 50, +t.vf || 1, +t.len > 0 ? +t.len : 0, t.rev ? 1 : 0].concat(+t.loss > 0 ? [+t.loss, +t.lossF > 0 ? +t.lossF : 0] : []).join(', '));
+    const ext = [];
+    if (mat > 3) ext.push('Sommerwire MAT: ' + mat);
+    model.sources.forEach((s, i) => { if (+s.ratio > 0 && +s.ratio !== 1) ext.push('Sommerwire SRC: ' + (i + 1) + ', ' + +s.ratio); });
+    model.loads.forEach((d, i) => { if (d.type !== 1 && (+d.Qc > 0 || +d.Cp > 0)) ext.push('Sommerwire LOAD: ' + (i + 1) + ', ' + (+d.Qc || 0) + ', ' + (+d.Cp || 0)); });
+    const ins = model.ins; if (ins && +ins.t > 0) ext.push('Sommerwire INS: ' + [+ins.t, +ins.er || 1, +ins.tand || 0].join(', ') + (ins.wires && String(ins.wires).trim() ? ', ' + String(ins.wires).trim() : ''));
     const ho = (model.objects || []).filter(o => o.type === 'house').map(o => 'Sommerwire HOUSE: ' + [o.x, o.y, o.len, o.wid, o.eave, o.ridge, o.rot, o.roof, o.grid, o.gutters || 'none', +o.pipes || 0, +o.rEarth || 0].map(v => (typeof v === 'number' ? +(+v).toFixed(4) : v)).join(', '));
-    L.push('### Comment ###', [model.comment || ''].concat(tl, ho).filter(x => x !== '').join('\r\n'));
+    L.push('### Comment ###', [model.comment || ''].concat(tl, ho, ext).filter(x => x !== '').join('\r\n'));
     return L.join('\r\n') + '\r\n';
   }
 
