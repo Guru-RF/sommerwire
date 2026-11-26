@@ -15,7 +15,7 @@ Its distinguishing feature is the real-ground model: the impedance over lossy so
 integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
 come out right, ground loss included. That is where the name comes from.
 
-By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
+Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
 ## Features
 
