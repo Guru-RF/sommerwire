@@ -80,7 +80,7 @@ for (const [name, type, nf, contact, impedance, field, blocked] of [
 });
 
 // Execute the actual display functions with a previously drawn pattern in each canvas.
-function checkPatternViews(row) {
+function checkPatternViews(row, held = null) {
   const elements = new Map();
   const $ = selector => {
     if (!elements.has(selector)) elements.set(selector, { offsetParent: true, textContent: 'old pattern' });
@@ -95,8 +95,33 @@ function checkPatternViews(row) {
     return html.slice(start, html.indexOf('\n}', start) + 2);
   });
   new Function('S', '$', 'prep', 'css', views.join('\n') + '\ndrawPatterns(); drawEdPolar();')(
-    { last: row }, $, prep, () => '');
+    { last: row, held }, $, prep, () => '');
   for (const id of ['#azPlot', '#elPlot', '#edAz', '#edEl', '#ff3d']) assert.ok($(id).cleared, id);
   for (const id of ['#azTitle', '#edPolTxt']) assert.match($(id).textContent, /pattern unavailable/i);
+  assert.equal($('#patLegend').textContent, '');
   assert.match($('#ff3d').label, /pattern unavailable/i);
 }
+
+test('ground-contact examples explain why their pattern and held overlay are unavailable', () => {
+  require('../structgen.js');
+  const definitions = html.slice(html.indexOf('const NF_MODES'), html.indexOf('/* ---------------- worker'));
+  const toModel = new Function('name', definitions + `
+    S.model = normalize(EXAMPLES.find(example => example.name === name));
+    return numericModel();
+  `);
+  const pack = new Function('self', 'MM', worker + '; return pack;')({}, MM);
+  const dipole = toModel('Half-wave dipole, 20 m');
+  const held = pack(dipole, dipole.freq);
+  assert.ok(held.cutAz.length && held.cutEl.length && Number.isFinite(held.gain));
+  for (const name of ['4-square vertical array, 40 m', 'Beverage receive antenna, 150 m']) {
+    const model = toModel(name);
+    const row = pack(model, model.freq);
+    assert.ok(Number.isFinite(row.sources[0].R), name);
+    assert.equal(row.grid, null);
+    checkPatternViews(row, held);
+    const fallbackWarning = row.warnings.find(text => text.includes('Wires touching the ground'));
+    assert.match(fallbackWarning, /perfect (ground|mirror).*whole model/i);
+    assert.doesNotMatch(fallbackWarning, /far field still uses/i);
+    assert.match(row.patternIssue, /relative pattern/i);
+  }
+});

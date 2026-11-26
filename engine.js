@@ -722,7 +722,7 @@
       const gc = new Set(); nodes.forEach((nd, i) => { if (nd.ground) gc.add(find(i)); });
       if (gc.size) segs.forEach(sg => { if (gc.has(find(sg.n0))) earthed.add(sg.wire); });
     }
-    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, as MMANA does, because the complex image cannot carry current into the soil and mixing the two images is not energy-consistent. The far field still uses the real ground. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance).');
+    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, because the soil model does not support current flowing from a wire into the earth. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance).');
     const cdepth = wantComplex ? complexDepth(+gnd.eps || 13, Number.isFinite(+gnd.sigma) && gnd.sigma !== '' ? +gnd.sigma : 0.005, mesh.lambda) : null;
     const noImage = wantComplex && !cdepth;
     const allPec = earthed.size > 0;
@@ -980,7 +980,7 @@
     const field = gnd.type === 2 ? 'Fresnel' : hasGround ? 'perfect image' : 'direct';
     const groundMethods = { impedance, field };
     const patternIssue = field === 'Fresnel' && (impedance === 'perfect mirror' || impedance === 'Sommerfeld PEC test')
-      ? 'Pattern unavailable. Perfect-mirror currents and real-soil Fresnel fields can predict more sky-wave power than the feed supplies.' : '';
+      ? 'Pattern unavailable. Perfect-mirror currents and real-soil Fresnel fields can predict more sky-wave power than the feed supplies. Even the relative pattern depends on the wire currents.' : '';
     if (patternIssue) mesh.warnings.push(patternIssue);
     return { ground: { ...gnd }, groundMethods, patternIssue, f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings };
   }
