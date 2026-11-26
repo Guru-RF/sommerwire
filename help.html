@@ -295,6 +295,7 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
   <li>VHF/UHF works the same as HF, but thin-wire rules get tighter: tube elements, booms and mounting clamps are often thick compared with the segment length, and an element passing through a boom without a joint is only an approximation.</li>
   <li>Numbers can differ slightly from MMANA-GAL and more from NEC; differences of a few percent in R and a few ohms in X are normal between codes.</li>
 </ul>
+<p><b>Further reading.</b> Every result is a model of an antenna, not the antenna itself. Joeri Van Dooren (ON6URE) explains how to tell a part left out of the model, a limit of the method and an uncertain input apart, and how to check a model against measurements, in <a href="https://shop.rf.guru/pages/the-limitations-of-nec" target="_blank" rel="noopener">The Limits of NEC: Model the System You Actually Built</a>; it applies to Sommerwire as much as to NEC. G. J. Burke's <i>NEC-5 Validation Manual</i> (LLNL-SM-791163, Lawrence Livermore National Laboratory, 2019, part of <a href="https://softwarelicensing.llnl.gov/product/nec-v50" target="_blank" rel="noopener">NEC 5.0 from LLNL</a>) shows, case by case, where the numerical errors of method-of-moments codes arise and how they shrink with finer segmentation.</p>
 
 <h2 id="h-open">Open questions and further investigation</h2>
 <ul>
@@ -315,6 +316,7 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 <ul class="refs">
   <li>A. J. Julian, J. C. Logan, J. W. Rockway, <i>MININEC: A Mini-Numerical Electromagnetics Code</i>, NOSC TD 516, 1982; J. Rockway, J. Logan et al., <i>The MININEC System: Microcomputer Analysis of Wire Antennas</i>, Artech House, 1988. Pulse basis, reduced kernel, point matching, image ground.</li>
   <li>G. J. Burke, A. J. Poggio, <i>Numerical Electromagnetics Code (NEC) — Method of Moments</i>, NOSC TD 116, 1981. Transmission-line ports (TL card), the organisation of the Sommerfeld ground (image plus interpolated remainder).</li>
+  <li>G. J. Burke, <i>NEC-5 Validation Manual</i>, LLNL-SM-791163, Lawrence Livermore National Laboratory, 2019. Convergence and numerical error of method-of-moments wire codes.</li>
   <li>A. Sommerfeld, "Über die Ausbreitung der Wellen in der drahtlosen Telegraphie", <i>Annalen der Physik</i>, 1909; A. Baños, <i>Dipole Radiation in the Presence of a Conducting Half-Space</i>, Pergamon, 1966. Half-space Hertz potentials and reflection factors.</li>
   <li>J. R. Wait and P. R. Bannister, complex image theory for antennas over lossy ground. The complex-depth image.</li>
   <li>K. A. Michalski, "Extrapolation methods for Sommerfeld integral tails", <i>IEEE Trans. Antennas Propag.</i>, 1998; P. Wynn, "On a device for computing the e<sub>m</sub>(S<sub>n</sub>) transformation", 1956. Tail summation and acceleration.</li>
