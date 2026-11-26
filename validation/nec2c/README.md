@@ -27,3 +27,7 @@ To build it from https://github.com/KJ7LNW/nec2c (GPL-3.0, version 1.3), in the 
     clang -O2 -w -DPACKAGE_STRING='"nec2c"' -o nec2c calculations.c fields.c geometry.c ground.c input.c main.c matrix.c misc.c network.c radiation.c somnec.c shared.c -lm
 
 nec2c refuses long file paths, so the scripts run it inside `decks/` with short file names. The scripts overwrite the files in `decks/` when run.
+
+Run the complex-image warning and numerical regression from the repository root with
+`node --test validation/nec2c/scripts/complex-image.test.js`. It reads the archived
+fine-mesh horizontal dipole cases and requires only Node.js.

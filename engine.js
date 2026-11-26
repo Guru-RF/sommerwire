@@ -748,9 +748,7 @@
       gR = sctx.G[0]; gI = sctx.G[1];
     }
     if (cdepth && !allPec) {
-      // the single complex image is an approximation that degrades for wires very close to lossy soil
-      const lowW = new Set(); segs.forEach(sg => { if (Math.min(sg.p0[2], sg.p1[2]) < 0.01 * mesh.lambda) lowW.add(sg.wire); });
-      if (lowW.size) mesh.warnings.push('Wires ' + [...lowW].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (lowW.size > 6 ? ' …' : '') + ' run less than 0.01 λ (' + (0.01 * mesh.lambda).toFixed(2) + ' m) above real ground. The complex image is unreliable this close to lossy soil: it tends to underestimate ground loss, so the feed resistance comes out too low and the gain too high, and can even go negative. Choose Sommerfeld for the impedance over real ground.');
+      mesh.warnings.push('Complex image approximates the real-ground impedance. It can underestimate feed resistance and overstate gain, especially near the soil. Compare with Sommerfeld for this geometry and soil.');
     }
     const halfM0 = halves.map(h => mirror(h.p0)), halfM1 = halves.map(h => mirror(h.p1));
     let hNode = -1;
