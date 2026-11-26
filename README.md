@@ -37,7 +37,7 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
   elevation goals over several frequencies.
 - **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, delta loop, horizontal loop, Moxon,
   two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, a G3TXQ 5-band hexbeam tuned per band,
-  an EFOC29 end-fed beside a house, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
+  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
