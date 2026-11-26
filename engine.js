@@ -349,6 +349,7 @@
   }
 
   /* ---------- mesh build ---------- */
+  const GROUND_CONTACT_TOL = 1e-4; // metres
   function buildMesh(model, f) {
     const lambda = lambdaOf(f);
     const g = model.ground || { type: 0, height: 0 };
@@ -370,7 +371,7 @@
       let id = nodeMap.get(key);
       if (id === undefined) {
         id = nodes.length;
-        nodes.push({ p: p.slice(), inc: [], ground: hasGround && Math.abs(p[2]) < 1e-4 });
+        nodes.push({ p: p.slice(), inc: [], ground: hasGround && Math.abs(p[2]) < GROUND_CONTACT_TOL });
         nodeMap.set(key, id);
       }
       return id;
@@ -384,7 +385,7 @@
       const a = Math.abs(w.r);
       wireSegs.push([]);
       if (!(L > 0) || !(a > 0)) { if (!(L > 0)) warnings.push('Wire ' + (wi + 1) + ' has zero length.'); return; }
-      if (hasGround && (A[2] < -1e-4 || B[2] < -1e-4)) warnings.push('Wire ' + (wi + 1) + ' goes below ground.');
+      if (hasGround && (A[2] < -GROUND_CONTACT_TOL || B[2] < -GROUND_CONTACT_TOL)) warnings.push('Wire ' + (wi + 1) + ' goes below ground.');
       const lens = segmentLengths(L, w.seg | 0, lambda, segCfg, a, centerWires.has(wi));
       const u = scl(sub(B, A), 1 / L);
       let t = 0, prev = nodeId(A);
@@ -693,7 +694,16 @@
     return mesh;
   }
 
+  function checkGroundGeometry(model) {
+    if (!model.ground || !(model.ground.type > 0)) return;
+    const height = +model.ground.height || 0;
+    const buried = model.wires.findIndex(w =>
+      w.z1 + height <= -GROUND_CONTACT_TOL || w.z2 + height <= -GROUND_CONTACT_TOL);
+    if (buried !== -1) throw new Error('Wire ' + (buried + 1) + ' extends below ground after the height offset. Buried wires and wires crossing the ground plane beyond the contact tolerance are unsupported.');
+  }
+
   function solve(model, f) {
+    checkGroundGeometry(model);
     const mesh = fitMesh(model, f);
     const { segs, nodes, halves, bases, hasGround } = mesh;
     const N = bases.length;
@@ -1309,6 +1319,7 @@
 
   /* Bounded Nelder–Mead on variables scaled to [0,1], restarted with smaller steps. step() runs one evaluation. */
   function makeOptimizer(model, vars, goals, freqs, maxEval) {
+    checkGroundGeometry(model);
     const n = vars.length;
     const lo = vars.map(v => +v.min), hi = vars.map(v => +v.max);
     const clamp = t => Math.min(1, Math.max(0, t));
@@ -1320,7 +1331,10 @@
       const vals = toVals(x);
       let r;
       try { r = evalGoals(applyVars(model, vars, vals), freqs, goals); if (!Number.isFinite(r.cost)) r.cost = 1e6; }
-      catch (e) { r = { cost: 1e6, per: [] }; }
+      catch (e) {
+        if (!st.start) throw e;
+        r = { cost: 1e6, per: [] };
+      }
       const pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
       const c = r.cost + pen;
       if (!st.start) st.start = { cost: c, vals, per: r.per };
