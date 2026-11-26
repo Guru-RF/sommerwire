@@ -1,6 +1,15 @@
 <meta charset="utf-8">
 <title>Sommerwire</title>
 <link rel="icon" href="brand/icon.svg" type="image/svg+xml">
+<script>
+// Visitor count (GoatCounter, no cookies): only on the GitHub Pages site.
+if (location.hostname === 'koenvdh.github.io') {
+  const gc = document.createElement('script');
+  gc.async = true; gc.src = 'https://gc.zgo.at/count.js';
+  gc.dataset.goatcounter = 'https://sommerwire.goatcounter.com/count';
+  document.head.appendChild(gc);
+}
+</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2365,7 +2374,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.0.1', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.0.2', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));
