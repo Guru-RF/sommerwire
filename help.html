@@ -196,9 +196,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 <div class="box warn">If any wire touches the ground (a ground-mounted vertical, a downpipe), the whole impedance is solved over the perfect mirror, as MMANA-GAL does, and a warning says so: mixing ground models in one solution is not energy-consistent, and current cannot flow into the soil in the image models. The ground loss of such a connection is then only the load you put at the base. Buried wires are not supported.</div>
 <div class="box warn" id="buried"><b>Buried radials cannot be modelled.</b> Sommerwire has no model for wires in the soil, so a vertical over buried radials, or over radials lying on the ground, is not calculated correctly:
 <ul>
-  <li>A wire below the ground (Z under 0) gets the warning "goes below ground", and its results mean nothing.</li>
+  <li>With perfect or real ground, calculation stops if either endpoint has Z below 0 after adding the model height offset. This includes wires crossing the surface. Free space accepts negative Z coordinates.</li>
   <li>Radials lying on the ground (Z = 0) touch it, so the whole model is solved over the perfect mirror. They then behave like a perfect ground screen: no ground loss, too much gain, and a feed resistance that is too low.</li>
-  <li>Changing the number or length of buried radials therefore shows none of the efficiency difference it makes in reality.</li>
 </ul>
 Two workable stand-ins: leave the radials out, put the vertical on the ground and add the ground loss as a resistance at its base (as in the 4-square example; roughly 2 Ω for about 120 quarter-wave radials, 5–15 Ω for 16–32, 30 Ω or more for a ground rod alone; these are rules of thumb, not calculations), or raise the radials a few centimetres above the ground, which the Sommerfeld ground does handle, although how close that comes to buried radials has not been checked here.</div>
 

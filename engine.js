@@ -381,7 +381,6 @@
       const a = Math.abs(w.r);
       wireSegs.push([]);
       if (!(L > 0) || !(a > 0)) { if (!(L > 0)) warnings.push('Wire ' + (wi + 1) + ' has zero length.'); return; }
-      if (hasGround && (A[2] < -1e-4 || B[2] < -1e-4)) warnings.push('Wire ' + (wi + 1) + ' goes below ground.');
       const lens = segmentLengths(L, w.seg | 0, lambda, segCfg, a, centerWires.has(wi));
       const u = scl(sub(B, A), 1 / L);
       let t = 0, prev = nodeId(A);
@@ -691,6 +690,11 @@
   }
 
   function solve(model, f) {
+    if (model.ground && model.ground.type > 0) {
+      const height = +model.ground.height || 0;
+      const buried = model.wires.findIndex(w => w.z1 + height < 0 || w.z2 + height < 0);
+      if (buried !== -1) throw new Error('Wire ' + (buried + 1) + ' extends below ground after the height offset. Buried wires and wires crossing the ground plane are unsupported.');
+    }
     const mesh = fitMesh(model, f);
     const { segs, nodes, halves, bases, hasGround } = mesh;
     const N = bases.length;
