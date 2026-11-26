@@ -768,7 +768,7 @@ function pack(model, f) {
   for (let d = 0; d < 360; d += 5) gAzs.push(d);
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
   const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
-  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
     N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, ground: g, height: model.ground.height };
 }`;
 let worker = null, workerUrl = null;
@@ -840,7 +840,8 @@ function renderReadout() {
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
   set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
-  set('#roG', fmt(r.gain, 2) + ' <small>dBi</small>');
+  set('#roG', (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + ' <small>dBi</small>');
+  $('#roG').title = r.approx ? 'Approximate: currents over a perfect mirror, pattern over real ground' + (r.capDb > 0 ? '; limited by ' + r.capDb.toFixed(1) + ' dB so radiated power does not exceed input power' : '') + '. See the warning on the Calculate tab.' : '';
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
   set('#roPol', r.pol);
@@ -1017,7 +1018,7 @@ $('#calcBtn').onclick = calculate;
 const GNAME = ['Free', 'Perfect', 'Real'];
 function renderResults() {
   $('#resTbl tbody').innerHTML = S.history.map((r, i) => '<tr class="' + (i === 0 ? 'latest' : '') + '"><td>' + (S.history.length - i) + '</td><td class="nm"></td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 2) + '</td><td>' + fmt(r.X, 2) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') +
-    '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
+    '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
   $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
   const r = S.last;
   if (r && (r.sources.length > 1 || r.sources.some(s => s.ratio !== 1))) {
@@ -2402,7 +2403,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.1.0', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.1.1', SW_DATE = '2026-11-26';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));

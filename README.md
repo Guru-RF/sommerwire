@@ -13,7 +13,7 @@ writes MMANA-GAL `.maa` files.
 
 Its distinguishing feature is the real-ground model: the impedance over lossy soil is solved with Sommerfeld
 integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
-come out right, ground loss included. That is where the name comes from.
+agree with NEC-2, ground loss included. That is where the name comes from.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
@@ -87,12 +87,14 @@ Compared with nec2c (the C translation of the public-domain NEC-2), same geometr
 
 Resistance agrees within 1–3 %, gain within 0.1 dB; the reactance offset of 1–4 Ω is the usual difference between
 MININEC- and NEC-style current expansions. On the DX Commander's small, crowded hub the codes differ more; a power
-balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it.
+balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it,
+which points to NEC-2 but does not prove either result. These are comparisons between programs, not measurements.
 The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 
 ## Limitations
 
-Thin wires only; a wire touching the ground switches the impedance to the perfect mirror; no buried wires, layered
+Thin wires only; a wire touching the ground switches the impedance to the perfect mirror, and the gain is then
+approximate (marked ≈, and limited so the pattern never holds more power than the feed supplies); no buried wires, layered
 soil or ground wave; walls and other dielectrics apart from wire insulation are not modelled; baluns are ideal
 transformers; at most 2500 unknowns. The
 Help tab lists these and the open questions in full.

@@ -1002,7 +1002,10 @@
     });
 
     if (sourceResults.some(sr => sr.R < 0)) mesh.warnings.push('Negative feed resistance: this result is not physical. Usually a ground approximation is stretched too far (see any ground warning) or the segmentation is too coarse.');
-    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings };
+    // currents solved over a perfect mirror while the pattern uses real-ground (Fresnel) reflection, as MMANA does:
+    // the two do not conserve energy, and close to the ground the gain comes out too high
+    const mirrorMix = hasGround && gnd.type === 2 && (allPec || (!wantSomm && !wantComplex) || gnd.nf === 'somm-pec-test');
+    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings, mirrorMix };
   }
 
   /* ---------- far field ---------- */
@@ -1068,10 +1071,25 @@
         // horizontal: -Rh * image
         dpr += -(rhr * ipr - rhi * ipi); dpi += -(rhr * ipi + rhi * ipr);
       }
-      const v = 4 * Math.PI * K * (dtr * dtr + dti * dti) / Pin;
-      const h = 4 * Math.PI * K * (dpr * dpr + dpi * dpi) / Pin;
+      const v = 4 * Math.PI * K * (dtr * dtr + dti * dti) / Pin * scale;
+      const h = 4 * Math.PI * K * (dpr * dpr + dpi * dpi) / Pin * scale;
       return { tot: v + h, v, h };
     }
+
+    // Radiated power over input power: the mean gain over the sphere (hemisphere above ground), midpoint rule
+    function powerRatio() {
+      const de = 2, da = 5, e0 = g.type > 0 ? 0 : -90, r = Math.PI / 180;
+      let sum = 0;
+      for (let e = e0 + de / 2; e < 90; e += de) {
+        let ring = 0; for (let a = da / 2; a < 360; a += da) ring += gain(e, a).tot;
+        sum += ring * Math.cos(e * r) * de * r * da * r;
+      }
+      return sum / (4 * Math.PI);
+    }
+    // With mirror currents and real-ground reflection the pattern can hold more power than the feed supplies.
+    // Then scale it down so radiated power equals input power: still optimistic, but no longer impossible.
+    let scale = 1, ratio = null;
+    if (res.mirrorMix && Pin > 0) { ratio = powerRatio(); if (ratio > 1) scale = 1 / ratio; }
 
     function findMax() {
       const e0 = g.type > 0 ? 0 : -90;
@@ -1093,7 +1111,7 @@
       }
       return best;
     }
-    return { gain, findMax };
+    return { gain, findMax, powerRatio, ratio, scale };
   }
 
   const dB = x => (x > 1e-30 ? 10 * Math.log10(x) : -300);
@@ -1108,8 +1126,12 @@
     const gr = divC(s0.R - z0, s0.X, s0.R + z0, s0.X);
     const gm = Math.hypot(gr[0], gr[1]);
     const swr = gm >= 1 ? Infinity : (1 + gm) / (1 - gm);
+    const capDb = pat.scale < 1 ? -dB(pat.scale) : 0;
+    if (res.mirrorMix) res.warnings.push(capDb > 0
+      ? 'Gain is approximate and was limited: the currents are solved over a perfect mirror while the pattern uses real-ground reflection. The pattern held ' + pat.ratio.toFixed(2) + ' times the input power, which is impossible, so all gains were lowered by ' + capDb.toFixed(1) + ' dB to make radiated power equal input power. The real gain is lower still, because the soil absorbs power. Impedance and SWR are those over the perfect mirror.'
+      : 'Gain is approximate: the currents are solved over a perfect mirror while the pattern uses real-ground reflection, as MMANA-GAL does. Close to the ground this overstates gain.');
     return {
-      res, pat, f, R: s0.R, X: s0.X, swr, z0,
+      res, pat, f, R: s0.R, X: s0.X, swr, z0, approx: !!res.mirrorMix, capDb,
       gain: dB(mx.g), el: mx.el, az: mx.az, fb: (fbRaw => (Math.abs(fbRaw) < 1e-9 ? 0 : fbRaw))(dB(front.tot) - dB(back.tot)),
       pol: front.h >= front.v ? 'Horizontal' : 'Vertical',
       gainH: dB(front.h), gainV: dB(front.v)
