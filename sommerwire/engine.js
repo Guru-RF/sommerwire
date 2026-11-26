@@ -827,6 +827,19 @@
       const loc = locate(mesh, ld.pos); if (!loc) return;
       let zr, zi;
       if (ld.type === 1) { zr = +ld.R || 0; zi = +ld.X || 0; }
+      else if (ld.type === 2) {
+        // parallel L-C trap: coil (with loss omega*L/Q in series with it) across the capacitor
+        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
+        const ar = ld.Q > 0 ? omega * L / ld.Q : 0, ai = omega * L;      // coil branch
+        if (!(Cc > 0)) { zr = ar; zi = ai; }
+        else if (!(L > 0)) { zr = 0; zi = -1 / (omega * Cc); }
+        else {
+          // Z = Zl / (1 + j*omega*C*Zl)
+          const dr = 1 - omega * Cc * ai, di = omega * Cc * ar, dd = dr * dr + di * di;
+          zr = (ar * dr + ai * di) / dd; zi = (ai * dr - ar * di) / dd;
+        }
+        if (+ld.R) zr += +ld.R;
+      }
       else {
         const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
         zr = 0; zi = omega * L - (Cc > 0 ? 1 / (omega * Cc) : 0);
@@ -1104,7 +1117,7 @@
           const v = nums(next() || '');
           const type = parseInt(v[1], 10) || 0;
           if (type === 1) model.loads.push({ pos: v[0], type: 1, R: +v[2] || 0, X: +v[3] || 0 });
-          else model.loads.push({ pos: v[0], type: 0, L: +v[2] || 0, C: +v[3] || 0, Q: +v[4] || 0, R: 0 });
+          else model.loads.push({ pos: v[0], type: type === 2 ? 2 : 0, L: +v[2] || 0, C: +v[3] || 0, Q: +v[4] || 0, R: 0 });
         }
       } else if (/segment/.test(h)) {
         const v = nums(next() || '');
@@ -1145,7 +1158,7 @@
     L.push('*** Source ***', model.sources.length + ',\t1');
     model.sources.forEach(s => L.push(s.pos + ',\t' + (+s.phase).toFixed(1) + ',\t' + (+s.mag).toFixed(1)));
     L.push('*** Load ***', model.loads.length + ',\t1');
-    model.loads.forEach(d => L.push(d.type === 1 ? d.pos + ',\t1,\t' + d.R + ',\t' + d.X : d.pos + ',\t0,\t' + d.L + ',\t' + d.C + ',\t' + (d.Q || 0)));
+    model.loads.forEach(d => L.push(d.type === 1 ? d.pos + ',\t1,\t' + d.R + ',\t' + d.X : d.pos + ',\t' + (d.type === 2 ? 2 : 0) + ',\t' + d.L + ',\t' + d.C + ',\t' + (d.Q || 0)));
     L.push('*** Segmentation ***', [model.seg.dm1, model.seg.dm2, model.seg.sc, model.seg.ec].join(',\t'));
     L.push('*** G/H/M/R/AzEl/X ***', [model.ground.type, (+model.ground.height).toFixed(2), model.material | 0, (+model.z0).toFixed(1), 120, 60, 0.0].join(',\t'));
     const tl = (model.tls || []).map(t => 'Sommerwire TL: ' + [t.p1, t.p2, +t.z0 || 50, +t.vf || 1, +t.len > 0 ? +t.len : 0, t.rev ? 1 : 0].join(', '));

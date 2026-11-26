@@ -21,7 +21,7 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
 
 - **Geometry** as editable tables (with expressions such as `R/4` or `33*F`) or drawn in a **3D editor** with snapping,
   wire splitting, undo/redo and live recalculation while you drag.
-- **Sources, loads** (series L–C with Q, or R + jX) and **transmission lines** (ideal lines across feed gaps, like
+- **Sources, loads** (series L–C with Q, parallel L–C traps, or R + jX) and **transmission lines** (ideal lines across feed gaps, like
   NEC's TL card), for example a coax centre line in a hexbeam.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
@@ -35,7 +35,7 @@ By **ON9PK Koen Van den Heuvel**. Free and unencumbered software, released into 
   R/jX, gain and F/B charts, a Smith chart and a per-band summary. Runs on all processor cores.
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.
-- **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, OCF dipole, G5RV, delta loop, Moxon,
+- **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, OCF dipole, G5RV, delta loop, Moxon,
   two-element quad, 160 m inverted-L, 40 m 4-square, a G3TXQ 5-band hexbeam tuned per band,
   an EFOC29 end-fed beside a house, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.

@@ -216,7 +216,7 @@ footer a { color: var(--accent); }
       </div>
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center"><h2>Loads</h2><button type="button" id="addLoad">Add load</button></div>
-        <p class="hint">Series L/C with optional Q, or a fixed R + jX.</p>
+        <p class="hint">Series L/C, a parallel L/C trap (Q is the coil's), or a fixed R + jX. Leave L or C at 0 to leave it out.</p>
         <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
@@ -466,6 +466,15 @@ const EXAMPLES = [
       { x1: '0', y1: '3.5', z1: '0', x2: '0', y2: '7', z2: '0', r: '1', seg: '-1' }],
     sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [{ pos: 'w2b', type: 0, L: 12, C: 0, Q: 200, R: 0, X: 0 }, { pos: 'w2e', type: 0, L: 12, C: 0, Q: 200, R: 0, X: 0 }],
     ground: { type: 2, height: 10, eps: 13, sigma: 0.005 }, material: 1, z0: 50, comment: '14 m dipole with two 12 µH coils (Q 200) half way out.' },
+  { name: 'Trap dipole, 80 + 40 m (W3DZZ type)', freq: 3.7, wires: [
+      { x1: '0', y1: '-17.23', z1: '10', x2: '0', y2: '-10.33', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '-10.33', z1: '10', x2: '0', y2: '-0.1', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '-0.1', z1: '10', x2: '0', y2: '0.1', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '0.1', z1: '10', x2: '0', y2: '10.33', z2: '10', r: '1', seg: '-1' },
+      { x1: '0', y1: '10.33', z1: '10', x2: '0', y2: '17.23', z2: '10', r: '1', seg: '-1' }],
+    sources: [{ pos: 'w3c', phase: 0, mag: 1 }], loads: [{ pos: 'w2b', type: 2, L: 8.2, C: 60, Q: 100, R: 0, X: 0 }, { pos: 'w4e', type: 2, L: 8.2, C: 60, Q: 100, R: 0, X: 0 }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: '34.5 m dipole at 10 m with a parallel trap (8.2 µH, Q 100, across 60 pF, resonant at 7.17 MHz) 10.33 m each side of the feed, then 6.9 m of wire beyond each trap. On 40 m the traps block the outer wires; on 80 m they act as loading coils, so the antenna is about 7 m shorter than a plain 80 m dipole. Resonant at 3.70 MHz (about 51 ohm) and 7.10 MHz (about 96 ohm, SWR 1.9 on 50 ohm coax).' },
   { name: "Off-centre-fed dipole (OCF, FD4 type), 80–10 m", freq: 7.1, wires: [
       { x1: '-13.9', y1: '0', z1: '10', x2: '-0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
       { x1: '-0.1', y1: '0', z1: '10', x2: '0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
@@ -709,7 +718,7 @@ function renderTables() {
     '<td class="x"><button type="button" data-del="s" data-i="' + i + '" aria-label="Delete source">×</button></td></tr>').join('');
   $('#loadTbl tbody').innerHTML = m.loads.map((l, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
     '<td>' + cellInput(l.pos, 'id="l' + i + 'pos" data-t="l" data-i="' + i + '" data-c="pos"') + '</td>' +
-    '<td><select id="l' + i + 'type" data-t="l" data-i="' + i + '" data-c="type"><option value="0"' + (l.type == 0 ? ' selected' : '') + '>L / C</option><option value="1"' + (l.type == 1 ? ' selected' : '') + '>R + jX</option></select></td>' +
+    '<td><select id="l' + i + 'type" data-t="l" data-i="' + i + '" data-c="type"><option value="0"' + (l.type == 0 ? ' selected' : '') + '>Series L / C</option><option value="2"' + (l.type == 2 ? ' selected' : '') + '>Parallel L / C (trap)</option><option value="1"' + (l.type == 1 ? ' selected' : '') + '>R + jX</option></select></td>' +
     ['L', 'C', 'Q', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
     '<td class="x"><button type="button" data-del="l" data-i="' + i + '" aria-label="Delete load">×</button></td></tr>').join('');
   $('#objTbl tbody').innerHTML = (m.objects || []).map((o, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
