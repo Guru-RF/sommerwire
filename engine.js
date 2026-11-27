@@ -1221,6 +1221,131 @@
     };
   }
 
+  /* ---------- angle summary and RDF ----------
+   * Both work on one sampling of the pattern over the visible sky (skyGrid): every `de` degrees of elevation from the
+   * horizon (free space: from -90) to the zenith, every `da` degrees of azimuth. All averages are averages of LINEAR
+   * power gain weighted by solid angle (dOmega = cos(el) d el d az), never averages of dB values.
+   * The elevation weights integrate a gain that is piecewise linear between the samples exactly, so a constant gain
+   * returns the exact solid angle; the azimuth sum is the periodic trapezoid rule.
+   * "V" and "H" are the theta and phi components, as everywhere else in the program. */
+  const RAD = Math.PI / 180;
+  function skyGrid(pat, hasGround, opts) {
+    const de = (opts && opts.de) || 1, da = (opts && opts.da) || 4;
+    const e0 = hasGround ? 0 : -90, nE = Math.round((90 - e0) / de) + 1, nA = Math.round(360 / da);
+    if (!(de > 0 && da > 0) || Math.abs((nE - 1) * de - (90 - e0)) > 1e-9 || Math.abs(nA * da - 360) > 1e-9) throw new Error('Sky grid: the steps must divide 90 and 360 degrees');
+    const els = Array.from({ length: nE }, (_, i) => e0 + i * de), azs = Array.from({ length: nA }, (_, i) => i * da);
+    const tot = new Float64Array(nE * nA), v = new Float64Array(nE * nA), h = new Float64Array(nE * nA);
+    for (let i = 0; i < nE; i++) for (let j = 0; j < nA; j++) {
+      const G = pat.gain(els[i], azs[j]), k = i * nA + j;
+      if (!(G.v >= 0 && G.h >= 0 && Number.isFinite(G.v + G.h))) throw new Error('The pattern is not finite at ' + els[i] + '° elevation, ' + azs[j] + '° azimuth');
+      v[k] = G.v; h[k] = G.h; tot[k] = G.v + G.h;
+    }
+    return { els, azs, de, da, e0, nA, tot, v, h, hasGround: !!hasGround, gain: pat.gain };
+  }
+  function gridIndex(grid, el, what) {
+    const i = Math.round((el - grid.e0) / grid.de);
+    if (!Number.isFinite(el) || i < 0 || i >= grid.els.length || Math.abs(grid.els[i] - el) > 1e-9) throw new Error(what + ': ' + el + '° is not an elevation of the sky grid (' + grid.e0 + ' to 90° in steps of ' + grid.de + '°)');
+    return i;
+  }
+  // band of elevations [a, b] (deg), all azimuths: solid angle, solid-angle mean of the linear gains, and the largest samples
+  function bandStats(grid, a, b) {
+    const ia = gridIndex(grid, a, 'Band start'), ib = gridIndex(grid, b, 'Band end');
+    if (ib <= ia) throw new Error('Band: the end elevation must be above the start');
+    const hR = grid.de * RAD, daR = grid.da * RAD, nA = grid.nA;
+    const sum = { tot: 0, v: 0, h: 0 }, peak = { tot: { g: -1 }, v: { g: -1 }, h: { g: -1 } };
+    let horizE = 0;
+    for (let i = ia; i <= ib; i++) {
+      const e = grid.els[i] * RAD, c = Math.cos(e), se2 = Math.sin(e) ** 2;
+      // integral of the hat function of node i times cos(el), clipped to the band
+      const w = ((i > ia ? c - Math.cos(e - hR) : 0) + (i < ib ? c - Math.cos(e + hR) : 0)) / hR + (i === ia ? -Math.sin(e) : 0) + (i === ib ? Math.sin(e) : 0);
+      let rt = 0, rv = 0, rh = 0;
+      for (let j = 0; j < nA; j++) {
+        const k = i * nA + j; rt += grid.tot[k]; rv += grid.v[k]; rh += grid.h[k];
+        for (const p of ['tot', 'v', 'h']) if (grid[p][k] > peak[p].g) peak[p] = { g: grid[p][k], el: grid.els[i], az: grid.azs[j] };
+      }
+      sum.tot += w * rt * daR; sum.v += w * rv * daR; sum.h += w * rh * daR; horizE += w * (rh + rv * se2) * daR;
+    }
+    const sr = 2 * Math.PI * (Math.sin(b * RAD) - Math.sin(a * RAD));
+    return { el0: a, el1: b, sr, integral: sum, mean: { tot: sum.tot / sr, v: sum.v / sr, h: sum.h / sr }, peak,
+      horizE: sum.tot > 0 ? horizE / sum.tot : null };   // share of the band's power whose E field is horizontal
+  }
+  /* H / V by angle. Two elevation bands, all azimuths:
+   *   low  (default 5-30 deg):  mean and peak of V and of H. `dominant` is 'V' or 'H' only when the two means differ by
+   *        at least `margin` dB (default 3), otherwise null: no dominance is claimed.
+   *   high (default 60-90 deg): mean and peak of the total field. These are the angles a near-vertical-incidence (NVIS)
+   *        path would use; whether such a path exists depends on the ionosphere, which is not modelled, so this is a
+   *        candidate figure, not a propagation prediction. Close to the zenith theta and phi are both horizontal
+   *        E fields (which is which depends only on the azimuth), so no V/H dominance is derived there; `horizE` gives
+   *        the share of the power whose E field is horizontal (never below sin^2(60 deg) = 75 % in the default band).
+   *   `favoured` is 'high' or 'low' only when the mean total gains of the two bands differ by at least `margin` dB. */
+  const ANGLE_BANDS = { low: [5, 30], high: [60, 90], margin: 3 };
+  function angleSummary(grid, opts) {
+    const o = Object.assign({}, ANGLE_BANDS, opts);
+    const fin = x => (Number.isFinite(x) ? x : null);
+    const dbs = b => Object.assign(b, { meanDb: { tot: dB(b.mean.tot), v: dB(b.mean.v), h: dB(b.mean.h) },
+      peakDb: { tot: dB(b.peak.tot.g), v: dB(b.peak.v.g), h: dB(b.peak.h.g) } });
+    const low = dbs(bandStats(grid, o.low[0], o.low[1])), high = dbs(bandStats(grid, o.high[0], o.high[1]));
+    const some = low.mean.tot > 1e-30 && high.mean.tot > 1e-30;
+    // a component that is absent has no dB value: no difference is given, and the other one dominates
+    const hasV = low.mean.v > 1e-30, hasH = low.mean.h > 1e-30;
+    low.vMinusH = hasV && hasH ? fin(low.meanDb.v - low.meanDb.h) : null;
+    low.dominant = low.vMinusH == null ? (hasV ? 'V' : hasH ? 'H' : null) : low.vMinusH >= o.margin ? 'V' : low.vMinusH <= -o.margin ? 'H' : null;
+    const highMinusLow = some ? fin(high.meanDb.tot - low.meanDb.tot) : null;
+    return { low, high, margin: o.margin, highMinusLow, favoured: highMinusLow == null ? null : highMinusLow >= o.margin ? 'high' : highMinusLow <= -o.margin ? 'low' : null };
+  }
+  /* Receiving directivity factor: RDF = 10 log10( G(desired direction) / mean G over the noise ), in dB.
+   *   desired {el, az} (required): the direction the wanted signal arrives from; its total-field gain is the numerator.
+   *   domain [el0, el1]: the elevations noise arrives from, all azimuths, spread evenly per unit solid angle
+   *        (default: the whole visible sky, horizon to zenith over ground, the full sphere in free space).
+   *   pol 'tot' | 'v' | 'h': the polarization component that receives the noise (default 'tot': unpolarized noise).
+   *   ref '4pi' | 'domain': the solid angle the noise integral is divided by. '4pi' is the published convention
+   *        (RDF = directivity; forward gain minus average gain): over ground it is 3.01 dB above the mean over the
+   *        hemisphere, in free space the two are the same. 'domain' is the plain mean over the noise domain.
+   * Named background assumptions (RDF_BACKGROUNDS):
+   *   sky: noise from the whole visible sky, unpolarized, '4pi'. Comparable with published RDF tables.
+   *   low: noise only from 0-30 deg elevation, unpolarized, mean over that band. Not comparable with `sky` in absolute
+   *        value: it answers how much the desired direction stands above the low-angle average.
+   * Losses cancel (numerator and denominator are the same pattern), so RDF is a pattern-shape figure. It says nothing
+   * about real noise, which is neither uniform nor known here. */
+  const RDF_BACKGROUNDS = { sky: { domain: null, pol: 'tot', ref: '4pi' }, low: { domain: [0, 30], pol: 'tot', ref: 'domain' } };
+  function rdf(grid, opts) {
+    const o = Object.assign({}, RDF_BACKGROUNDS.sky, opts), d = o.desired;
+    if (!d || !Number.isFinite(d.el) || !Number.isFinite(d.az)) throw new Error('RDF needs a desired direction {el, az}');
+    if (d.el < grid.e0 || d.el > 90) throw new Error('RDF: the desired elevation ' + d.el + '° is outside the pattern');
+    if (!['tot', 'v', 'h'].includes(o.pol)) throw new Error('RDF: unknown polarization ' + o.pol);
+    if (o.ref !== '4pi' && o.ref !== 'domain') throw new Error('RDF: unknown reference ' + o.ref);
+    const dom = o.domain || [grid.e0, 90];
+    if (o.ref === '4pi' && (dom[0] !== grid.e0 || dom[1] !== 90)) throw new Error('RDF: the 4 pi reference needs the whole visible sky as the noise domain');
+    const b = bandStats(grid, dom[0], dom[1]);
+    const gDes = grid.gain(d.el, d.az).tot, mean = b.integral[o.pol] / (o.ref === '4pi' ? 4 * Math.PI : b.sr);
+    const ok = gDes > 1e-30 && mean > 1e-30 && Number.isFinite(gDes / mean);
+    return { rdf: ok ? 10 * Math.log10(gDes / mean) : null, desired: { el: d.el, az: d.az }, gDes, gDesDb: dB(gDes), mean, meanDb: dB(mean), domain: dom, sr: b.sr, pol: o.pol, ref: o.ref };
+  }
+  /* Summary of one analyze() result for the user interface. Flags that make every figure in it approximate:
+   *   approx:  currents over the perfect mirror with a real-ground pattern (see analyze); the pattern shape is not exact.
+   *   coarse:  the sky grid misses the main lobe (its largest sample is over 1 dB below the refined maximum), so the
+   *            averages are unreliable for this narrow a beam.
+   *   overUnity: the pattern holds over 5 % more power than the sources supply, which is not physical. */
+  function patternSummary(a, model, opts) {
+    const hasGround = ((model.ground || {}).type | 0) > 0;
+    const grid = skyGrid(a.pat, hasGround, opts);
+    const desired = { el: a.el, az: a.az };
+    const sky = rdf(grid, Object.assign({}, RDF_BACKGROUNDS.sky, { desired }));
+    const gridMax = grid.tot.reduce((m, x) => Math.max(m, x), 0), skyPower = sky.mean;
+    const strip = b => ({ el0: b.el0, el1: b.el1, meanDb: b.meanDb, peakDb: b.peakDb, horizE: b.horizE, vMinusH: b.vMinusH, dominant: b.dominant,
+      peakAt: { tot: [b.peak.tot.el, b.peak.tot.az], v: [b.peak.v.el, b.peak.v.az], h: [b.peak.h.el, b.peak.h.az] } });
+    const out = { hasGround, approx: !!a.approx, coarse: !(gridMax * 1.2589 >= sky.gDes), overUnity: skyPower > 1.05, skyPower, desired,
+      rdf: { sky: { rdf: sky.rdf, meanDb: sky.meanDb, domain: sky.domain, ref: sky.ref } }, hv: null };
+    if (hasGround) {
+      const low = rdf(grid, Object.assign({}, RDF_BACKGROUNDS.low, { desired }));
+      out.rdf.low = { rdf: low.rdf, meanDb: low.meanDb, domain: low.domain, ref: low.ref };
+      const s = angleSummary(grid);
+      out.hv = { low: strip(s.low), high: strip(s.high), margin: s.margin, highMinusLow: s.highMinusLow, favoured: s.favoured };
+    }
+    out.uncertain = out.approx || out.coarse || out.overUnity;
+    return out;
+  }
+
   /* ---------- MAA files ---------- */
   function parseMAA(text) {
     const lines = text.replace(/\r/g, '').split('\n');
@@ -1465,6 +1590,6 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+  root.MM = { skyGrid, bandStats, angleSummary, rdf, patternSummary, ANGLE_BANDS, RDF_BACKGROUNDS, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
     varValue, applyVars, evalGoals, makeOptimizer };
 })(typeof globalThis !== 'undefined' ? globalThis : self);

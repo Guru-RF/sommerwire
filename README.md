@@ -36,7 +36,7 @@ for these.
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
 - **Buildings**: a house beside the antenna with a metal roof as a wire grid, rain gutters and downpipes to earth.
-- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern.
+- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF).
 - **HF, VHF and UHF**: the same solver from 160 m to 23 cm; long passive wires such as masts are coarsened automatically
   when a VHF/UHF model would otherwise exceed the 2500-unknown limit.
 - **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, both 2 m and 70 cm at once (split axis), or the whole
@@ -96,6 +96,16 @@ over the whole searched range: the fixed length, not the heights, keeps the 160 
 fine-tuning on site. The examples calculate both listed band frequencies by default (the strip under the readout shows SWR and
 impedance at each), and open the Pattern tab in *Horizontal + vertical*: the H and V polarization components of
 the same azimuth and elevation cuts, against one 0 dB reference (the total-field maximum).
+
+Under the cuts, a table gives an angle summary per band: mean and peak V and H gain at low angles (5–30°, all azimuths),
+mean and peak total gain at high angles (60–90°, the NVIS candidate range; a figure for how much goes up, not a propagation
+prediction), and RDF toward the total-field maximum for two stated noise assumptions (whole visible sky with the published
+4π convention, and 0–30° elevation only). Means are linear power weighted by solid angle. “Dominant” or “favoured” is
+printed only for a difference of 3 dB or more. In the model, on the lower band of each example the high angles are
+favoured (by 9.0 dB at 1.85 MHz and 7.4 dB at 3.65 MHz) and low-angle H exceeds V by 3.7 and 3.2 dB; on the upper band
+neither holds (high minus low 2.1 and 0.8 dB, V minus H −2.5 and −0.7 dB). The vertical section does not make either
+example V-dominant at low angles on this soil. Max gain and F/B keep their meaning (total-field maximum, and that maximum
+against the opposite azimuth at the same elevation) and are now labelled as such.
 These are model results, not measurements; no SWR, loss or gain figure from RF.Guru is reproduced.
 
 ## How it works
@@ -147,7 +157,7 @@ index.html           the application, with engine.js, structgen.js, hexgen.js, e
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
-tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view, angle summary and RDF)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```
 

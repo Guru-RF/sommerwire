@@ -166,7 +166,8 @@ kbd { font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px
 .coord { position: absolute; left: 8px; top: 8px; font-family: var(--f-mono); font-size: 11.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; pointer-events: none; max-width: calc(100% - 16px); }
 .legend i.bandkey { border: 0; height: 10px; width: 16px; background: var(--trace3); opacity: 0.3; border-radius: 2px; }
 .bandsum { display: grid; gap: 8px; }
-.bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
+#patSum { margin-top: 12px; display: grid; gap: 8px; }
+#patSum h3, .bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
 table.results td.good { color: var(--good); } table.results td.warn { color: var(--warn); } table.results td.bad { color: var(--bad); }
 footer { color: var(--muted); font-size: 12px; max-width: 80ch; display: grid; gap: 6px; }
 footer p { margin: 0; }
@@ -197,9 +198,9 @@ footer a { color: var(--accent); }
     <div class="ro"><div class="k">Frequency</div><div class="v" id="roF">–</div></div>
     <div class="ro wide"><div class="k">Impedance (Ω)</div><div class="v" id="roZ">–</div></div>
     <div class="ro"><div class="k" id="roSwrK">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
-    <div class="ro"><div class="k">Gain</div><div class="v" id="roG">–</div></div>
-    <div class="ro"><div class="k">F/B</div><div class="v" id="roFB">–</div></div>
-    <div class="ro"><div class="k">Elevation</div><div class="v" id="roEl">–</div></div>
+    <div class="ro"><div class="k" title="Largest total-field gain (H and V power together) over all directions, in dBi relative to the power accepted by the sources. Its direction is under Elevation and on the Far field tab.">Max gain</div><div class="v" id="roG">–</div></div>
+    <div class="ro"><div class="k" title="Front-to-back: the total-field maximum against the direction 180° away in azimuth at the same elevation. For a maximum near the zenith both directions are almost overhead, so F/B is near 0 dB and says little.">F/B</div><div class="v" id="roFB">–</div></div>
+    <div class="ro"><div class="k" title="Elevation of the total-field maximum">Elevation</div><div class="v" id="roEl">–</div></div>
     <div class="ro"><div class="k">Polarization</div><div class="v" id="roPol">–</div></div>
   </section>
   <div id="bandAntenna" hidden></div>
@@ -345,7 +346,7 @@ footer a { color: var(--accent); }
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Results</h2><button type="button" id="clearRes" class="ghost">Clear list</button></div>
       <p class="hint">Each calculation adds a row so you can compare changes. The newest row is highlighted.</p>
-      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th>Gain dBi</th><th>F/B dB</th><th>Elev °</th><th>Ground</th><th>H m</th><th>Pol</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
+      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th><th title="Elevation of the total-field maximum">Elev °</th><th>Ground</th><th>H m</th><th>Pol</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
       <div id="srcRes"></div>
     </div>
   </section>
@@ -366,6 +367,7 @@ footer a { color: var(--accent); }
         <div class="fld"><span id="elTitle">Elevation</span><div class="canvasbox polar"><canvas id="elPlot"></canvas></div></div>
       </div>
       <div class="legend" id="patLegend"></div>
+      <div id="patSum"></div>
       <p class="hint">Scale: dB relative to the maximum, rings at −3, −6, −10, −20 and −30 dB. Azimuth 0° is the +X axis, counter-clockwise, matching the top view.</p>
     </div>
     <div class="card">
@@ -804,7 +806,8 @@ function pack(model, f) {
   for (let d = 0; d < 360; d += 5) gAzs.push(d);
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
   const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
-  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+  let sum = null; try { sum = MM.patternSummary(a, model); } catch (err) { r.warnings.push('No angle summary or RDF: ' + (err.message || err)); }
+  return { grid, sum, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
     N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, earthed: r.earthed, ground: g, height: model.ground.height };
 }`;
 let worker = null, workerUrl = null;
@@ -1094,6 +1097,7 @@ async function calcBands(model, key, main) {
   }
   S.bandRes = { key, rows };
   renderBands();
+  drawPatterns();
 }
 function renderBands() {
   const box = $('#bandRes'), fl = (S.model && S.model.bands) || [];
@@ -1765,7 +1769,7 @@ function drawPolar(cv, series, half, ref) {
 function drawPatterns() {
   const az = $('#azPlot'); if (!az.offsetParent) return;
   const r = S.last;
-  if (!r) { prep(az); prep($('#elPlot')); return; }
+  if (!r) { prep(az); prep($('#elPlot')); $('#patSum').innerHTML = ''; return; }
   const mode = $('#polSel').value;
   const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
   const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
@@ -1796,7 +1800,44 @@ function drawPatterns() {
   if (S.held) lg += '<span><i class="dash" style="border-color:var(--muted)"></i>Held: <span class="heldName"></span></span>';
   $('#patLegend').innerHTML = lg;
   if (S.held) $('#patLegend .heldName').textContent = S.held.label;
+  // the other bands of a multiband example, when they were solved for this same model
+  const bandRows = S.bandRes && S.bandRes.rows;
+  $('#patSum').innerHTML = patSummaryHtml(bandRows && bandRows.some(x => Math.abs(x.f - r.f) < 1e-9) ? bandRows.map(x => (Math.abs(x.f - r.f) < 1e-9 ? r : x)) : [r]);
   drawFF3D();
+}
+/* Angle summary under the cuts: what Max gain and F/B measure, V and H at low angles, the total field at high angles,
+   and RDF (see MM.angleSummary and MM.rdf). A verdict is printed only when the engine found one; otherwise "neither". */
+function patSummaryHtml(rows) {
+  rows = rows.filter(r => r && r.sum);
+  if (!rows.length) return '';
+  const d2 = x => (x == null || !Number.isFinite(x) ? '–' : fmt(x, 2)), dir = (el, az) => fmt(el, 1) + '° el, ' + fmt(az, 1) + '° az';
+  const hv = rows.some(r => r.sum.hv), m = hv ? rows.find(r => r.sum.hv).sum.hv : null;
+  const lo = m && m.low.el0 + '–' + m.low.el1 + '°', hi = m && m.high.el0 + '–' + m.high.el1 + '°', mg = m && m.margin;
+  const pol = h => (h.low.dominant ? h.low.dominant + ' dominant' : 'neither dominates');
+  const fav = h => (h.favoured ? h.favoured + ' angles favoured' : 'neither favoured');
+  const body = rows.map(r => {
+    const s = r.sum, h = s.hv, q = s.uncertain ? '≈ ' : '';
+    return '<tr><td>' + fmt(r.f, 3) + '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + dir(r.el, r.az) + '</td><td>' + fmt(r.fb, 1) + '</td>' +
+      (hv ? (h ? '<td>' + q + d2(h.low.meanDb.v) + ' / ' + d2(h.low.meanDb.h) + '</td><td>' + d2(h.low.peakDb.v) + ' / ' + d2(h.low.peakDb.h) + '</td><td>' + d2(h.low.vMinusH) + ' · ' + pol(h) +
+        '</td><td>' + q + d2(h.high.meanDb.tot) + ' / ' + d2(h.high.peakDb.tot) + '</td><td>' + d2(h.highMinusLow) + ' · ' + fav(h) + '</td>' : '<td>–</td><td>–</td><td>–</td><td>–</td><td>–</td>') : '') +
+      '<td>' + q + d2(s.rdf.sky.rdf) + '</td>' + (hv ? '<td>' + (s.rdf.low ? q + d2(s.rdf.low.rdf) : '–') + '</td>' : '') + '</tr>';
+  }).join('');
+  const why = [];
+  if (rows.some(r => r.sum.approx)) why.push('the currents were solved over a perfect mirror while the pattern uses real-ground reflection, so the pattern shape is approximate');
+  if (rows.some(r => r.sum.coarse)) why.push('the main lobe is narrower than the 1° × 4° averaging grid');
+  if (rows.some(r => r.sum.overUnity)) why.push('the pattern holds more power than the sources supply');
+  return '<h3>Gain, F/B' + (hv ? ', H / V by angle' : '') + ' and RDF</h3><div class="tscroll"><table class="results" id="patSumTbl"><thead><tr><th>MHz</th>' +
+    '<th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Direction of the total-field maximum; also the desired direction for RDF">Toward</th>' +
+    '<th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th>' +
+    (hv ? '<th>Low ' + lo + ' mean V / H dBi</th><th>Low ' + lo + ' peak V / H dBi</th><th>Low-angle V − H dB</th><th>High ' + hi + ' total mean / peak dBi</th><th>High − low mean dB</th>' : '') +
+    '<th title="Desired direction: the total-field maximum. Noise: the whole visible sky, even per solid angle, unpolarized; 4π reference (directivity), as in published RDF tables">RDF all-sky dB</th>' +
+    (hv ? '<th title="Desired direction: the total-field maximum. Noise: only from 0–30° elevation, even per solid angle, unpolarized; relative to the mean over that band">RDF low-angle noise dB</th>' : '') +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<p class="hint"><b>Max gain</b> is the largest total-field gain (H and V power together) over all directions; <b>F/B</b> compares it with the direction 180° away in azimuth at the same elevation, so for a maximum near the zenith it is close to 0 dB and says little. ' +
+    (hv ? '<b>Low ' + lo + '</b> and <b>high ' + hi + '</b> cover all azimuths; every mean is a mean of linear power weighted by solid angle. V or H “dominant” and high or low “favoured” appear only for a difference of at least ' + mg + ' dB; otherwise neither is claimed. ' +
+      'The high band holds the angles a near-vertical (NVIS) path would use: a candidate figure, not a propagation prediction, since the ionosphere is not modelled. Close to the zenith both components are horizontal fields, so the high band uses the total. ' : '') +
+    '<b>RDF</b> = gain toward the maximum minus the mean gain over the assumed noise directions' + (hv ? '; the two columns assume different noise and are not comparable in absolute value' : '') + '. It describes the pattern shape, not real noise.' +
+    (why.length ? ' <b>≈ approximate:</b> ' + why.join('; ') + '.' : '') + '</p>';
 }
 $('#polSel').onchange = drawPatterns;
 

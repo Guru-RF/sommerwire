@@ -110,7 +110,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 </ul>
 
 <h3 id="h-readout">The readout strip</h3>
-<p>After every calculation the strip at the top shows the frequency, feed impedance R + jX of the first source (after its balun, if it has one), SWR against the reference impedance, maximum gain (dBi), F/B, the elevation of the main lobe and the dominant polarization. For an example that lists several band frequencies (the RF.Guru EFHW16080 and EFHW8040), a <b>Bands</b> row under the strip shows the SWR and R + jX at each of them, all solved for the model as it is now; any model edit blanks the row until the next full calculation, and clicking a band makes it the calculation frequency. The status line underneath gives the number of segments and unknowns, the time taken and how many warnings were raised; warnings are listed on the Calculate tab and should be read, because they flag situations where the numbers are not trustworthy.</p>
+<p>After every calculation the strip at the top shows the frequency, feed impedance R + jX of the first source (after its balun, if it has one), SWR against the reference impedance, maximum gain (dBi; the largest total-field gain over all directions), F/B (that maximum against the direction 180° away in azimuth at the same elevation), the elevation of the maximum and the polarization component that is larger there. For a maximum near the zenith, F/B compares two almost overhead directions and stays near 0 dB; the <a href="#h-pattern">Far field tab</a> has an angle summary for such antennas. For an example that lists several band frequencies (the RF.Guru EFHW16080 and EFHW8040), a <b>Bands</b> row under the strip shows the SWR and R + jX at each of them, all solved for the model as it is now; any model edit blanks the row until the next full calculation, and clicking a band makes it the calculation frequency. The status line underneath gives the number of segments and unknowns, the time taken and how many warnings were raised; warnings are listed on the Calculate tab and should be read, because they flag situations where the numbers are not trustworthy.</p>
 
 <h3 id="h-geometry">Geometry tab</h3>
 <p>The top section holds the antenna name, the design frequency and an editable <b>comment</b>: the comment section of a <code>.maa</code> file is shown there when you open it, and whatever you type is written back on <b>Save .maa</b>.</p>
@@ -155,6 +155,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 <ul>
   <li>Azimuth and elevation plots in dB relative to the maximum (rings at −3, −6, −10, −20, −30 dB). The azimuth cut is at the elevation of maximum gain; the elevation cut is toward the azimuth of maximum gain.</li>
   <li>Choose total, horizontal or vertical polarization, <b>Horizontal + vertical</b> (the H and V components of the same azimuth and elevation cuts, both in dB below the total-field maximum, so they share one reference; the elevation title gives the peak of each), or all three. The RF.Guru EFHW inverted-Ls open in Horizontal + vertical; every other example keeps the current choice. <b>Hold for comparison</b> keeps the current pattern on the plots as a reference; <b>Clear held</b> removes it.</li>
+  <li>The table under the cuts repeats <b>Max gain</b>, its direction and <b>F/B</b>, and adds an angle summary and RDF (<a href="#m-angle">method</a>). Over ground it gives, for all azimuths together, the mean and peak of V and of H at low angles (5–30°) and the mean and peak of the total field at high angles (60–90°). It says “V dominant”, “H dominant”, “high angles favoured” or “low angles favoured” only when the difference is at least 3 dB, and “neither” otherwise. The high-angle figure is an NVIS <i>candidate</i>: it shows how much the antenna radiates upward, not whether the ionosphere returns it. A multiband example gets one row per band once the bands are solved. Values marked ≈ rest on an approximate pattern; the note under the table says why.</li>
   <li><b>3D pattern</b>: drag to rotate, wheel or pinch to zoom, sampled every 5°, down to −40 dB.</li>
 </ul>
 
@@ -223,6 +224,20 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
   <li>Gain is in dBi, relative to the net power accepted by all sources together, so wire loss, load loss, line loss and (with Sommerfeld) ground loss lower it; mismatch loss at the transmitter is not included. Power lost to the ground and to the surface wave does not show up in the sky-wave pattern.</li>
   <li>The maximum is found on a 5° grid and refined down to 0.25°. F/B compares the maximum with the direction 180° away in azimuth at the same elevation.</li>
   <li>Polarization is horizontal or vertical according to which component is larger toward the maximum.</li>
+</ul>
+
+<h3 id="m-angle">Angle summary and RDF</h3>
+<ul>
+  <li>The pattern is sampled over the visible sky every 1° of elevation (horizon to zenith over ground, −90° to 90° in free space) and every 4° of azimuth. Every mean is a mean of <b>linear power gain weighted by solid angle</b> (cos(elevation) per step), never a mean of dB values. V and H are the θ and φ components, as on the plots.</li>
+  <li><b>Low angles, 5–30°</b>: mean and peak of V and of H over all azimuths. One is called dominant only if the two means differ by 3 dB or more.</li>
+  <li><b>High angles, 60–90°</b>: mean and peak of the total field. Near the zenith θ and φ are both horizontal fields, and which one a wire excites depends only on the azimuth, so no V/H split is given there. This is the range a near-vertical-incidence (NVIS) path uses; whether such a path exists depends on the frequency and the ionosphere, which Sommerwire does not model. High or low angles are called favoured only if the two mean total gains differ by 3 dB or more.</li>
+  <li><b>RDF</b> (receiving directivity factor) = 10·log(gain toward the desired direction / mean gain over the directions noise comes from). The <b>desired direction</b> is the total-field maximum, the direction Max gain refers to and the “Toward” column shows; for an antenna whose maximum is overhead that is the zenith. Two noise assumptions are given, both with noise spread evenly per solid angle over all azimuths and unpolarized (total field):
+    <ul>
+      <li><b>All-sky</b>: noise from the whole visible sky, divided by 4π, the published convention (forward gain minus average gain, i.e. directivity). Over ground this is 3.01 dB above the plain mean over the hemisphere. A short vertical on perfect ground gives 4.77 dB.</li>
+      <li><b>Low-angle noise</b> (over ground only): noise from 0–30° elevation only, relative to the mean over that band. It is a different quantity and cannot be compared with the all-sky figure in absolute value.</li>
+    </ul>
+    Losses cancel in RDF, so it describes the shape of the pattern only. Real noise is neither uniform nor known here; RDF ranks patterns under the stated assumption and is not a signal-to-noise prediction.</li>
+  <li><b>≈</b> marks figures from a pattern that is itself approximate: currents solved over the perfect mirror with a real-ground pattern (<a href="#mixgain">see above</a>), a main lobe narrower than the sampling grid (the largest sample is more than 1 dB below the refined maximum), or a pattern that holds over 5 % more power than the sources supply.</li>
 </ul>
 
 <h3 id="m-loss">Wire loss and loads</h3>
