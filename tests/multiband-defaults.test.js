@@ -36,7 +36,7 @@ const byName = n => { const i = EXAMPLES.findIndex(e => e.name.startsWith(n)); a
 const EXPECTED = {
   'RF.Guru EFHW16080': [1.85, 3.65],
   'RF.Guru EFHW8040': [3.65, 7.1],
-  'RF.Guru EFOC29': [3.6, 7.1, 14.175, 18.118, 21.225, 24.94, 28.5]
+  'RF.Guru EFOC29': [3.6, 7.1, 10.125, 14.175, 18.118, 21.225, 24.94, 28.5]
 };
 
 test('band frequencies only on the examples that state them', () => {

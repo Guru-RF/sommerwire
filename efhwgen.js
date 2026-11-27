@@ -82,10 +82,11 @@
    * The 29 m is kept untrimmed and the choke is ideal (open end of the shield wire): no matching to a measurement.
    * Wires: 1 radiator (+X), 2 coax shield exterior from the feedpoint to the choke (-Y). Source at w1b. */
   const EFOC_SRC = { product: 'https://shop.rf.guru/products/efoc29', guide: 'https://shop.rf.guru/pages/efoc29-antenna-installation-guide' };
-  // bands: one calculation frequency per supported band (MHz): 80 m at the guide's 3.6 MHz target, the others at
-  // IARU Region 1 band midpoints except 10 m (28.5 MHz, the lower part where the guide places its resonance)
+  // bands: one calculation frequency per band 80-10 m except 60 m (MHz): 80 m at the guide's 3.6 MHz target, the others
+  // at IARU Region 1 band midpoints except 10 m (28.5 MHz, the lower part where the guide places its resonance). 30 m
+  // (10.125 MHz) and 15 m are included although RF.Guru says they may need a tuner; 60 m needs one and is left out.
   const RFGURU_EFOC29 = { name: 'RF.Guru EFOC29 end-fed off-centre, 80–10 m, 4:1, flat top', ratio: 4, total: 29, feed: 8, choke: 12, chokeZ: 2,
-    rWire: 1, rShield: 3.6, eps: 5, sigma: 0.001, bands: [3.6, 7.1, 14.175, 18.118, 21.225, 24.94, 28.5] };
+    rWire: 1, rShield: 3.6, eps: 5, sigma: 0.001, bands: [3.6, 7.1, 10.125, 14.175, 18.118, 21.225, 24.94, 28.5] };
   function rfGuruEfoc29() {
     const d = RFGURU_EFOC29, dy = Math.sqrt(d.choke * d.choke - (d.feed - d.chokeZ) ** 2);
     const w = (a, b, r) => ({ x1: fm(a[0]), y1: fm(a[1]), z1: fm(a[2]), x2: fm(b[0]), y2: fm(b[1]), z2: fm(b[2]), r: String(r), seg: '-1' });

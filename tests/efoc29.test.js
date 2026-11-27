@@ -2,7 +2,7 @@
  * Run from the repository root:  node --test tests/
  * Checks the sourced dimensions (29 m radiator, 4:1, ~12 m coax return ended by the choke), that the assumed geometry
  * and the limitations are labelled in the comment, that no wire touches the soil (Sommerfeld, no perfect-mirror
- * fallback), the ideal 4:1 ratio, and pins the modelled SWR at the seven default band frequencies. These SWRs are the
+ * fallback), the ideal 4:1 ratio, and pins the modelled SWR at the eight default band frequencies (80, 40, 30, 20, 17, 15, 12 and 10 m). These SWRs are the
  * model's figures for the stated assumptions (ideal unun and choke, untrimmed 29 m); they are not measurements. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -28,9 +28,9 @@ const idx = EXAMPLES.findIndex(e => e.name.startsWith('RF.Guru EFOC29'));
 const appModel = () => vm.runInContext('S.model = normalize(clone(EXAMPLES[' + idx + '])); numericModel()', app);
 const len = w => Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1);
 
-const BANDS = [3.6, 7.1, 14.175, 18.118, 21.225, 24.94, 28.5];
+const BANDS = [3.6, 7.1, 10.125, 14.175, 18.118, 21.225, 24.94, 28.5];
 // modelled SWR (50 Ω side of the ideal 4:1) for the assumed geometry; see efhwgen.js
-const SWR = { 3.6: 2.580, 7.1: 2.865, 14.175: 3.131, 18.118: 1.527, 21.225: 5.881, 24.94: 8.944, 28.5: 2.841 };
+const SWR = { 3.6: 2.580, 7.1: 2.865, 10.125: 17.505, 14.175: 3.131, 18.118: 1.527, 21.225: 5.881, 24.94: 8.944, 28.5: 2.841 };
 
 test('EFOC29: in the Examples menu from efhwgen.js, multiband, opens in H + V', () => {
   assert.ok(idx >= 0);
