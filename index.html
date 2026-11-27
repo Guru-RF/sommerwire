@@ -2470,7 +2470,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.4.5', SW_DATE = '2026-11-27';
+const SW_VERSION = '1.4.6', SW_DATE = '2026-11-27';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));
