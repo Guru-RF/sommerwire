@@ -50,6 +50,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 
 <nav class="toc" aria-label="Contents">
   <a href="#h-start">Quick start</a>
+  <a href="#h-approach">Approaching a model</a>
   <a href="#h-use">Using Sommerwire</a>
   <a class="sub" href="#h-files">Examples, opening and exporting</a>
   <a class="sub" href="#h-readout">The readout strip</a>
@@ -88,6 +89,16 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
   <li>Use <b>Optimize</b> to let Sommerwire adjust lengths or positions toward an SWR, gain or F/B goal.</li>
 </ol>
 <div class="box">Units: coordinates in metres, wire radius in millimetres, frequency in MHz. Azimuth 0° is the +X axis, counting counter-clockwise seen from above; Z is height.</div>
+
+<h2 id="h-approach">Approaching a model</h2>
+<p>A result from Sommerwire answers the question you entered, not the antenna in your garden. Joeri Van Dooren (ON6URE) of RF.Guru has written a series of articles on how to use modelling tools well. In short:</p>
+<ul>
+  <li><b>Use the simplest model that still holds the physics your decision needs.</b> An array sum or image-theory estimate shows why a pattern looks the way it does; a method-of-moments solver such as Sommerwire is needed when the currents themselves have to be found (bends, closely spaced wires, off-centre feeds, coupling). See <a href="https://shop.rf.guru/pages/why-we-use-simplified-antenna-models-and-when-we-use-nec" target="_blank" rel="noopener">Why We Use Simplified Antenna Models—and When We Use NEC</a> and <a href="https://shop.rf.guru/pages/modeling-antennas-with-python-no-nec-or-mmana-required" target="_blank" rel="noopener">Modeling Antenna Patterns with Python: What the Model Can Prove</a>.</li>
+  <li><b>Model the system you actually built.</b> A conductor you leave out (coax shield, mast, counterpoise, station wiring) is simply absent from the answer. Keep apart three kinds of error: something left out of the model, a limit of the method, and an input you are not sure of (ground, losses, exact lengths). Sweep the uncertain inputs instead of trusting one number, check that the result does not change when you refine the segments, and compare with a measurement at the same reference plane. See <a href="https://shop.rf.guru/pages/the-limitations-of-nec" target="_blank" rel="noopener">The Limits of NEC: Model the System You Actually Built</a>.</li>
+  <li><b>The return path is part of the antenna.</b> For end-fed and off-centre-fed antennas the counterpoise, radials and the outside of the coax carry current and change impedance, loss and pattern; a low SWR at one point does not prove the return path is right. See <a href="https://shop.rf.guru/pages/counterpoise-return-path-coax-current-choke-boundary" target="_blank" rel="noopener">The Counterpoise Is Part of the Antenna, Not an Optional Wire</a>.</li>
+  <li><b>Compare like with like.</b> A pattern scaled to its own maximum hides differences in gain and efficiency; compare antennas in dBi, over the same ground and with the same losses.</li>
+</ul>
+<p>The <a href="#h-limits">Limitations</a> section lists what Sommerwire itself leaves out.</p>
 
 <h2 id="h-use">Using Sommerwire</h2>
 
