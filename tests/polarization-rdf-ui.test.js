@@ -362,6 +362,8 @@ test('wording: the SWR label and the help say where SWR comes from, and what H a
 test('licence and credits are untouched', () => {
   assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'LICENSE'))).digest('hex'), '6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e');
   for (const t of [html, help, fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')]) assert.match(t, /ON9PK Koen Van den Heuvel/);
-  assert.match(html, /Contributions by <b>ON6URE Joeri Van Dooren<\/b>/); assert.match(help, /Contributions by <b>ON6URE Joeri Van Dooren<\/b>/);
+  const credit = /Contributions by <b><a href="https:\/\/on6ure\.be" target="_blank" rel="noopener">ON6URE<\/a> Joeri Van Dooren<\/b>/;
+  assert.match(html, credit); assert.match(help, credit);
+  assert.match(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8'), /\[ON6URE\]\(https:\/\/on6ure\.be\) Joeri Van Dooren/);
   for (const f of ['engine.js', 'efhwgen.js', 'structgen.js', 'hexgen.js']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0], /ON9PK Koen Van den Heuvel.*public domain/);
 });

@@ -17,7 +17,7 @@ agree with NEC-2, ground loss included. That is where the name comes from.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
-Contributions by **ON6URE Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
+Contributions by **[ON6URE](https://on6ure.be) Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
 inverted-L examples with their dual-band results and sourced dimensions, the horizontal + vertical pattern view, the
 check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
 for these.
@@ -36,7 +36,7 @@ for these.
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
 - **Buildings**: a house beside the antenna with a metal roof as a wire grid, rain gutters and downpipes to earth.
-- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF). The readout shows RDF beside F/B and names the polarization from the whole pattern (for example *Mixed H+V*), apart from the components toward the maximum; the 3D editor can draw the total, H, V or H + V far field on one scale. SWR always comes from the feedpoint of the coupled solve of all wires, never from the pattern.
+- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF). The readout shows the H and V peak gains, each over the whole pattern with its own elevation and azimuth and apart from the total-field Max gain, plus the V peak in a stated 5–30° low-angle (DX) window and the H peak in a 60–90° high-angle (NVIS) window, with no propagation or dominance claim; it also shows RDF beside F/B and names the polarization from the whole pattern (for example *Mixed H+V*), apart from the components toward the maximum; the 3D editor can draw the total, H, V or H + V far field on one scale. SWR always comes from the feedpoint of the coupled solve of all wires, never from the pattern.
 - **HF, VHF and UHF**: the same solver from 160 m to 23 cm; long passive wires such as masts are coarsened automatically
   when a VHF/UHF model would otherwise exceed the 2500-unknown limit.
 - **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, both 2 m and 70 cm at once (split axis), or the whole
@@ -157,7 +157,7 @@ index.html           the application, with engine.js, structgen.js, hexgen.js, e
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
-tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```
 
@@ -167,8 +167,10 @@ Sommerwire was written from published methods; no code from MMANA-GAL, MININEC o
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
 MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design.
 
-The RF.Guru EFHW inverted-L examples were modelled and contributed by Joeri Van Dooren ON6URE (RF.Guru) from RF.Guru's
+The RF.Guru EFHW inverted-L examples were modelled and contributed by [ON6URE](https://on6ure.be) Joeri Van Dooren
+([RF.Guru](https://shop.rf.guru)) from RF.Guru's
 published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions).
+The pull-request history of these contributions is in [CONTRIBUTION-HISTORY.md](CONTRIBUTION-HISTORY.md).
 
 ## Licence
 

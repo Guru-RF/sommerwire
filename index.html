@@ -202,11 +202,15 @@ footer a { color: var(--accent); }
     <div class="ro"><div class="k">Frequency</div><div class="v" id="roF">–</div></div>
     <div class="ro wide"><div class="k">Impedance (Ω)</div><div class="v" id="roZ">–</div></div>
     <div class="ro"><div class="k" id="roSwrK" title="SWR at the feedpoint, from the feed impedance beside it: one coupled solution of every modelled wire (vertical and horizontal legs and the return path alike), not from the far field. No polarization or pattern view changes it.">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
-    <div class="ro"><div class="k" title="Largest total-field gain (H and V power together) over all directions, in dBi relative to the power accepted by the sources. Its direction is under Elevation and on the Far field tab.">Max gain</div><div class="v" id="roG">–</div></div>
+    <div class="ro"><div class="k" title="Largest total-field gain (H and V power together) over all directions, in dBi relative to the power accepted by the sources. Its direction is under Elevation and on the Far field tab.">Max gain</div><div class="v" id="roG">–</div><div class="s" id="roGS"></div></div>
     <div class="ro"><div class="k" title="Front-to-back: the total-field maximum against the direction 180° away in azimuth at the same elevation. For a maximum near the zenith both directions are almost overhead, so F/B is near 0 dB and says little.">F/B</div><div class="v" id="roFB">–</div></div>
     <div class="ro"><div class="k" title="Receiving directivity factor, a separate figure from F/B: gain toward an assumed desired direction (the total-field maximum) minus the mean gain over assumed noise directions (the whole visible sky, even per solid angle, unpolarized). Point at the value for the direction used. ≈ marks an approximate pattern; n/a means no figure could be made.">RDF all-sky</div><div class="v" id="roRdf">–</div><div class="s" id="roRdfS"></div></div>
     <div class="ro"><div class="k" title="Elevation of the total-field maximum">Elevation</div><div class="v" id="roEl">–</div></div>
     <div class="ro"><div class="k" title="Named from the whole pattern: how the radiated power over all directions divides between the H (φ) and V (θ) components. Mixed H+V: within 3 dB of each other. Mostly H or V: 3 dB or more. Horizontal or Vertical: 20 dB or more. Point at the value for the components toward the maximum.">Polarization</div><div class="v" id="roPol">–</div><div class="s" id="roPolS"></div></div>
+    <div class="ro"><div class="k" title="Largest H (φ) gain anywhere in the pattern, searched on its own; point at the value for its direction and how it was found">H peak</div><div class="v" id="roPkH">–</div><div class="s" id="roPkHS"></div></div>
+    <div class="ro"><div class="k" title="Largest V (θ) gain anywhere in the pattern, searched on its own; point at the value for its direction and how it was found">V peak</div><div class="v" id="roPkV">–</div><div class="s" id="roPkVS"></div></div>
+    <div class="ro"><div class="k" id="roLoVK" title="Largest V (θ) gain inside a fixed low-elevation window, all azimuths. DX only names the window: no path, propagation or dominance is implied.">Low-angle V · DX</div><div class="v" id="roLoV">–</div><div class="s" id="roLoVS"></div></div>
+    <div class="ro"><div class="k" id="roHiHK" title="Largest H (φ) gain inside a fixed high-elevation window, all azimuths. NVIS only names the window: no path, propagation or dominance is implied.">High-angle H · NVIS</div><div class="v" id="roHiH">–</div><div class="s" id="roHiHS"></div></div>
   </section>
   <div id="bandAntenna" hidden></div>
   <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
@@ -466,7 +470,7 @@ footer a { color: var(--accent); }
 
   <footer>
     <p class="author">Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> with the help of Claude Opus 5.5 in November 2026 · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
-    <p class="author">Contributions by <b>ON6URE Joeri Van Dooren</b> (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>): the RF.Guru EFHW inverted-L examples with dual-band results, the horizontal + vertical pattern view, the below-ground wire check and the clearing of sweep results after a model edit.</p>
+    <p class="author">Contributions by <b><a href="https://on6ure.be" target="_blank" rel="noopener">ON6URE</a> Joeri Van Dooren</b> (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>): the RF.Guru EFHW inverted-L examples with dual-band results, the horizontal + vertical pattern view, the below-ground wire check and the clearing of sweep results after a model edit.</p>
     <p>Sommerwire is an independent thin-wire moment-method solver in the MININEC style (pulse currents at nodes, reduced kernel, image ground). It reads and writes the plain-text .maa layout used by MMANA-GAL so you can bring models across, but it is not MMANA-GAL and its numbers can differ slightly. The optimizer is a bounded Nelder–Mead search, restarted with smaller steps.</p>
   </footer>
 </div>
@@ -886,19 +890,28 @@ function renderReadout() {
   const r = S.last;
   const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
   const sub = (id, o) => { $(id).title = o.title; $(id + 'S').textContent = o.s; };
-  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].forEach(i => set(i, '–')); sub('#roRdf', { title: '', s: '' }); sub('#roPol', { title: '', s: '' }); return; }
+  const PK = ['#roPkH', '#roPkV', '#roLoV', '#roHiH'];
+  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].concat(PK).forEach(i => set(i, '–')); ['#roRdf', '#roPol'].concat(PK).forEach(i => sub(i, { title: '', s: '' })); $('#roGS').textContent = ''; return; }
   set('#roF', fmt(r.f, 3) + ' <small>MHz</small>');
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
   set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
   set('#roG', (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + ' <small>dBi</small>');
   $('#roG').title = r.approx ? 'Approximate: currents over a perfect mirror, pattern over real ground' + (r.capDb > 0 ? '; limited by ' + r.capDb.toFixed(1) + ' dB so radiated power does not exceed input power' : '') + '. See the warning on the Calculate tab.' : '';
+  // total field: the H and V power together, toward its own maximum; the H and V peaks below are searched apart from it
+  $('#roGS').textContent = 'total H+V · ' + fmt(r.el, 1) + '° el, ' + fmt(r.az, 1) + '° az';
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
   // RDF and polarization come from the angle summary of the same result (r.sum); F/B, gain and SWR do not need it
   const rd = rdfReadout(r), po = polReadout(r);
   set('#roRdf', rd.v); sub('#roRdf', rd);
   set('#roPol', po.v); sub('#roPol', po);
+  // H and V peaks, each over the whole pattern and in its own direction; low-angle V and high-angle H in stated windows
+  const pk = peakReadouts(r);
+  PK.forEach((id, i) => { const o = pk[i]; set(id, o.v); sub(id, o); });
+  const w = r.sum && r.sum.peaks ? r.sum.peaks.windows : MM_WINDOWS;
+  $('#roLoVK').textContent = 'Low-angle V ' + w.low[0] + '–' + w.low[1] + '° · DX';
+  $('#roHiHK').textContent = 'High-angle H ' + w.high[0] + '–' + w.high[1] + '° · NVIS';
 }
 
 /* ---------------- tables ---------------- */
@@ -1906,6 +1919,37 @@ function rdfReadout(r) {
       fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth. Assumed noise: the whole visible sky, even per solid angle, unpolarized (4π reference, as in published RDF tables).' +
       (low ? ' Low-angle noise: the same direction against noise from 0–30° elevation only, a different assumption that cannot be compared with the all-sky figure.' : '') +
       ' It describes the pattern shape and is not a signal-to-noise prediction. F/B is a separate figure: two directions only.' };
+}
+/* The four peak tiles of the readout, read from r.sum.peaks (MM.componentPeaks): H and V each over the whole visible
+   pattern, V in the low window and H in the high window. Each is the largest value of that one component, found on
+   its own, in its own direction; none is derived from Max gain (the total field) or from the other component, and no
+   tile compares H with V. "DX" and "NVIS" only name the windows: the figures say how strongly the pattern radiates
+   that component at those elevations, not that a path exists there (the ionosphere is not modelled). */
+const MM_WINDOWS = { low: [5, 30], high: [60, 90] };
+function peakReadouts(r) {
+  const s = r && r.sum, P = s && s.peaks, why = s ? approxWhy(s) : [], q = s && s.uncertain ? '≈ ' : '';
+  const W = P ? P.windows : MM_WINDOWS, ap = why.length ? 'Approximate: ' + why.join('; ') + '. ' : '';
+  const NAME = { h: 'H (φ)', v: 'V (θ)' };
+  const where = p => (p.el >= 90 - 1e-9 ? fmt(p.el, 1) + '° el (zenith)' : fmt(p.el, 1) + '° el, ' + fmt(p.az, 1) + '° az');
+  const one = (p, c, win, label) => {
+    const span = win ? win[0] + '–' + win[1] + '° elevation, all azimuths' : (s.hasGround ? 'the whole visible pattern, horizon to zenith, all azimuths' : 'the whole pattern, the full sphere (free space)');
+    const intro = (label ? label + ' names this window only. ' : '') + 'Largest ' + NAME[c] + ' gain over ' + span + ', searched for this component on its own (1° × 4° sky grid, then refined on the pattern to 0.25°' + (win ? ' without leaving the window' : '') + '). ';
+    if (!p) return { v: 'none', s: win ? 'no ' + c.toUpperCase() + ' power in ' + win[0] + '–' + win[1] + '°' : 'no ' + c.toUpperCase() + ' power', title: ap + intro + 'This component carries no power there.' };
+    // on a window limit the component still rises beyond it; the zenith and the horizon over ground have nothing beyond
+    const edge = win && ((Math.abs(p.el - win[0]) < 1e-9 && win[0] > (s.hasGround ? 0 : -90)) || (Math.abs(p.el - win[1]) < 1e-9 && win[1] < 90));
+    return { v: q + fmt(p.db, 2) + ' <small>dBi</small>', s: (win ? win[0] + '–' + win[1] + '° window · ' : '') + where(p),
+      title: ap + intro + 'Found at ' + fmt(p.el, 2) + '° elevation' + (p.el >= 90 - 1e-9 ? ' (the zenith: every azimuth is the same direction there, the azimuth ' + fmt(p.az, 2) + '° only orients θ and φ)' : ', ' + fmt(p.az, 2) + '° azimuth') + '. ' +
+        (edge ? 'That is the edge of the window: the component is still larger just outside it. ' : '') +
+        'Max gain is a different figure: the total field, H and V power together, toward its own maximum; this peak is generally in another direction. ' +
+        (p.el >= 60 ? 'At this elevation θ and φ are both nearly horizontal fields in space, and which one is called H or V depends on the azimuth. ' : '') +
+        (label ? 'It is a pattern figure, not a statement that ' + (label === 'NVIS' ? 'an ' : 'a ') + label + ' path exists or that one component dominates: the ionosphere is not modelled. ' : '') +
+        'H and V are components of the whole antenna’s field, not of single wires.' };
+  };
+  if (!P) { const t = 'Not available for this result: ' + noSummary(s); return [0, 1, 2, 3].map(() => ({ v: 'n/a', s: '', title: t })); }
+  const noGround = win => ({ v: 'n/a', s: 'needs a ground', title: 'The ' + win[0] + '–' + win[1] + '° window is a range of elevations above a ground; this model is in free space. The H and V peaks over the whole pattern are given.' });
+  return [one(P.h, 'h'), one(P.v, 'v'),
+    s.hasGround ? one(P.lowV, 'v', W.low, 'DX') : noGround(W.low),
+    s.hasGround ? one(P.highH, 'h', W.high, 'NVIS') : noGround(W.high)];
 }
 // vertical and horizontal extent of the modelled conductors (m), from the solved segments [x0, y0, z0, x1, y1, z1, ...]
 function wireRuns(segs) {

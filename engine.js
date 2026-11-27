@@ -1347,6 +1347,45 @@
       peak: { el: peak.el, az: peak.az, vDb: dB(G.v), hDb: dB(G.h), vMinusH: G.v > 1e-30 && G.h > 1e-30 ? dB(G.v) - dB(G.h) : null,
         horizE: tot > 1e-30 ? (G.h + G.v * s2) / tot : null, nearZenith: peak.el >= o.zenith } };
   }
+  /* Largest gain of ONE component ('h' = phi, 'v' = theta, 'tot') over the elevations [el0, el1], all azimuths, each
+   * searched on its own: the V peak and the H peak are generally in different directions from each other and from the
+   * total-field maximum, and none of them is assumed from another. Start: the largest sample of the sky grid in the
+   * window (ties go to the lower elevation, then the lower azimuth); then a local search on the pattern itself in steps
+   * of 2, 1, 0.5 and 0.25 deg that never leaves the window, so a window peak on its edge stays on the edge.
+   * Returns { g (linear), db, el, az, el0, el1 }, or null when the component carries no power in the window.
+   * Nothing here says why the component is there, which wire produces it, or where a signal at that angle would go. */
+  const PEAK_WINDOWS = { low: ANGLE_BANDS.low, high: ANGLE_BANDS.high };
+  function componentPeak(grid, comp, el0, el1) {
+    if (!['tot', 'v', 'h'].includes(comp)) throw new Error('Peak: unknown component ' + comp);
+    const lo = el0 == null ? grid.e0 : el0, hi = el1 == null ? 90 : el1;
+    const ia = gridIndex(grid, lo, 'Peak window start'), ib = gridIndex(grid, hi, 'Peak window end');
+    if (ib < ia) throw new Error('Peak window: the end elevation must not be below the start');
+    const nA = grid.nA, arr = grid[comp];
+    let best = { g: -1, el: lo, az: 0 };
+    for (let i = ia; i <= ib; i++) for (let j = 0; j < nA; j++) { const x = arr[i * nA + j]; if (x > best.g) best = { g: x, el: grid.els[i], az: grid.azs[j] }; }
+    if (!(best.g > 1e-30)) return null;
+    const val = (el, az) => grid.gain(el, az)[comp];
+    for (const step of [2, 1, 0.5, 0.25]) {
+      const c = best;
+      for (let k = -3; k <= 3; k++) {
+        const el = c.el + k * step; if (el < lo - 1e-9 || el > hi + 1e-9) continue;
+        for (let m = -3; m <= 3; m++) {
+          const az = (((c.az + m * step) % 360) + 360) % 360, G = val(el, az);
+          if (G > best.g * (1 + 1e-9)) best = { g: G, el, az };
+        }
+      }
+    }
+    return { g: best.g, db: dB(best.g), el: best.el, az: best.az, el0: lo, el1: hi };
+  }
+  /* The peaks the readout shows: H and V each over the whole visible pattern (horizon to zenith over ground, the full
+   * sphere in free space), V over the low window and H over the high window (over ground only: those windows are
+   * elevations above a ground). The window limits travel with the figures so the page prints them, not assumes them. */
+  function componentPeaks(grid, opts) {
+    const w = Object.assign({}, PEAK_WINDOWS, opts);
+    const out = { h: componentPeak(grid, 'h'), v: componentPeak(grid, 'v'), lowV: null, highH: null, windows: { low: w.low.slice(), high: w.high.slice() } };
+    if (grid.hasGround) { out.lowV = componentPeak(grid, 'v', w.low[0], w.low[1]); out.highH = componentPeak(grid, 'h', w.high[0], w.high[1]); }
+    return out;
+  }
   /* Summary of one analyze() result for the user interface. Flags that make every figure in it approximate:
    *   approx:  currents over the perfect mirror with a real-ground pattern (see analyze); the pattern shape is not exact.
    *   coarse:  the sky grid misses the main lobe (its largest sample is over 1 dB below the refined maximum), so the
@@ -1369,6 +1408,7 @@
       out.hv = { low: strip(s.low), high: strip(s.high), margin: s.margin, highMinusLow: s.highMinusLow, favoured: s.favoured };
     }
     out.pol = polarization(grid, desired);
+    out.peaks = componentPeaks(grid);
     out.uncertain = out.approx || out.coarse || out.overUnity;
     return out;
   }
@@ -1617,6 +1657,6 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, patternSummary, ANGLE_BANDS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, componentPeak, componentPeaks, patternSummary, ANGLE_BANDS, PEAK_WINDOWS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
     varValue, applyVars, evalGoals, makeOptimizer };
 })(typeof globalThis !== 'undefined' ? globalThis : self);
