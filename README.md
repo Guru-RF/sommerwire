@@ -17,6 +17,11 @@ agree with NEC-2, ground loss included. That is where the name comes from.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
+Contributions by **ON6URE Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
+inverted-L examples with their dual-band results and sourced dimensions, the horizontal + vertical pattern view, the
+check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
+for these.
+
 ## Features
 
 - **Geometry** as editable tables (with expressions such as `R/4` or `33*F`) or drawn in a **3D editor** with snapping,
@@ -151,6 +156,9 @@ validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 Sommerwire was written from published methods; no code from MMANA-GAL, MININEC or NEC was used. It builds on the
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
 MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design.
+
+The RF.Guru EFHW inverted-L examples were modelled and contributed by Joeri Van Dooren ON6URE (RF.Guru) from RF.Guru's
+published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions).
 
 ## Licence
 
