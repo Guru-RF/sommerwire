@@ -18,7 +18,7 @@ agree with NEC-2, ground loss included. That is where the name comes from.
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
 Contributions by **[ON6URE](https://on6ure.be) Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
-inverted-L examples with their dual-band results and sourced dimensions, the RF.Guru EFOC29 example with its seven-band
+inverted-L examples with their dual-band results and sourced dimensions, the RF.Guru EFOC29 example with its eight-band
 results, the horizontal + vertical pattern view, the
 check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
 for these.
@@ -125,17 +125,28 @@ replace, the maintainer's own *EFOC29 end-fed, flat top at 8 m* example.
 | Choke | six turns through the supplied ferrite core | ideal boundary: open end of the shield wire, no coax beyond it |
 | Ground | — | Sommerfeld, lower-conductivity soil εr 5, 1 mS/m (assumed, as the EFHW examples) |
 
-Default calculation frequencies, one per band: 3.6 MHz (80 m, the guide's tuning target), 7.1, 14.175, 18.118, 21.225 and
-24.94 MHz (Region 1 band centres) and 28.5 MHz (10 m, the lower part where the guide places the resonance). 60 and 30 m are
-left out (the product page says 60 m needs a tuner); 15 m is included although it may need one. The modelled SWR on the
-50 Ω side is 2.58 (3.6 MHz), 2.86 (7.1), 3.13 (14.175), 1.53 (18.118), 5.88 (21.225), 8.94 (24.94) and 2.84 (28.5); doubling
-the segment density moves these by 3 % or less. These are model figures for the stated assumptions. They are not
+Default calculation frequencies, one per band 80–10 m: 3.6 MHz (80 m, the guide's tuning target), 7.1, 10.125, 14.175,
+18.118, 21.225 and 24.94 MHz (Region 1 band centres) and 28.5 MHz (10 m, the lower part where the guide places the
+resonance). 60 m is left out (RF.Guru says it needs a tuner); 30 and 15 m are included although they may need one. The
+modelled SWR on the 50 Ω side is 2.58 (3.6 MHz), 2.86 (7.1), 17.50 (10.125), 3.13 (14.175), 1.53 (18.118), 5.88 (21.225),
+8.94 (24.94) and 2.84 (28.5); on 30 m the 29 m wire is about one wavelength long and presents about 3410 − j540 Ω at the
+feedpoint, 854 − j136 Ω on the 50 Ω side of the 4:1, so that band needs a tuner in this model. Doubling the segment density moves these by 3 % or less. These are model figures for the stated assumptions. They are not
 measurements and are not compared with RF.Guru's typical installed VSWR (below 2.5:1, below about 3:1 on 80 m), which
 RF.Guru gives as a setup target for a tuned installation, not a guarantee. No length was trimmed to approach it. Not modelled: XLPE
 insulation, transformer loss and parasitics, the choke's finite impedance, the station-side coax and second choke, other
 coax routes (zig-zag, near the ground), the 13 m wire-counterpoise version, the inverted-L, inverted-U and sloper layouts,
 sag and nearby objects. RF.Guru advises measuring the installed antenna and tuning it by folding back the surplus wire.
 Like the EFHW examples, it opens the Pattern tab in *Horizontal + vertical*.
+
+**10 m mast with a buried coax return: study, no preset.** A separate study,
+[validation/efoc29-mast](validation/efoc29-mast/README.md), asks for the feed height that minimises the worst SWR at these
+eight frequencies with the 29 m wire rising from the feedpoint to a 10 m mast top and then running horizontally (an
+assumed inverted-L), and the 12 m coax return running down the mast and then buried to the choke. Neither Sommerwire nor
+NEC-2 can model a buried wire (both reject it), so the study sweeps explicitly labelled above-soil proxies and a truncated
+bound instead. It finds no defensible buried optimum: 30 m decides the worst SWR (12.6–18.7 at the best feed height of
+every proxy and soil), that best height sits on an edge of the searched 0.75–9 m range for every above-soil proxy and
+flips between the two edges with the proxy height, and the truncated bound gives a different antenna altogether. No mast preset was added
+for that reason.
 
 ## How it works
 
@@ -188,6 +199,7 @@ tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
 tests/               node --test regression tests (RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
+validation/efoc29-mast/  EFOC29 on a 10 m mast with a buried return: feed-height study on above-soil proxies, with a nec2c check
 ```
 
 ## Acknowledgements
