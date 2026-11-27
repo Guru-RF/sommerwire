@@ -18,7 +18,8 @@ agree with NEC-2, ground loss included. That is where the name comes from.
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
 
 Contributions by **[ON6URE](https://on6ure.be) Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
-inverted-L examples with their dual-band results and sourced dimensions, the horizontal + vertical pattern view, the
+inverted-L examples with their dual-band results and sourced dimensions, the RF.Guru EFOC29 example with its seven-band
+results, the horizontal + vertical pattern view, the
 check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
 for these.
 
@@ -46,7 +47,7 @@ for these.
   elevation goals over several frequencies.
 - **Examples**: Yagi, a 20 m Yagi of telescoping tubes on a metal boom, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, ZS6BKW, delta loop, horizontal loop, Moxon,
   two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, 40/20 m trap vertical, 160 m Beverage, a G3TXQ 5-band hexbeam tuned per band,
-  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, RF.Guru EFHW16080 (160/80 m, 68:1) and EFHW8040 (80/40 m, 70:1) end-fed inverted-Ls, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
+  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, RF.Guru EFHW16080 (160/80 m, 68:1) and EFHW8040 (80/40 m, 70:1) end-fed inverted-Ls, an RF.Guru EFOC29 (80–10 m, 4:1) flat top with its coax return section, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
@@ -108,6 +109,34 @@ example V-dominant at low angles on this soil. Max gain and F/B keep their meani
 against the opposite azimuth at the same elevation) and are now labelled as such.
 These are model results, not measurements; no SWR, loss or gain figure from RF.Guru is reproduced.
 
+## RF.Guru EFOC29 example: provenance and assumptions
+
+Built by `rfGuruEfoc29()` in [efhwgen.js](efhwgen.js); checked by `node --test tests/` ([tests/efoc29.test.js](tests/efoc29.test.js)).
+Sources (RF.Guru, retrieved 2026-11-27): [EFOC29 product page](https://shop.rf.guru/products/efoc29),
+[EFOC29 installation guide](https://shop.rf.guru/pages/efoc29-antenna-installation-guide). It sits beside, and does not
+replace, the maintainer's own *EFOC29 end-fed, flat top at 8 m* example.
+
+| | Sourced | Modelled |
+|---|---|---|
+| Radiator | 29 m starting dimension, supplied longer for fold-back tuning | 29 m straight, untrimmed, 1 mm radius (assumed; gauge not published) |
+| Transformer | integrated 4:1 unun | ideal lossless 4:1 (*Balun n:1* = 4) |
+| Layout | flat top, feedpoint about 7–18 m; 7–8 m reference installation | flat top at 8 m (assumed) |
+| Return path | coax-counterpoise version: about the first 12 m of coax exterior, ended by the first choke at about 12 m | 12 m shield exterior, straight, perpendicular to the radiator, from 8 m down to 2 m at the choke (route assumed), 3.6 mm radius (assumed) |
+| Choke | six turns through the supplied ferrite core | ideal boundary: open end of the shield wire, no coax beyond it |
+| Ground | — | Sommerfeld, lower-conductivity soil εr 5, 1 mS/m (assumed, as the EFHW examples) |
+
+Default calculation frequencies, one per band: 3.6 MHz (80 m, the guide's tuning target), 7.1, 14.175, 18.118, 21.225 and
+24.94 MHz (Region 1 band centres) and 28.5 MHz (10 m, the lower part where the guide places the resonance). 60 and 30 m are
+left out (the product page says 60 m needs a tuner); 15 m is included although it may need one. The modelled SWR on the
+50 Ω side is 2.58 (3.6 MHz), 2.86 (7.1), 3.13 (14.175), 1.53 (18.118), 5.88 (21.225), 8.94 (24.94) and 2.84 (28.5); doubling
+the segment density moves these by 3 % or less. These are model figures for the stated assumptions. They are not
+measurements and are not compared with RF.Guru's typical installed VSWR (below 2.5:1, below about 3:1 on 80 m), which
+RF.Guru gives as a setup target for a tuned installation, not a guarantee. No length was trimmed to approach it. Not modelled: XLPE
+insulation, transformer loss and parasitics, the choke's finite impedance, the station-side coax and second choke, other
+coax routes (zig-zag, near the ground), the 13 m wire-counterpoise version, the inverted-L, inverted-U and sloper layouts,
+sag and nearby objects. RF.Guru advises measuring the installed antenna and tuning it by folding back the surplus wire.
+Like the EFHW examples, it opens the Pattern tab in *Horizontal + vertical*.
+
 ## How it works
 
 - **Wires**: thin-wire method of moments in the MININEC style: pulse currents at the nodes, constant charge per
@@ -157,7 +186,7 @@ index.html           the application, with engine.js, structgen.js, hexgen.js, e
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
-tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```
 
@@ -167,9 +196,10 @@ Sommerwire was written from published methods; no code from MMANA-GAL, MININEC o
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
 MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design.
 
-The RF.Guru EFHW inverted-L examples were modelled and contributed by [ON6URE](https://on6ure.be) Joeri Van Dooren
+The RF.Guru EFHW inverted-L and EFOC29 examples were modelled and contributed by [ON6URE](https://on6ure.be) Joeri Van Dooren
 ([RF.Guru](https://shop.rf.guru)) from RF.Guru's
-published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions).
+published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions) and
+[the EFOC29 example](#rfguru-efoc29-example-provenance-and-assumptions).
 The pull-request history of these contributions is in [CONTRIBUTION-HISTORY.md](CONTRIBUTION-HISTORY.md).
 
 ## Licence

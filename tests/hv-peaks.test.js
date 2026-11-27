@@ -84,7 +84,7 @@ test('a component with no power has no peak (null), not a −300 dB number', () 
 });
 
 /* ---------- 2. the RF.Guru presets ---------- */
-const app = vm.createContext({ MM, WMStruct: globalThis.WMStruct, rfGuruEfhwInvL: globalThis.rfGuruEfhwInvL, clone: o => JSON.parse(JSON.stringify(o)) });
+const app = vm.createContext({ MM, WMStruct: globalThis.WMStruct, rfGuruEfhwInvL: globalThis.rfGuruEfhwInvL, rfGuruEfoc29: globalThis.rfGuruEfoc29, clone: o => JSON.parse(JSON.stringify(o)) });
 vm.runInContext(section('const NF_MODES', '/* ---------------- worker'), app);
 const EXAMPLES = vm.runInContext('EXAMPLES', app);
 const appModel = n => { const i = EXAMPLES.findIndex(e => e.name.startsWith(n)); assert.ok(i >= 0, n); return vm.runInContext('S.model = normalize(clone(EXAMPLES[' + i + '])); numericModel()', app); };
