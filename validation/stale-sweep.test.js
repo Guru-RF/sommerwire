@@ -18,7 +18,7 @@ function ui(parallel) {
   const draws = [];
   const ctx = { $, S, workerUrl: parallel, navigator: { hardwareConcurrency: 2 },
     document: {}, performance: { now: () => 500 }, numericModel: () => S.model,
-    drawSweep: () => draws.push(S.sweep), validateCells() {}, drawView() {}, renderVars() {}, setStatus() {},
+    drawSweep: () => draws.push(S.sweep), invalidateBands() {}, validateCells() {}, drawView() {}, renderVars() {}, setStatus() {},
     makeWorker() { const w = { terminate() {}, postMessage() {} }; workers.push(w); return w; },
     job() { return new Promise(resolve => jobs.push(resolve)); } };
   vm.runInNewContext(section('let calcTimer', "document.addEventListener('input'") +
