@@ -69,6 +69,9 @@ label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .ro .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .ro .v { font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ro .v small { font-size: 12px; color: var(--muted); }
+.ro .s { font-size: 11px; line-height: 1.3; color: var(--muted); }
+.ro .v, .ro .s { transition: opacity 0.15s; }
+.readout.stale .v, .readout.stale .s { opacity: 0.5; transition-delay: 0.6s; }
 .v.good { color: var(--good); } .v.warn { color: var(--warn); } .v.bad { color: var(--bad); }
 .bandres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: var(--muted); }
 .bandres .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -166,8 +169,9 @@ kbd { font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px
 .coord { position: absolute; left: 8px; top: 8px; font-family: var(--f-mono); font-size: 11.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; pointer-events: none; max-width: calc(100% - 16px); }
 .legend i.bandkey { border: 0; height: 10px; width: 16px; background: var(--trace3); opacity: 0.3; border-radius: 2px; }
 .bandsum { display: grid; gap: 8px; }
-#patSum { margin-top: 12px; display: grid; gap: 8px; }
-#patSum h3, .bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
+#patSum, #polDetail { margin-top: 12px; display: grid; gap: 8px; min-width: 0; }
+#polDetail:empty { display: none; }
+#patSum h3, #polDetail h3, .bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
 table.results td.good { color: var(--good); } table.results td.warn { color: var(--warn); } table.results td.bad { color: var(--bad); }
 footer { color: var(--muted); font-size: 12px; max-width: 80ch; display: grid; gap: 6px; }
 footer p { margin: 0; }
@@ -197,11 +201,12 @@ footer a { color: var(--accent); }
   <section class="readout" aria-label="Latest result">
     <div class="ro"><div class="k">Frequency</div><div class="v" id="roF">–</div></div>
     <div class="ro wide"><div class="k">Impedance (Ω)</div><div class="v" id="roZ">–</div></div>
-    <div class="ro"><div class="k" id="roSwrK">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
+    <div class="ro"><div class="k" id="roSwrK" title="SWR at the feedpoint, from the feed impedance beside it: one coupled solution of every modelled wire (vertical and horizontal legs and the return path alike), not from the far field. No polarization or pattern view changes it.">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
     <div class="ro"><div class="k" title="Largest total-field gain (H and V power together) over all directions, in dBi relative to the power accepted by the sources. Its direction is under Elevation and on the Far field tab.">Max gain</div><div class="v" id="roG">–</div></div>
     <div class="ro"><div class="k" title="Front-to-back: the total-field maximum against the direction 180° away in azimuth at the same elevation. For a maximum near the zenith both directions are almost overhead, so F/B is near 0 dB and says little.">F/B</div><div class="v" id="roFB">–</div></div>
+    <div class="ro"><div class="k" title="Receiving directivity factor, a separate figure from F/B: gain toward an assumed desired direction (the total-field maximum) minus the mean gain over assumed noise directions (the whole visible sky, even per solid angle, unpolarized). Point at the value for the direction used. ≈ marks an approximate pattern; n/a means no figure could be made.">RDF all-sky</div><div class="v" id="roRdf">–</div><div class="s" id="roRdfS"></div></div>
     <div class="ro"><div class="k" title="Elevation of the total-field maximum">Elevation</div><div class="v" id="roEl">–</div></div>
-    <div class="ro"><div class="k">Polarization</div><div class="v" id="roPol">–</div></div>
+    <div class="ro"><div class="k" title="Named from the whole pattern: how the radiated power over all directions divides between the H (φ) and V (θ) components. Mixed H+V: within 3 dB of each other. Mostly H or V: 3 dB or more. Horizontal or Vertical: 20 dB or more. Point at the value for the components toward the maximum.">Polarization</div><div class="v" id="roPol">–</div><div class="s" id="roPolS"></div></div>
   </section>
   <div id="bandAntenna" hidden></div>
   <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
@@ -287,6 +292,7 @@ footer a { color: var(--accent); }
         <label class="fld chk"><input type="checkbox" id="showSeg" checked><span>Segments</span></label>
         <label class="fld chk"><input type="checkbox" id="showCur" checked><span>Currents</span></label>
         <label class="fld chk"><input type="checkbox" id="edLobe" checked><span>Far field</span></label>
+        <label class="fld" title="Which part of the far field is drawn around the antenna and on the two cuts beside it. Every choice uses the same scale: 0 dB is the total-field maximum."><span>Far-field view</span><select id="edPol" aria-label="Far field shown in the editor"><option value="tot">Total</option><option value="h">H only</option><option value="v">V only</option><option value="hv">H + V</option></select></label>
         <label class="fld chk" title="Turns the model slowly; stops while you point at it or edit, and starts again a few seconds after"><input type="checkbox" id="edSpin" checked><span>Auto-rotate</span></label>
       </div>
       <div class="edgrid">
@@ -306,6 +312,7 @@ footer a { color: var(--accent); }
         </div>
       </div>
       <div class="legend" id="viewLegend"></div>
+      <div class="legend" id="edLobeLegend"></div>
     </div>
   </section>
 
@@ -346,7 +353,7 @@ footer a { color: var(--accent); }
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Results</h2><button type="button" id="clearRes" class="ghost">Clear list</button></div>
       <p class="hint">Each calculation adds a row so you can compare changes. The newest row is highlighted.</p>
-      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th><th title="Elevation of the total-field maximum">Elev °</th><th>Ground</th><th>H m</th><th>Pol</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
+      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th><th title="Elevation of the total-field maximum">Elev °</th><th>Ground</th><th>H m</th><th title="Named from the whole pattern: the H / V split of the radiated power over all directions (see the Far field tab)">Polarization</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
       <div id="srcRes"></div>
     </div>
   </section>
@@ -368,6 +375,7 @@ footer a { color: var(--accent); }
       </div>
       <div class="legend" id="patLegend"></div>
       <div id="patSum"></div>
+      <div id="polDetail"></div>
       <p class="hint">Scale: dB relative to the maximum, rings at −3, −6, −10, −20 and −30 dB. Azimuth 0° is the +X axis, counter-clockwise, matching the top view.</p>
     </div>
     <div class="card">
@@ -869,12 +877,16 @@ function setStatus(kind, text) {
   const lab = { ok: 'Calculated', stale: 'Model changed', err: 'Error', busy: 'Calculating' }[kind];
   $('#status').innerHTML = '<span class="pill ' + cls + '">' + lab + '</span><span></span>';
   $('#status span:last-child').textContent = text || '';
+  // results on screen that belong to an earlier model (or frequency) are dimmed until the next result arrives
+  const ro = $('.readout');
+  if (ro) { const old = !!(S.last && S.dirty); ro.classList.toggle('stale', old); ro.title = old ? 'From the last calculation: the model has changed since then. Calculate to update.' : ''; }
 }
 function swrClass(s) { return s <= 1.5 ? 'good' : s <= 2.5 ? 'warn' : 'bad'; }
 function renderReadout() {
   const r = S.last;
   const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
-  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roEl', '#roPol'].forEach(i => set(i, '–')); return; }
+  const sub = (id, o) => { $(id).title = o.title; $(id + 'S').textContent = o.s; };
+  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].forEach(i => set(i, '–')); sub('#roRdf', { title: '', s: '' }); sub('#roPol', { title: '', s: '' }); return; }
   set('#roF', fmt(r.f, 3) + ' <small>MHz</small>');
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
@@ -883,7 +895,10 @@ function renderReadout() {
   $('#roG').title = r.approx ? 'Approximate: currents over a perfect mirror, pattern over real ground' + (r.capDb > 0 ? '; limited by ' + r.capDb.toFixed(1) + ' dB so radiated power does not exceed input power' : '') + '. See the warning on the Calculate tab.' : '';
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
-  set('#roPol', r.pol);
+  // RDF and polarization come from the angle summary of the same result (r.sum); F/B, gain and SWR do not need it
+  const rd = rdfReadout(r), po = polReadout(r);
+  set('#roRdf', rd.v); sub('#roRdf', rd);
+  set('#roPol', po.v); sub('#roPol', po);
 }
 
 /* ---------------- tables ---------------- */
@@ -1108,11 +1123,14 @@ function renderBands() {
   if (!fl.length) { box.innerHTML = ''; return; }
   const rows = S.bandRes && S.bandRes.rows;
   const z = r => fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1) + ' Ω';
+  // F/B and RDF per band, each toward that band's own total-field maximum; RDF needs the angle summary (n/a without one)
+  const rdf = r => { const s = r.sum, v = s && s.rdf && s.rdf.sky ? s.rdf.sky.rdf : null; return 'RDF ' + (v == null ? 'n/a' : (s.uncertain ? '≈ ' : '') + fmt(v, 2) + ' dB'); };
+  const pat = r => (Number.isFinite(r.fb) ? ' · F/B ' + fmt(r.fb, 1) + ' dB · ' + rdf(r) : '');
   box.innerHTML = '<span class="k">Bands</span>' + fl.map((f, i) => {
     const r = rows && rows[i];
     return '<button type="button"' + (Math.abs(f - S.calcFreq) < 1e-9 ? ' class="on"' : '') + ' data-band="' + f + '" title="Use ' + f + ' MHz as the calculation frequency">' + f + ' MHz' +
-      (r ? ' · SWR <span class="' + swrClass(r.swr) + '">' + (Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</span> · ' + z(r) : ' · –') + '</button>';
-  }).join('') + (rows ? '' : '<span>Not calculated for the current model yet.</span>');
+      (r ? ' · SWR <span class="' + swrClass(r.swr) + '">' + (Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</span> · ' + z(r) + pat(r) : ' · –') + '</button>';
+  }).join('') + (rows ? (rows.some(r => r && Number.isFinite(r.fb)) ? '<span title="RDF assumes the wanted signal arrives from the total-field maximum of that band and noise from the whole visible sky, even per solid angle, unpolarized. ≈: approximate pattern; n/a: no figure. F/B compares that maximum with the opposite azimuth at the same elevation.">RDF: all-sky noise, toward each band’s own maximum</span>' : '') : '<span>Not calculated for the current model yet.</span>');
 }
 $('#bandRes').onclick = e => {
   const b = e.target.closest('[data-band]'); if (!b) return;
@@ -1122,7 +1140,7 @@ $('#bandRes').onclick = e => {
 const GNAME = ['Free', 'Perfect', 'Real'];
 function renderResults() {
   $('#resTbl tbody').innerHTML = S.history.map((r, i) => '<tr class="' + (i === 0 ? 'latest' : '') + '"><td>' + (S.history.length - i) + '</td><td class="nm"></td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 2) + '</td><td>' + fmt(r.X, 2) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') +
-    '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
+    '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + (r.sum && r.sum.uncertain ? '≈ ' : '') + polLabel(r.sum && r.sum.pol) + '</td><td>' + r.N + '</td></tr>').join('');
   $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
   const r = S.last;
   if (r && (r.sources.length > 1 || r.sources.some(s => s.ratio !== 1))) {
@@ -1507,34 +1525,41 @@ function drawView() {
       const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
       Wv.forEach(ww => [ww.a, ww.b].forEach(p => { for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], p[k]); mx[k] = Math.max(mx[k], p[k]); } }));
       const ctr = [0, 1, 2].map(k => (mn[k] + mx[k]) / 2), Rl = V.span * 0.65;
-      const G = S.last.grid, nE = G.els.length, nA = G.azs.length, ref = S.last.gain;
-      const px = new Float64Array(nE * nA), py = new Float64Array(nE * nA), pd = new Float64Array(nE * nA), pt = new Float64Array(nE * nA);
-      for (let i = 0; i < nE; i++) {
-        const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
-        for (let j = 0; j < nA; j++) {
-          const kk = i * nA + j, a = G.azs[j] * Math.PI / 180, t = Math.max(0, (G.tot[kk] - ref + 40) / 40), rr = t * Rl;
-          const q = P([ctr[0] + rr * ce * Math.cos(a), ctr[1] + rr * ce * Math.sin(a), ctr[2] + rr * se]);
-          px[kk] = q[0]; py[kk] = q[1]; pd[kk] = q[2]; pt[kk] = t;
-        }
-      }
+      // one surface per layer (total, H, V, or H and V together). Every layer uses the same radial scale and the same
+      // 0 dB, the total-field maximum, so the shapes of the components can be compared with each other and with the total.
+      const G = S.last.grid, nE = G.els.length, nA = G.azs.length, ref = S.last.gain, M = nE * nA;
+      const layers = lobeLayers($('#edPol').value), nL = layers.length;
+      const px = new Float64Array(nL * M), py = new Float64Array(nL * M), pd = new Float64Array(nL * M), pt = new Float64Array(nL * M);
       const quads = [];
-      for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
-        const a = i * nA + j, b = i * nA + (j + 1) % nA, cc = (i + 1) * nA + (j + 1) % nA, d = (i + 1) * nA + j;
-        const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4; if (tt <= 0) continue;
-        quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt]);
-      }
+      layers.forEach((layer, li) => {
+        const arr = G[layer.key], o = li * M;
+        for (let i = 0; i < nE; i++) {
+          const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
+          for (let j = 0; j < nA; j++) {
+            const kk = o + i * nA + j, a = G.azs[j] * Math.PI / 180, t = Math.max(0, (arr[kk - o] - ref + 40) / 40), rr = t * Rl;
+            const q = P([ctr[0] + rr * ce * Math.cos(a), ctr[1] + rr * ce * Math.sin(a), ctr[2] + rr * se]);
+            px[kk] = q[0]; py[kk] = q[1]; pd[kk] = q[2]; pt[kk] = t;
+          }
+        }
+        for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
+          const a = o + i * nA + j, b = o + i * nA + (j + 1) % nA, cc = o + (i + 1) * nA + (j + 1) % nA, d = o + (i + 1) * nA + j;
+          const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4; if (tt <= 0) continue;
+          quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt, li]);
+        }
+      });
       quads.sort((p1, p2) => p1[4] - p2[4]);
-      const Lc = css('--cur-light') || '46%';
+      const Lc = css('--cur-light') || '46%', fixed = layers.map(l => l.color && css(l.color));
       c.save(); c.lineWidth = 0.6;
-      for (const [a, b, cc, d, , tt] of quads) {
+      for (const [a, b, cc, d, , tt, li] of quads) {
         c.beginPath(); c.moveTo(px[a], py[a]); c.lineTo(px[b], py[b]); c.lineTo(px[cc], py[cc]); c.lineTo(px[d], py[d]); c.closePath();
-        const col = 'hsl(' + (215 - 205 * tt) + ' 70% ' + Lc + ')';
-        c.globalAlpha = 0.13; c.fillStyle = col; c.fill();
-        c.globalAlpha = 0.32; c.strokeStyle = col; c.stroke();
+        const col = fixed[li] || 'hsl(' + (215 - 205 * tt) + ' 70% ' + Lc + ')';
+        c.globalAlpha = fixed[li] ? 0.1 : 0.13; c.fillStyle = col; c.fill();
+        c.globalAlpha = fixed[li] ? 0.45 : 0.32; c.strokeStyle = col; c.stroke();
       }
       c.restore();
     }
   }
+  $('#edLobeLegend').innerHTML = edLobeLegendHtml(S.last, $('#edPol').value, S.dirty, $('#edLobe').checked);
   // wires, coloured by current when the result matches the model
   const fresh = S.last && !S.dirty && $('#showCur').checked;
   if (fresh) {
@@ -1769,7 +1794,7 @@ function drawPolar(cv, series, half, ref) {
 function drawPatterns() {
   const az = $('#azPlot'); if (!az.offsetParent) return;
   const r = S.last;
-  if (!r) { prep(az); prep($('#elPlot')); $('#patSum').innerHTML = ''; return; }
+  if (!r) { prep(az); prep($('#elPlot')); $('#patSum').innerHTML = ''; $('#polDetail').innerHTML = ''; return; }
   const mode = $('#polSel').value;
   const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
   const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
@@ -1802,7 +1827,9 @@ function drawPatterns() {
   if (S.held) $('#patLegend .heldName').textContent = S.held.label;
   // the other bands of a multiband example, when they were solved for this same model
   const bandRows = S.bandRes && S.bandRes.rows;
-  $('#patSum').innerHTML = patSummaryHtml(bandRows && bandRows.some(x => Math.abs(x.f - r.f) < 1e-9) ? bandRows.map(x => (Math.abs(x.f - r.f) < 1e-9 ? r : x)) : [r]);
+  const shown = bandRows && bandRows.some(x => Math.abs(x.f - r.f) < 1e-9) ? bandRows.map(x => (Math.abs(x.f - r.f) < 1e-9 ? r : x)) : [r];
+  $('#patSum').innerHTML = patSummaryHtml(shown);
+  $('#polDetail').innerHTML = polDetailHtml(shown);
   drawFF3D();
 }
 /* Angle summary under the cuts: what Max gain and F/B measure, V and H at low angles, the total field at high angles,
@@ -1839,19 +1866,105 @@ function patSummaryHtml(rows) {
     '<b>RDF</b> = gain toward the maximum minus the mean gain over the assumed noise directions' + (hv ? '; the two columns assume different noise and are not comparable in absolute value' : '') + '. It describes the pattern shape, not real noise.' +
     (why.length ? ' <b>≈ approximate:</b> ' + why.join('; ') + '.' : '') + '</p>';
 }
+/* Polarization and RDF wording for the readout, the results list and the Far field tab. All of it is read from the
+   angle summary of a result (r.sum, see MM.patternSummary); nothing here asks for a new solve.
+   Three things are kept apart:
+   1. the label: how the radiated power over ALL directions divides between the H (phi) and V (theta) components;
+   2. the two components toward the total-field maximum, which are local spherical components: near the zenith both
+      are nearly horizontal fields in space, so a larger "V" there is not vertical polarization;
+   3. the geometry of the wires, which is not a statement about the field of any one wire. */
+function polLabel(p) {
+  if (!p || !p.kind) return 'n/a';
+  return p.kind === 'mixed' ? 'Mixed H+V' : p.pure ? (p.kind === 'H' ? 'Horizontal' : 'Vertical') : 'Mostly ' + p.kind;
+}
+function approxWhy(s) {
+  const why = [];
+  if (s.approx) why.push('the currents were solved over a perfect mirror while the pattern uses real-ground reflection, so the pattern shape is approximate');
+  if (s.coarse) why.push('the main lobe is narrower than the 1° × 4° averaging grid');
+  if (s.overUnity) why.push('the pattern holds more power than the sources supply');
+  return why;
+}
+const noSummary = s => (s ? 'the pattern holds no power there.' : 'no angle summary could be made for it (see the warnings on the Calculate tab).');
+function polReadout(r) {
+  const s = r && r.sum, p = s && s.pol;
+  if (!p || !p.kind) return { v: 'n/a', s: '', title: 'Polarization is not available for this result: ' + noSummary(s) };
+  const pc = x => Math.round(100 * x), hP = pc(p.share.h), k = p.peak, why = approxWhy(s);
+  const split = 'H (φ) ' + hP + ' %, V (θ) ' + (100 - hP) + ' % of the radiated power over all directions';
+  const what = p.kind === 'mixed' ? 'Mixed H+V: ' + split + ', within ' + p.margin + ' dB of each other, so neither names the antenna. Which one is stronger changes with direction: see the H and V cuts on the Far field tab.'
+    : polLabel(p) + ': ' + split + (p.pure ? ', ' + p.pureDb + ' dB or more apart.' : ', ' + p.margin + ' dB or more apart (under ' + p.pureDb + ' dB): the other component is still there in some directions.');
+  return { v: (s.uncertain ? '≈ ' : '') + polLabel(p), s: 'H ' + hP + ' % · V ' + (100 - hP) + ' % of radiated power',
+    title: (why.length ? 'Approximate: ' + why.join('; ') + '. ' : '') + what + ' Toward the maximum (' + fmt(k.el, 1) + '° elevation, ' + fmt(k.az, 1) + '° azimuth): V (θ) ' + fmt(k.vDb, 2) + ' dBi, H (φ) ' + fmt(k.hDb, 2) + ' dBi' +
+      (k.nearZenith ? '; this close to the zenith both are nearly horizontal fields in space (' + pc(k.horizE) + ' % of that field is horizontal), and which of the two is larger depends on the azimuth only.' : '.') +
+      ' H and V are field components of the whole antenna, not of single wires.' };
+}
+function rdfReadout(r) {
+  const s = r && r.sum, sky = s && s.rdf && s.rdf.sky;
+  if (!sky || sky.rdf == null) return { v: 'n/a', s: '', title: 'RDF is not available for this result: ' + noSummary(s) + ' F/B does not depend on it.' };
+  const q = s.uncertain ? '≈ ' : '', low = s.rdf.low && s.rdf.low.rdf != null ? s.rdf.low : null, why = approxWhy(s);
+  return { v: q + fmt(sky.rdf, 2) + ' <small>dB</small>', s: low ? 'low-angle noise ' + q + fmt(low.rdf, 2) + ' dB' : '',
+    title: (why.length ? 'Approximate: ' + why.join('; ') + '. ' : '') + 'RDF (receiving directivity factor) = gain toward the desired direction minus the mean gain over the noise directions. Assumed desired direction: the total-field maximum, ' +
+      fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth. Assumed noise: the whole visible sky, even per solid angle, unpolarized (4π reference, as in published RDF tables).' +
+      (low ? ' Low-angle noise: the same direction against noise from 0–30° elevation only, a different assumption that cannot be compared with the all-sky figure.' : '') +
+      ' It describes the pattern shape and is not a signal-to-noise prediction. F/B is a separate figure: two directions only.' };
+}
+// vertical and horizontal extent of the modelled conductors (m), from the solved segments [x0, y0, z0, x1, y1, z1, ...]
+function wireRuns(segs) {
+  let vert = 0, horiz = 0;
+  for (const g of segs || []) { vert += Math.abs(g[5] - g[2]); horiz += Math.hypot(g[3] - g[0], g[4] - g[1]); }
+  return { vert, horiz };
+}
+function polDetailHtml(rows) {
+  rows = rows.filter(r => r && r.sum && r.sum.pol && r.sum.pol.kind);
+  if (!rows.length) return '';
+  const pc = x => Math.round(100 * x), d2 = x => (x == null || !Number.isFinite(x) ? '–' : fmt(x, 2)), p0 = rows[0].sum.pol, run = wireRuns(rows[0].segs);
+  const body = rows.map(r => {
+    const p = r.sum.pol, k = p.peak, q = r.sum.uncertain ? '≈ ' : '';
+    return '<tr><td>' + fmt(r.f, 3) + '</td><td>' + q + polLabel(p) + '</td><td>' + pc(p.share.h) + ' / ' + (100 - pc(p.share.h)) + '</td><td>' + d2(p.vMinusH) + '</td><td>' + fmt(k.el, 1) + '° el, ' + fmt(k.az, 1) + '° az</td><td>' +
+      fmt(k.vDb, 2) + ' / ' + fmt(k.hDb, 2) + '</td><td>' + (k.horizE == null ? '–' : pc(k.horizE) + ' %' + (k.nearZenith ? ' · near the zenith: V and H are both horizontal fields' : '')) + '</td></tr>';
+  }).join('');
+  return '<h3>Polarization: what H and V mean here</h3><div class="tscroll"><table class="results" id="polTbl"><thead><tr><th>MHz</th>' +
+    '<th title="From the H / V split of the radiated power over all directions">Polarization</th><th title="Share of the radiated power in each component, all directions, linear power weighted by solid angle">All directions H / V %</th>' +
+    '<th title="Total V power over total H power, all directions">All directions V − H dB</th><th title="Direction of the total-field maximum">Maximum toward</th>' +
+    '<th title="The two components in that one direction">There V (θ) / H (φ) dBi</th><th title="Share of the field toward the maximum whose E vector is horizontal in space">There E horizontal in space</th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<p class="hint"><b>Polarization</b> is named from the whole pattern: how the radiated power, summed over all directions, divides between the H and V components that the cuts above show. ' +
+    '“Mixed H+V” means the two are within ' + p0.margin + ' dB of each other; “Mostly H” or “Mostly V” a difference of ' + p0.margin + ' dB or more; plain “Horizontal” or “Vertical” ' + p0.pureDb + ' dB or more. Which one is stronger changes with direction, so read the cuts for the angle you need. ' +
+    '<b>Toward the maximum</b> the table gives both components in that one direction. H and V are the local spherical components θ and φ: at low angles V (θ) is close to a vertical field, but near the zenith both are nearly horizontal fields in space and which of them is larger depends on the azimuth only, so a larger V overhead is not vertical polarization. ' +
+    '<b>Wire geometry</b> is a third thing: this model has ' + fmt(run.vert, 2) + ' m of vertical run and ' + fmt(run.horiz, 2) + ' m of horizontal run. All wires carry one coupled current distribution and each field component is the sum over all of them, so H and V are not assigned to individual wires. ' +
+    'SWR comes from that same solution at the feedpoint and does not depend on anything shown here.</p>';
+}
 $('#polSel').onchange = drawPatterns;
 
-/* mini far-field plots beside the 3D editor */
+/* mini far-field plots beside the 3D editor, and the far field drawn around the antenna in it. Both follow the
+   "Far-field view" menu (#edPol): total, H only, V only, or H and V together. Every view is scaled against the same
+   0 dB, the total-field maximum, so the component shapes can be compared. H and V keep the colours of the 2D plots. */
+const LOBE_NAMES = { tot: 'total (H + V power)', h: 'H (φ) only', v: 'V (θ) only' };
+function lobeLayers(mode) {
+  const H = { key: 'h', color: '--trace2' }, Vt = { key: 'v', color: '--trace3' };
+  return mode === 'hv' ? [H, Vt] : mode === 'h' ? [H] : mode === 'v' ? [Vt] : [{ key: 'tot', color: null }];
+}
+function edLobeLegendHtml(r, mode, stale, shown) {
+  if (!r || !r.grid || !shown) return '';
+  const L = lobeLayers(mode);
+  const sw = l => '<i style="border-color:var(' + l.color + ')"></i>';
+  return (L.length > 1 ? '<span>Far field: H and V on one scale</span>' + L.map(l => '<span>' + sw(l) + (l.key === 'h' ? 'H (φ)' : 'V (θ)') + '</span>').join('')
+    : '<span>' + (L[0].color ? sw(L[0]) : '') + 'Far field: ' + LOBE_NAMES[L[0].key] + '</span>' + (L[0].color ? '' : '<span>Colour: level, blue (low) to red (high)</span>')) +
+    '<span>0 dB = ' + fmt(r.gain, 2) + ' dBi, the total-field maximum, for every view; −40 dB at the centre · ' + fmt(r.f, 3) + ' MHz</span>' +
+    (r.approx ? '<span>≈ approximate pattern</span>' : '') + (stale ? '<span>from the last calculation; the model has changed</span>' : '');
+}
 function drawEdPolar() {
   const az = $('#edAz'); if (!az || !az.offsetParent) return;
   const r = S.last;
   if (!r) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = ''; return; }
-  const acc = css('--accent');
-  drawPolar(az, [{ pts: r.cutAz.map(p => [p[0], p[1]]), color: acc }], false, r.gain);
-  drawPolar($('#edEl'), [{ pts: r.cutEl.map(p => [p[0], p[1]]), color: acc }], r.ground > 0, r.gain);
-  $('#edPolTxt').textContent = fmt(r.gain, 2) + ' dBi at ' + fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB';
+  const COL = { tot: 1, h: 2, v: 3 }, L = lobeLayers($('#edPol').value);
+  const series = cut => L.map(l => ({ pts: cut.map(p => [p[0], p[COL[l.key]]]), color: css(l.color || '--accent') }));
+  drawPolar(az, series(r.cutAz), false, r.gain);
+  drawPolar($('#edEl'), series(r.cutEl), r.ground > 0, r.gain);
+  const sky = r.sum && r.sum.rdf && r.sum.rdf.sky ? r.sum.rdf.sky.rdf : null;
+  $('#edPolTxt').textContent = fmt(r.gain, 2) + ' dBi at ' + fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB · RDF all-sky ' + (sky == null ? 'n/a' : (r.sum.uncertain ? '≈ ' : '') + fmt(sky, 2) + ' dB');
 }
 $('#edLobe').onchange = () => drawView();
+$('#edPol').onchange = () => { drawView(); drawEdPolar(); };
 
 /* ---------------- 3D far field ---------------- */
 const FV = { yaw: -0.6, pitch: 0.45, zoom: 1 };
@@ -2513,6 +2626,7 @@ $('#exampleSel').onchange = e => {
   if (e.target.value === '') return;
   const ex = EXAMPLES[+e.target.value];
   if (ex.pol) $('#polSel').value = ex.pol;
+  if (ex.pol && $('#edPol option[value="' + ex.pol + '"]')) $('#edPol').value = ex.pol;
   S.history = []; loadModel(ex.build === 'hextable' ? hexTableModel(ex.centre, ex.tuned) : ex.maa ? modelFromMAA(ex.maa) : clone(ex)); e.target.value = '';
   drawPatterns();
 };

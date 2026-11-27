@@ -1321,6 +1321,32 @@
     const ok = gDes > 1e-30 && mean > 1e-30 && Number.isFinite(gDes / mean);
     return { rdf: ok ? 10 * Math.log10(gDes / mean) : null, desired: { el: d.el, az: d.az }, gDes, gDesDb: dB(gDes), mean, meanDb: dB(mean), domain: dom, sr: b.sr, pol: o.pol, ref: o.ref };
   }
+  /* Polarization, for display only (nothing here feeds back into the solve). Two different things, kept apart:
+   *   share / vMinusH / kind: how the radiated power over the whole visible sky divides between the H (phi) and the
+   *        V (theta) component, linear power weighted by solid angle. `kind` is 'mixed' when the two are within
+   *        `margin` dB (default 3), else 'H' or 'V'; `pure` when the weaker one is at least `pure` dB down (default 20)
+   *        or absent. null when nothing is radiated. This is what the H and V plots show, summed over direction.
+   *   peak: the theta and phi gains toward one direction {el, az} (the total-field maximum). These are the LOCAL
+   *        spherical components: at elevation el the theta unit vector is tilted el from the vertical, so of the
+   *        theta power only cos^2(el) is a vertical E field in space. `horizE` is the share of the power toward that
+   *        direction whose E field is horizontal in space, (h + v sin^2 el) / (h + v); `nearZenith` (el >= `zenith`,
+   *        default 60 deg, the start of the high band) marks directions where theta and phi are both nearly
+   *        horizontal and which of the two is larger depends on the azimuth only.
+   * Neither says which wire radiates what: every component is the sum over all the currents of one coupled solution. */
+  const POL_RULE = { margin: 3, pure: 20, zenith: ANGLE_BANDS.high[0] };
+  function polarization(grid, peak, opts) {
+    const o = Object.assign({}, POL_RULE, opts);
+    if (!peak || !Number.isFinite(peak.el) || !Number.isFinite(peak.az)) throw new Error('Polarization needs a direction {el, az}');
+    const b = bandStats(grid, grid.e0, 90), P = b.integral, some = P.tot > 1e-30;
+    const hasV = some && P.v > 1e-30 * P.tot, hasH = some && P.h > 1e-30 * P.tot;
+    const vMinusH = hasV && hasH ? 10 * Math.log10(P.v / P.h) : null;
+    const kind = !some ? null : vMinusH == null ? (hasV ? 'V' : 'H') : Math.abs(vMinusH) < o.margin ? 'mixed' : vMinusH > 0 ? 'V' : 'H';
+    const G = grid.gain(peak.el, peak.az), tot = G.v + G.h, s2 = Math.sin(peak.el * RAD) ** 2;
+    return { share: some ? { h: P.h / P.tot, v: P.v / P.tot } : null, vMinusH, kind, pure: some && (vMinusH == null || Math.abs(vMinusH) >= o.pure),
+      margin: o.margin, pureDb: o.pure, horizE: b.horizE,
+      peak: { el: peak.el, az: peak.az, vDb: dB(G.v), hDb: dB(G.h), vMinusH: G.v > 1e-30 && G.h > 1e-30 ? dB(G.v) - dB(G.h) : null,
+        horizE: tot > 1e-30 ? (G.h + G.v * s2) / tot : null, nearZenith: peak.el >= o.zenith } };
+  }
   /* Summary of one analyze() result for the user interface. Flags that make every figure in it approximate:
    *   approx:  currents over the perfect mirror with a real-ground pattern (see analyze); the pattern shape is not exact.
    *   coarse:  the sky grid misses the main lobe (its largest sample is over 1 dB below the refined maximum), so the
@@ -1342,6 +1368,7 @@
       const s = angleSummary(grid);
       out.hv = { low: strip(s.low), high: strip(s.high), margin: s.margin, highMinusLow: s.highMinusLow, favoured: s.favoured };
     }
+    out.pol = polarization(grid, desired);
     out.uncertain = out.approx || out.coarse || out.overUnity;
     return out;
   }
@@ -1590,6 +1617,6 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { skyGrid, bandStats, angleSummary, rdf, patternSummary, ANGLE_BANDS, RDF_BACKGROUNDS, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, patternSummary, ANGLE_BANDS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
     varValue, applyVars, evalGoals, makeOptimizer };
 })(typeof globalThis !== 'undefined' ? globalThis : self);
