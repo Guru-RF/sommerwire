@@ -1,5 +1,5 @@
 /* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
-/* RF.Guru low-band EFHW inverted-L examples (EFHW16080 and EFHW8040).
+/* RF.Guru low-band EFHW inverted-L examples (EFHW16080 and EFHW8040) and the EFOC29 flat top (further down).
  *
  * Sourced (RF.Guru pages, retrieved 2026-11-26):
  *   EFHW16080: integrated 68:1 unun, ~82 m 2 mm wire, "~18–20 m vertical + remainder horizontal",
@@ -68,4 +68,40 @@
   rfGuruEfhwInvL.ROLES = ['radiator', 'radiator', 'return'];
   root.RFGURU_EFHW = RFGURU_EFHW;
   root.rfGuruEfhwInvL = rfGuruEfhwInvL;
+
+  /* RF.Guru EFOC29 end-fed off-centre wire, 80-10 m, integrated 4:1 unun, coax-counterpoise version, flat top.
+   * Sourced (RF.Guru product page and installation guide, retrieved 2026-11-27):
+   *   29 m radiator starting dimension (the wire is supplied longer for fold-back tuning); integrated 4:1 unun;
+   *   flat top: the 29 m in a straight horizontal span, feedpoint about 7-18 m; a "7-8 m reference installation";
+   *   about the first 12 m of coax exterior is the intended return path, ended by the first choke at about 12 m;
+   *   near-resonant on 80, 40, 20, 17, 12 and 10 m; 60 m needs a tuner, 30 and 15 m may need one;
+   *   typical installed VSWR below 2.5:1 on the supported bands and below about 3:1 on 80 m (setup targets).
+   * Assumed (not published on those pages, labelled in the comment, adjustable): feedpoint and flat top 8 m (the
+   *   reference height), the coax route (straight, perpendicular to the radiator, sloping down to 2 m at the
+   *   choke), wire radius 1 mm, shield radius 3.6 mm, the soil (εr 5, 1 mS/m, as the EFHW examples), copper.
+   * The 29 m is kept untrimmed and the choke is ideal (open end of the shield wire): no matching to a measurement.
+   * Wires: 1 radiator (+X), 2 coax shield exterior from the feedpoint to the choke (-Y). Source at w1b. */
+  const EFOC_SRC = { product: 'https://shop.rf.guru/products/efoc29', guide: 'https://shop.rf.guru/pages/efoc29-antenna-installation-guide' };
+  // bands: one calculation frequency per supported band (MHz): 80 m at the guide's 3.6 MHz target, the others at
+  // IARU Region 1 band midpoints except 10 m (28.5 MHz, the lower part where the guide places its resonance)
+  const RFGURU_EFOC29 = { name: 'RF.Guru EFOC29 end-fed off-centre, 80–10 m, 4:1, flat top', ratio: 4, total: 29, feed: 8, choke: 12, chokeZ: 2,
+    rWire: 1, rShield: 3.6, eps: 5, sigma: 0.001, bands: [3.6, 7.1, 14.175, 18.118, 21.225, 24.94, 28.5] };
+  function rfGuruEfoc29() {
+    const d = RFGURU_EFOC29, dy = Math.sqrt(d.choke * d.choke - (d.feed - d.chokeZ) ** 2);
+    const w = (a, b, r) => ({ x1: fm(a[0]), y1: fm(a[1]), z1: fm(a[2]), x2: fm(b[0]), y2: fm(b[1]), z2: fm(b[2]), r: String(r), seg: '-1' });
+    return {
+      name: d.name, freq: d.bands[0], bands: d.bands.slice(),
+      wires: [w([0, 0, d.feed], [d.total, 0, d.feed], d.rWire), w([0, 0, d.feed], [0, -dy, d.chokeZ], d.rShield)],
+      sources: [{ pos: 'w1b', phase: 0, mag: 1, ratio: d.ratio }], loads: [],
+      ground: { type: 2, height: 0, eps: d.eps, sigma: d.sigma }, material: 1, z0: 50,
+      comment: 'Sourced from RF.Guru (' + EFOC_SRC.product + ', ' + EFOC_SRC.guide + '): 29 m radiator starting dimension, integrated 4:1 unun, flat top in one straight horizontal span with the feedpoint about 7-18 m up (7-8 m reference installation), and in the coax-counterpoise version about the first 12 m of coax exterior as the return path, ended by the first choke at about 12 m. ' +
+        'Assumed, not published there (adjustable): feedpoint and flat top at ' + d.feed + ' m; wire 2 is the outside of the coax shield, ' + d.choke + ' m straight from the feedpoint, perpendicular to the radiator and sloping down to ' + d.chokeZ + ' m at the choke, which is an ideal boundary (open end of the shield wire, no finite choke impedance and no coax beyond it); wire radius ' + d.rWire + ' mm, shield radius ' + d.rShield + ' mm, copper, lower-conductivity soil (εr ' + d.eps + ', ' + d.sigma * 1000 + ' mS/m). ' +
+        'Balun 4:1 is an ideal lossless transformer: the SWR is the 50 Ω side, "At the antenna" is the wire end. The 29 m is not trimmed to any target. Not modelled: XLPE insulation, transformer loss and parasitics, the choke impedance, the station-side coax, the zig-zag or near-ground coax routes, the separate 13 m wire counterpoise version, the inverted-L, inverted-U and sloper layouts, sag and nearby objects. ' +
+        'RF.Guru gives near resonance on 80, 40, 20, 17, 12 and 10 m (60 m needs a tuner, 30 and 15 m may), and a typical installed SWR below 2.5 (below about 3 on 80 m) as a setup target, not a guarantee; RF.Guru advises measuring and tuning the installed antenna by folding back the surplus wire. ' +
+        'Calculated by default at ' + d.bands.join(', ').replace(/, (?=[^,]*$)/, ' and ') + ' MHz (80 m at the guide\'s 3.6 MHz target, 10 m in its lower part, the others at band centre). No measured SWR or match is implied.'
+    };
+  }
+  rfGuruEfoc29.ROLES = ['radiator', 'return'];
+  root.RFGURU_EFOC29 = RFGURU_EFOC29;
+  root.rfGuruEfoc29 = rfGuruEfoc29;
 })(typeof globalThis !== 'undefined' ? globalThis : self);

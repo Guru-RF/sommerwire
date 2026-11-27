@@ -2,10 +2,10 @@
  * Run from the repository root:  node --test tests/
  * 1. Which examples carry band frequencies (model.bands, MHz), and that each one is defensible: inside an IARU
  *    Region 1 amateur band and stated in the example itself (or the midpoint of a range it states).
- *    Only the two RF.Guru EFHW inverted-Ls carry bands; every other example stays single-band.
+ *    Only the RF.Guru EFHW inverted-Ls and the RF.Guru EFOC29 carry bands; every other example stays single-band.
  * 2. Engine values at those frequencies, so the band list and the example's own claims stay in step.
  * 3. The UI flow: one full calculation also solves the other bands; edits clear them; late results are dropped.
- * 4. The pattern view: the EFHW examples open with horizontal + vertical polarization on the same cuts. */
+ * 4. The pattern view: the RF.Guru examples open with horizontal + vertical polarization on the same cuts. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -24,7 +24,7 @@ function section(start, end) {
 }
 
 // the app's own example table, normalize() and numericModel(), run in a sandbox
-const app = vm.createContext({ MM, WMStruct: globalThis.WMStruct, rfGuruEfhwInvL: globalThis.rfGuruEfhwInvL, clone: o => JSON.parse(JSON.stringify(o)) });
+const app = vm.createContext({ MM, WMStruct: globalThis.WMStruct, rfGuruEfhwInvL: globalThis.rfGuruEfhwInvL, rfGuruEfoc29: globalThis.rfGuruEfoc29, clone: o => JSON.parse(JSON.stringify(o)) });
 vm.runInContext(section('const NF_MODES', '/* ---------------- worker') + section('/* amateur HF bands per IARU region', 'const hfBands'), app);
 const EXAMPLES = vm.runInContext('EXAMPLES', app);
 const HAM1 = vm.runInContext('HAM_BANDS[1]', app);
@@ -35,7 +35,8 @@ const byName = n => { const i = EXAMPLES.findIndex(e => e.name.startsWith(n)); a
 // examples that state their operating frequencies; everything else stays single-band
 const EXPECTED = {
   'RF.Guru EFHW16080': [1.85, 3.65],
-  'RF.Guru EFHW8040': [3.65, 7.1]
+  'RF.Guru EFHW8040': [3.65, 7.1],
+  'RF.Guru EFOC29': [3.6, 7.1, 14.175, 18.118, 21.225, 24.94, 28.5]
 };
 
 test('band frequencies only on the examples that state them', () => {
@@ -200,9 +201,9 @@ test('pattern menu offers Horizontal + vertical and keeps the other modes', () =
   assert.deepEqual([...sel.matchAll(/value="(\w+)"/g)].map(m => m[1]), ['tot', 'h', 'v', 'hv', 'all']);
 });
 
-test('both EFHW examples open in H + V; no other example sets a pattern view', () => {
+test('the RF.Guru examples open in H + V; no other example sets a pattern view', () => {
   const withPol = EXAMPLES.filter(e => e.pol).map(e => [e.name.slice(0, 17), e.pol]);
-  assert.deepEqual(plain(withPol), [['RF.Guru EFHW16080', 'hv'], ['RF.Guru EFHW8040 ', 'hv']]);
+  assert.deepEqual(plain(withPol), [['RF.Guru EFHW16080', 'hv'], ['RF.Guru EFHW8040 ', 'hv'], ['RF.Guru EFOC29 en', 'hv']]);
   assert.match(section("$('#exampleSel').onchange", "$('#openBtn')"), /if \(ex\.pol\) \$\('#polSel'\)\.value = ex\.pol/);
 });
 
