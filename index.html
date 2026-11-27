@@ -202,6 +202,7 @@ footer a { color: var(--accent); }
     <div class="ro"><div class="k">Elevation</div><div class="v" id="roEl">–</div></div>
     <div class="ro"><div class="k">Polarization</div><div class="v" id="roPol">–</div></div>
   </section>
+  <div id="bandAntenna" hidden></div>
   <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
   <div class="status" id="status"></div>
 
@@ -1000,7 +1001,7 @@ $('#addTl').onclick = () => {
   renderTables(); changed();
 };
 $('#addLoad').onclick = () => { S.model.loads.push({ pos: 'w1c', type: 0, L: 1, C: 0, Q: 0, R: 0, X: 0 }); renderTables(); changed(); };
-$('#mName').oninput = e => { S.model.name = e.target.value; };
+$('#mName').oninput = e => { S.model.name = e.target.value; renderBands(); };
 $('#mComment').oninput = e => { S.model.comment = e.target.value; };
 $('#mFreq').oninput = e => { const v = +e.target.value; if (v > 0) { const sync = Math.abs(S.calcFreq - S.model.freq) < 1e-9; S.model.freq = v; $('#mLambda').textContent = fmt(MM.lambdaOf(v), 3) + ' m'; if (sync) { S.calcFreq = v; $('#cFreq').value = v; setSweepDefaults(); } changed(); } };
 $('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(false, false); } };
@@ -1095,6 +1096,9 @@ async function calcBands(model, key, main) {
 }
 function renderBands() {
   const box = $('#bandRes'), fl = (S.model && S.model.bands) || [];
+  const title = $('#bandAntenna');
+  title.textContent = fl.length ? (S.model.name || '').trim() : '';
+  title.hidden = !title.textContent;
   box.hidden = !fl.length;
   if (!fl.length) { box.innerHTML = ''; return; }
   const rows = S.bandRes && S.bandRes.rows;
