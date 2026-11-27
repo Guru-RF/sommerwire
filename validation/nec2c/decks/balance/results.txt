@@ -1,0 +1,5 @@
+# necbal.js: power balance over perfect ground, lossless wires (integrated gain / 4π must be 1)
+7.1 MHz simple ground plane (radials at 5 cm):  nec2c Z 35.7-26.6j  ∫G/4π 0.985 | Sommerwire Z 34.9-28.7j  ∫G/4π 1.000
+7.1 MHz DX Commander (0.1 m segments):        nec2c Z 46.5-13.8j  ∫G/4π 0.811 | Sommerwire Z 37.3-13.9j  ∫G/4π 1.000
+14.175 MHz simple ground plane (radials at 5 cm):  nec2c Z 2558.7-76.1j  ∫G/4π 0.985 | Sommerwire Z 2218.3-819.1j  ∫G/4π 1.000
+14.175 MHz DX Commander (0.1 m segments):        nec2c Z 58.0+22.8j  ∫G/4π 0.782 | Sommerwire Z 38.4+3.9j  ∫G/4π 1.000

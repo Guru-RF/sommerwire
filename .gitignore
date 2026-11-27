@@ -3,3 +3,4 @@
 # nec2c is GPL-3.0 third-party software: build it locally (see validation/nec2c/README.md)
 validation/nec2c/bin/
 node_modules/
+validation/nec2c/runs/

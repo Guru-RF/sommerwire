@@ -255,7 +255,10 @@
     { name: 'Lossless', sigma: Infinity },
     { name: 'Copper', sigma: 5.8e7 },
     { name: 'Aluminium', sigma: 3.5e7 },
-    { name: 'Iron', sigma: 1.0e7 }
+    { name: 'Iron (as MMANA, non-magnetic)', sigma: 1.0e7 },
+    { name: 'Steel, galvanised (µr 100)', sigma: 6.0e6, mu: 100 },
+    { name: 'Stainless steel', sigma: 1.4e6 },
+    { name: 'Brass', sigma: 1.5e7 }
   ];
 
   const lambdaOf = f => C0 / f;
@@ -346,6 +349,7 @@
   }
 
   /* ---------- mesh build ---------- */
+  const GROUND_CONTACT_TOL = 1e-4; // metres
   function buildMesh(model, f) {
     const lambda = lambdaOf(f);
     const g = model.ground || { type: 0, height: 0 };
@@ -367,7 +371,7 @@
       let id = nodeMap.get(key);
       if (id === undefined) {
         id = nodes.length;
-        nodes.push({ p: p.slice(), inc: [], ground: hasGround && Math.abs(p[2]) < 1e-4 });
+        nodes.push({ p: p.slice(), inc: [], ground: hasGround && Math.abs(p[2]) < GROUND_CONTACT_TOL });
         nodeMap.set(key, id);
       }
       return id;
@@ -381,7 +385,7 @@
       const a = Math.abs(w.r);
       wireSegs.push([]);
       if (!(L > 0) || !(a > 0)) { if (!(L > 0)) warnings.push('Wire ' + (wi + 1) + ' has zero length.'); return; }
-      if (hasGround && (A[2] < -1e-4 || B[2] < -1e-4)) warnings.push('Wire ' + (wi + 1) + ' goes below ground.');
+      if (hasGround && (A[2] < -GROUND_CONTACT_TOL || B[2] < -GROUND_CONTACT_TOL)) warnings.push('Wire ' + (wi + 1) + ' goes below ground.');
       const lens = segmentLengths(L, w.seg | 0, lambda, segCfg, a, centerWires.has(wi));
       const u = scl(sub(B, A), 1 / L);
       let t = 0, prev = nodeId(A);
@@ -659,8 +663,9 @@
 
   /* If a model has more unknowns than the solver allows, long passive wires (longer than one wavelength,
    * carrying no source, load or transmission line, such as a mast or a long boom) are cut into coarser
-   * segments, longest first: first lambda/20, then lambda/10. Their current varies slowly, so this changes the
-   * results very little, while the active parts keep their fine segmentation. Models that fit are untouched. */
+   * segments, longest first: first lambda/20, then lambda/10. Their current usually varies slowly, so this
+   * mostly changes the results little, but a passive wire close to the antenna carries induced current and
+   * the effect depends on that coupling; the warning gives the counts so it can be checked. Models that fit are untouched. */
   const MAX_UNKNOWNS = 2500;
   function fitMesh(model, f) {
     const mesh = buildMesh(model, f);
@@ -682,7 +687,7 @@
         if (mesh2.bases.length <= MAX_UNKNOWNS) {
           mesh2.warnings.push('To stay within ' + MAX_UNKNOWNS + ' unknowns, the long passive wire' + (done.length > 1 ? 's ' : ' ') +
             done.map(i => 'w' + (i + 1)).join(', ') + ' (no source, load or line on ' + (done.length > 1 ? 'them' : 'it') + ') ' + (done.length > 1 ? 'were' : 'was') +
-            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz. This changes the results very little; set Seg on those wires yourself to choose the count.');
+            ' cut into coarser segments, about λ/' + per + ' at ' + f + ' MHz (' + done.map(i => 'w' + (i + 1) + ': ' + mesh2.wireSegs[i].length + ' segments').join(', ') + '). This usually changes the results little, but a passive wire close to the antenna carries induced current. To check, set Seg on those wires to these counts, then try finer counts on one wire at a time and compare impedance and gain.');
           return mesh2;
         }
       }
@@ -690,8 +695,88 @@
     return mesh;
   }
 
+  function checkGroundGeometry(model) {
+    if (!model.ground || !(model.ground.type > 0)) return;
+    const height = +model.ground.height || 0;
+    const buried = model.wires.findIndex(w =>
+      w.z1 + height <= -GROUND_CONTACT_TOL || w.z2 + height <= -GROUND_CONTACT_TOL);
+    if (buried !== -1) throw new Error('Wire ' + (buried + 1) + ' extends below ground after the height offset. Buried wires and wires crossing the ground plane beyond the contact tolerance are unsupported.');
+  }
+
+  /* ---------- boom correction ----------
+   * An element mounted through a metal boom resonates as if it were shorter than it is, so it must be cut longer
+   * than its free-space length. DL6WU's measurements, curve-fitted by G3SEK: for a round boom bonded to the element,
+   * the correction to the total element length is BC * boom diameter with
+   *   BC = 733 B (0.055 - B) - 504 B (0.03 - B),  B = boom diameter in wavelengths (valid up to about 0.055),
+   * and about half of that for an element insulated from the boom. The element length is not a parameter.
+   * Sommerwire takes the entered lengths as built (through the boom) and shortens each element electrically by the
+   * correction, so the boom itself is not drawn. Elements are straight open chains of wires square to the boom. */
+  function straightGroups(wires) {
+    const key = (x, y, z) => Math.round(x / 1e-5) + ',' + Math.round(y / 1e-5) + ',' + Math.round(z / 1e-5);
+    const ends = new Map(), add = (k, i, e) => { if (!ends.has(k)) ends.set(k, []); ends.get(k).push([i, e]); };
+    const ok = wires.map(w => Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1) > 0);
+    wires.forEach((w, i) => { if (!ok[i]) return; add(key(w.x1, w.y1, w.z1), i, 0); add(key(w.x2, w.y2, w.z2), i, 1); });
+    const dirOf = w => { const L = Math.hypot(w.x2 - w.x1, w.y2 - w.y1, w.z2 - w.z1); return [(w.x2 - w.x1) / L, (w.y2 - w.y1) / L, (w.z2 - w.z1) / L]; };
+    const seen = new Set(), groups = [];
+    wires.forEach((w0, i0) => {
+      if (!ok[i0] || seen.has(i0)) return;
+      const d0 = dirOf(w0), members = [i0]; seen.add(i0); let straight = true;
+      const queue = [i0];
+      while (queue.length) {
+        const i = queue.pop(), w = wires[i];
+        for (const k of [key(w.x1, w.y1, w.z1), key(w.x2, w.y2, w.z2)]) {
+          const at = ends.get(k);
+          if (at.length > 2) straight = false;
+          for (const [j] of at) if (!seen.has(j)) {
+            seen.add(j); members.push(j); queue.push(j);
+            const d = dirOf(wires[j]); if (Math.abs(Math.abs(d[0] * d0[0] + d[1] * d0[1] + d[2] * d0[2]) - 1) > 1e-6) straight = false;
+          }
+        }
+      }
+      if (straight) groups.push({ members, dir: d0 });
+    });
+    return groups;
+  }
+  function boomFraction(B) { return 733 * B * (0.055 - B) - 504 * B * (0.03 - B); }
+  function applyBoom(model, f) {
+    const bm = model.boom;
+    if (!bm || !(+bm.d > 0) || !(bm.mount === 'bonded' || bm.mount === 'insulated')) return model;
+    const lambda = lambdaOf(f), D = +bm.d / 1000, B = D / lambda;
+    const axis = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[bm.axis] || [1, 0, 0];
+    const notes = [];
+    let frac = boomFraction(Math.min(B, 0.055));
+    if (B > 0.055) notes.push('The boom is ' + B.toFixed(3) + ' λ thick, beyond the 0.055 λ the DL6WU/G3SEK correction covers; the correction for 0.055 λ was used.');
+    if (bm.mount === 'insulated') frac *= 0.5;
+    const corr = Math.max(0, frac * D);          // metres off the total element length
+    if (!(corr > 0)) return model;
+    const m = Object.assign({}, model, { wires: model.wires.map(w => Object.assign({}, w)) });
+    const done = [];
+    for (const g of straightGroups(model.wires)) {
+      if (Math.abs(g.dir[0] * axis[0] + g.dir[1] * axis[1] + g.dir[2] * axis[2]) > 0.05) continue;   // not square to the boom
+      // the two outer ends of the chain: the extreme projections on its direction
+      let lo = Infinity, hi = -Infinity;
+      const proj = (x, y, z) => x * g.dir[0] + y * g.dir[1] + z * g.dir[2];
+      g.members.forEach(i => { const w = model.wires[i]; for (const t of [proj(w.x1, w.y1, w.z1), proj(w.x2, w.y2, w.z2)]) { lo = Math.min(lo, t); hi = Math.max(hi, t); } });
+      if (hi - lo <= 2 * corr) continue;
+      const moveEnd = (w, e, sgn) => { const k = e ? ['x2', 'y2', 'z2'] : ['x1', 'y1', 'z1']; k.forEach((c, q) => { w[c] += sgn * g.dir[q] * corr / 2; }); };
+      g.members.forEach(i => {
+        const w0 = model.wires[i], w = m.wires[i];
+        if (Math.abs(proj(w0.x1, w0.y1, w0.z1) - lo) < 1e-6) moveEnd(w, 0, 1); else if (Math.abs(proj(w0.x1, w0.y1, w0.z1) - hi) < 1e-6) moveEnd(w, 0, -1);
+        if (Math.abs(proj(w0.x2, w0.y2, w0.z2) - lo) < 1e-6) moveEnd(w, 1, 1); else if (Math.abs(proj(w0.x2, w0.y2, w0.z2) - hi) < 1e-6) moveEnd(w, 1, -1);
+      });
+      done.push(g.members.slice().sort((a, b) => a - b)[0]);
+    }
+    if (done.length) notes.push('Boom correction (' + (bm.mount === 'insulated' ? 'insulated' : 'bonded') + ' through a ' + (+bm.d) + ' mm boom): ' + done.length + ' element' + (done.length > 1 ? 's' : '') + ' (starting at ' + done.slice(0, 6).map(i => 'w' + (i + 1)).join(', ') + (done.length > 6 ? ' …' : '') + ') solved ' + (corr * 1000).toFixed(1) + ' mm shorter than drawn, so the lengths you entered are the lengths to cut.');
+    else notes.push('Boom correction is on, but no straight element square to the ' + (bm.axis || 'x').toUpperCase() + ' axis was found.');
+    m._boomNotes = notes;
+    return m;
+  }
+
   function solve(model, f) {
+    checkGroundGeometry(model);
+    model = applyBoom(model, f);
     const mesh = fitMesh(model, f);
+    if (model._boomNotes) mesh.warnings.push(...model._boomNotes);
     const { segs, nodes, halves, bases, hasGround } = mesh;
     const N = bases.length;
     if (!segs.length) throw new Error('No wires defined.');
@@ -722,7 +807,7 @@
       const gc = new Set(); nodes.forEach((nd, i) => { if (nd.ground) gc.add(find(i)); });
       if (gc.size) segs.forEach(sg => { if (gc.has(find(sg.n0))) earthed.add(sg.wire); });
     }
-    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, as MMANA does, because the complex image cannot carry current into the soil and mixing the two images is not energy-consistent. The far field still uses the real ground. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance).');
+    if ((wantComplex || wantSomm) && earthed.size) mesh.warnings.push('Wires touching the ground (' + [...earthed].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (earthed.size > 6 ? ' …' : '') + '): the impedance is solved over perfect ground for the whole model, as MMANA does, because the complex image cannot carry current into the soil and mixing the two images is not energy-consistent. The far field still uses the real ground. Ground loss at those wires is only the load you place at their base (house downpipes include their earth resistance). This applies even to a wire far away or not connected to the antenna: if such a wire is not part of what you want to model, raise it off the ground or remove it.');
     const cdepth = wantComplex ? complexDepth(+gnd.eps || 13, Number.isFinite(+gnd.sigma) && gnd.sigma !== '' ? +gnd.sigma : 0.005, mesh.lambda) : null;
     const noImage = wantComplex && !cdepth;
     const allPec = earthed.size > 0;
@@ -735,9 +820,10 @@
       gR = sctx.G[0]; gI = sctx.G[1];
     }
     if (cdepth && !allPec) {
-      // the single complex image is an approximation that degrades for wires very close to lossy soil
-      const lowW = new Set(); segs.forEach(sg => { if (Math.min(sg.p0[2], sg.p1[2]) < 0.01 * mesh.lambda) lowW.add(sg.wire); });
-      if (lowW.size) mesh.warnings.push('Wires ' + [...lowW].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (lowW.size > 6 ? ' …' : '') + ' run less than 0.01 λ (' + (0.01 * mesh.lambda).toFixed(2) + ' m) above real ground. The complex image is unreliable this close to lossy soil: it tends to underestimate ground loss, so the feed resistance comes out too low and the gain too high, and can even go negative. Choose Sommerfeld for the impedance over real ground.');
+      // the single complex image is an approximation that degrades toward the soil: for a 20 m dipole it reads
+      // 0.7 dB too high at 0.14 lambda, 3.5 dB at 0.05 lambda and 5.9 dB at 0.014 lambda (against Sommerfeld)
+      const lowW = new Set(); segs.forEach(sg => { if (Math.min(sg.p0[2], sg.p1[2]) < 0.2 * mesh.lambda) lowW.add(sg.wire); });
+      if (lowW.size) mesh.warnings.push('Wires ' + [...lowW].map(w => 'w' + (w + 1)).slice(0, 6).join(', ') + (lowW.size > 6 ? ' …' : '') + ' run less than 0.2 λ (' + (0.2 * mesh.lambda).toFixed(1) + ' m) above real ground. The complex image underestimates ground loss there, so the feed resistance comes out too low and the gain too high (for a 20 m dipole about 0.7 dB at 3 m, 3.5 dB at 1 m), and very close to the soil the resistance can even go negative. Choose Sommerfeld for the impedance over real ground.');
     }
     const halfM0 = halves.map(h => mirror(h.p0)), halfM1 = halves.map(h => mirror(h.p1));
     let hNode = -1;
@@ -810,14 +896,34 @@
     if (somm) sommerfeldFill(mesh, sctx, k, pre, Zr, Zi);
 
     // conductor loss (skin effect) on shared halves
+    let hMap = null;
+    const byHalf = () => {
+      if (hMap) return hMap; hMap = new Map();
+      bases.forEach((b, i) => [b.a, b.b].forEach(pp => { if (pp) { if (!hMap.has(pp.half)) hMap.set(pp.half, []); hMap.get(pp.half).push([i, pp.d]); } }));
+      return hMap;
+    };
     const mat = MATERIALS[model.material | 0] || MATERIALS[0];
     if (isFinite(mat.sigma)) {
-      const Rs = Math.sqrt(omega * MU0 / (2 * mat.sigma));
-      const byHalf = new Map();
-      bases.forEach((b, i) => [b.a, b.b].forEach(pp => { if (pp) { if (!byHalf.has(pp.half)) byHalf.set(pp.half, []); byHalf.get(pp.half).push([i, pp.d]); } }));
-      byHalf.forEach((list, hi) => {
-        const h = halves[hi]; const r = Rs / (2 * Math.PI * h.seg.a) * h.len;
-        for (const [i, di] of list) for (const [j, dj] of list) Zr[i * N + j] += r * dot(di, dj);
+      const Rs = Math.sqrt(omega * MU0 * (mat.mu || 1) / (2 * mat.sigma));
+      // a magnetic wire also has internal inductance equal to its skin resistance
+      const Xs = mat.mu > 1 ? Rs : 0;
+      byHalf().forEach((list, hi) => {
+        const h = halves[hi]; const r = Rs / (2 * Math.PI * h.seg.a) * h.len, x = Xs / (2 * Math.PI * h.seg.a) * h.len;
+        for (const [i, di] of list) for (const [j, dj] of list) { const d = dot(di, dj); Zr[i * N + j] += r * d; Zi[i * N + j] += x * d; }
+      });
+    }
+    // insulated wire: a distributed series impedance per metre (the thin-sheath approximation NEC-4 also uses)
+    //   Z' = j omega mu0/(2 pi) (1 - 1/eps*) ln(b/a),  eps* = eps_r (1 - j tan d)
+    const ins = model.ins;
+    if (ins && +ins.t > 0 && +ins.er >= 1) {
+      const er = +ins.er, td = +ins.tand > 0 ? +ins.tand : 0, dd = er * (1 + td * td);
+      const A = 1 - 1 / dd, B = td / dd, set = Array.isArray(ins.wires) ? new Set(ins.wires) : null;
+      byHalf().forEach((list, hi) => {
+        const h = halves[hi]; if (set && !set.has(h.seg.wire)) return;
+        const a = h.seg.a, b = a + ins.t / 1000;
+        const X0 = omega * MU0 / (2 * Math.PI) * Math.log(b / a) * h.len;
+        const r = X0 * B, x = X0 * A;
+        for (const [i, di] of list) for (const [j, dj] of list) { const d = dot(di, dj); Zr[i * N + j] += r * d; Zi[i * N + j] += x * d; }
       });
     }
 
@@ -827,23 +933,19 @@
       const loc = locate(mesh, ld.pos); if (!loc) return;
       let zr, zi;
       if (ld.type === 1) { zr = +ld.R || 0; zi = +ld.X || 0; }
-      else if (ld.type === 2) {
-        // parallel L-C trap: coil (with loss omega*L/Q in series with it) across the capacitor
-        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
-        const ar = ld.Q > 0 ? omega * L / ld.Q : 0, ai = omega * L;      // coil branch
-        if (!(Cc > 0)) { zr = ar; zi = ai; }
-        else if (!(L > 0)) { zr = 0; zi = -1 / (omega * Cc); }
-        else {
-          // Z = Zl / (1 + j*omega*C*Zl)
-          const dr = 1 - omega * Cc * ai, di = omega * Cc * ar, dd = dr * dr + di * di;
-          zr = (ar * dr + ai * di) / dd; zi = (ai * dr - ar * di) / dd;
-        }
-        if (+ld.R) zr += +ld.R;
-      }
       else {
-        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12;
-        zr = 0; zi = omega * L - (Cc > 0 ? 1 / (omega * Cc) : 0);
-        if (ld.Q > 0 && L > 0) zr = omega * L / ld.Q;
+        // coil: omega*L/Q in series with jwL, optionally across its own self-capacitance Cp;
+        // capacitor: -j/(wC) with loss 1/(wC Qc) in series. Type 0 puts them in series, type 2 in parallel (trap).
+        const L = (+ld.L || 0) * 1e-6, Cc = (+ld.C || 0) * 1e-12, Cp = (+ld.Cp || 0) * 1e-12;
+        const par = (ar, ai, br, bi) => { const nr = ar * br - ai * bi, ni = ar * bi + ai * br, [qr, qi] = divC(nr, ni, ar + br, ai + bi); return [qr, qi]; };
+        let lr = L > 0 && ld.Q > 0 ? omega * L / ld.Q : 0, li = omega * L;
+        if (L > 0 && Cp > 0) [lr, li] = par(lr, li, 0, -1 / (omega * Cp));
+        const cr = Cc > 0 && ld.Qc > 0 ? 1 / (omega * Cc * ld.Qc) : 0, ci = Cc > 0 ? -1 / (omega * Cc) : 0;
+        if (ld.type === 2) {
+          if (!(Cc > 0)) { zr = lr; zi = li; }
+          else if (!(L > 0)) { zr = cr; zi = ci; }
+          else [zr, zi] = par(lr, li, cr, ci);
+        } else { zr = lr + cr; zi = li + ci; }
         if (+ld.R) zr += +ld.R;
       }
       const sg = bases.map(b => partSign(b, loc.half, loc.dir));
@@ -881,7 +983,9 @@
       const a = portIndex(ga), b = portIndex(gb);
       const L = +t.len > 0 ? +t.len : len(sub(ga.pt, gb.pt));
       if (!(L > 0)) { mesh.warnings.push('Transmission line ' + (ti + 1) + ' has zero length. It was left out.'); return; }
-      lines.push({ a, b, z0: +t.z0 > 0 ? +t.z0 : 50, vf: +t.vf > 0 ? Math.min(1, +t.vf) : 1, L, rev: !!t.rev });
+      // matched loss in dB per 100 m, given at lossF MHz and scaled with sqrt(f) (skin effect), or as is without lossF
+      const dbm = +t.loss > 0 ? +t.loss / 100 * (+t.lossF > 0 ? Math.sqrt(f / +t.lossF) : 1) : 0;
+      lines.push({ a, b, z0: +t.z0 > 0 ? +t.z0 : 50, vf: +t.vf > 0 ? Math.min(1, +t.vf) : 1, L, rev: !!t.rev, alpha: dbm / (20 / Math.LN10) });
     });
 
     // ---- sources: on a line port they drive the network, elsewhere they are series gap sources ----
@@ -894,12 +998,12 @@
       if (portByHalf.has(loc.half)) {
         const k = portByHalf.get(loc.half);
         if (ports[k].src) { mesh.warnings.push('Two sources on the same feed point ' + sc.pos + '; only the first is used.'); return; }
-        ports[k].src = { vr, vi }; srcs.push({ spec: sc.pos, vr, vi, port: k }); return;
+        ports[k].src = { vr, vi }; srcs.push({ spec: sc.pos, vr, vi, port: k, ratio: +sc.ratio > 0 ? +sc.ratio : 1 }); return;
       }
       const sg = bases.map(b => partSign(b, loc.half, loc.dir));
       if (!sg.some(x => x)) { mesh.warnings.push('Source ' + sc.pos + ' sits on a free wire end and cannot be fed.'); return; }
       sg.forEach((sv, i) => { if (sv) { br[i] += sv * vr; bi[i] += sv * vi; } });
-      srcs.push({ spec: sc.pos, vr, vi, sg });
+      srcs.push({ spec: sc.pos, vr, vi, sg, ratio: +sc.ratio > 0 ? +sc.ratio : 1 });
     });
     if (!srcs.length) throw new Error('No valid source. Add a source such as "w1c" (wire 1 centre).');
 
@@ -916,13 +1020,19 @@
         for (let b = 0; b < P; b++) { const [yr, yi] = dotS(ports[a].sg, Xr[b], Xi[b]); Ytr[a * P + b] = yr; Yti[a * P + b] = yi; }
         const [gr, gi] = dotS(ports[a].sg, x0r, x0i); g0r[a] = gr; g0i[a] = gi;
       }
-      // lossless line: Y11 = Y22 = -j cot(bl)/Z0, Y12 = Y21 = +j csc(bl)/Z0 (sign flipped when reversed)
+      // line with gamma = alpha + j beta: Y11 = Y22 = coth(gamma l)/Z0, Y12 = Y21 = -csch(gamma l)/Z0
+      // (sign flipped when reversed); lossless this is -j cot(bl)/Z0 and +j csc(bl)/Z0
       const k0 = 2 * Math.PI * f / C0;
       lines.forEach(l => {
-        let th = k0 / l.vf * l.L; if (Math.abs(Math.sin(th)) < 1e-9) th += 1e-6;
-        const cot = Math.cos(th) / Math.sin(th), csc = 1 / Math.sin(th), y12 = (l.rev ? -1 : 1) * csc / l.z0;
-        Yti[l.a * P + l.a] -= cot / l.z0; Yti[l.b * P + l.b] -= cot / l.z0;
-        Yti[l.a * P + l.b] += y12; Yti[l.b * P + l.a] += y12;
+        const al = l.alpha * l.L;
+        let th = k0 / l.vf * l.L; if (al < 1e-9 && Math.abs(Math.sin(th)) < 1e-9) th += 1e-6;
+        const shr = Math.sinh(al) * Math.cos(th), shi = Math.cosh(al) * Math.sin(th);
+        const chr = Math.cosh(al) * Math.cos(th), chi = Math.sinh(al) * Math.sin(th);
+        const [ctr, cti] = divC(chr, chi, shr, shi), [csr, csi] = divC(1, 0, shr, shi), sg = l.rev ? -1 : 1;
+        Ytr[l.a * P + l.a] += ctr / l.z0; Yti[l.a * P + l.a] += cti / l.z0;
+        Ytr[l.b * P + l.b] += ctr / l.z0; Yti[l.b * P + l.b] += cti / l.z0;
+        Ytr[l.a * P + l.b] -= sg * csr / l.z0; Yti[l.a * P + l.b] -= sg * csi / l.z0;
+        Ytr[l.b * P + l.a] -= sg * csr / l.z0; Yti[l.b * P + l.a] -= sg * csi / l.z0;
       });
       const U = [], F = [];
       ports.forEach((pt, kk) => { if (pt.src) { F.push(kk); Vr[kk] = pt.src.vr; Vi[kk] = pt.src.vi; } else U.push(kk); });
@@ -958,7 +1068,8 @@
       const zr = (sr.vr * ir + sr.vi * ii) / den, zi = (sr.vi * ir - sr.vr * ii) / den;
       const pw = 0.5 * (sr.vr * ir + sr.vi * ii);
       Pin += pw;
-      return { spec: sr.spec, R: zr, X: zi, Ir: ir, Ii: ii, V: Math.hypot(sr.vr, sr.vi), P: pw };
+      // an ideal feed transformer (balun / unun, impedance ratio n:1) divides the impedance seen by the feeder
+      return { spec: sr.spec, R: zr / sr.ratio, X: zi / sr.ratio, Rant: zr, Xant: zi, ratio: sr.ratio, Ir: ir, Ii: ii, V: Math.hypot(sr.vr, sr.vi), P: pw };
     });
 
     // half currents along segment direction
@@ -974,7 +1085,10 @@
     });
 
     if (sourceResults.some(sr => sr.R < 0)) mesh.warnings.push('Negative feed resistance: this result is not physical. Usually a ground approximation is stretched too far (see any ground warning) or the segmentation is too coarse.');
-    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings };
+    // currents solved over a perfect mirror while the pattern uses real-ground (Fresnel) reflection, as MMANA does:
+    // the two do not conserve energy, and close to the ground the gain comes out too high
+    const mirrorMix = hasGround && gnd.type === 2 && (allPec || (!wantSomm && !wantComplex) || gnd.nf === 'somm-pec-test');
+    return { f, lambda: mesh.lambda, k, mesh, sources: sourceResults, Pin, halfRe: hr, halfIm: hiA, segCur, N, warnings: mesh.warnings, mirrorMix, earthed: [...earthed].sort((a, b) => a - b) };
   }
 
   /* ---------- far field ---------- */
@@ -1040,10 +1154,25 @@
         // horizontal: -Rh * image
         dpr += -(rhr * ipr - rhi * ipi); dpi += -(rhr * ipi + rhi * ipr);
       }
-      const v = 4 * Math.PI * K * (dtr * dtr + dti * dti) / Pin;
-      const h = 4 * Math.PI * K * (dpr * dpr + dpi * dpi) / Pin;
+      const v = 4 * Math.PI * K * (dtr * dtr + dti * dti) / Pin * scale;
+      const h = 4 * Math.PI * K * (dpr * dpr + dpi * dpi) / Pin * scale;
       return { tot: v + h, v, h };
     }
+
+    // Radiated power over input power: the mean gain over the sphere (hemisphere above ground), midpoint rule
+    function powerRatio() {
+      const de = 2, da = 5, e0 = g.type > 0 ? 0 : -90, r = Math.PI / 180;
+      let sum = 0;
+      for (let e = e0 + de / 2; e < 90; e += de) {
+        let ring = 0; for (let a = da / 2; a < 360; a += da) ring += gain(e, a).tot;
+        sum += ring * Math.cos(e * r) * de * r * da * r;
+      }
+      return sum / (4 * Math.PI);
+    }
+    // With mirror currents and real-ground reflection the pattern can hold more power than the feed supplies.
+    // Then scale it down so radiated power equals input power: still optimistic, but no longer impossible.
+    let scale = 1, ratio = null;
+    if (res.mirrorMix && Pin > 0) { ratio = powerRatio(); if (ratio > 1) scale = 1 / ratio; }
 
     function findMax() {
       const e0 = g.type > 0 ? 0 : -90;
@@ -1065,7 +1194,7 @@
       }
       return best;
     }
-    return { gain, findMax };
+    return { gain, findMax, powerRatio, ratio, scale };
   }
 
   const dB = x => (x > 1e-30 ? 10 * Math.log10(x) : -300);
@@ -1080,12 +1209,168 @@
     const gr = divC(s0.R - z0, s0.X, s0.R + z0, s0.X);
     const gm = Math.hypot(gr[0], gr[1]);
     const swr = gm >= 1 ? Infinity : (1 + gm) / (1 - gm);
+    const capDb = pat.scale < 1 ? -dB(pat.scale) : 0;
+    if (res.mirrorMix) res.warnings.push(capDb > 0
+      ? 'Gain is approximate and was limited: the currents are solved over a perfect mirror while the pattern uses real-ground reflection. The pattern held ' + pat.ratio.toFixed(2) + ' times the input power, which is impossible, so all gains were lowered by ' + capDb.toFixed(1) + ' dB to make radiated power equal input power. The real gain is lower still, because the soil absorbs power. Impedance and SWR are those over the perfect mirror.'
+      : 'Gain is approximate: the currents are solved over a perfect mirror while the pattern uses real-ground reflection, as MMANA-GAL does. Close to the ground this overstates gain.');
     return {
-      res, pat, f, R: s0.R, X: s0.X, swr, z0,
+      res, pat, f, R: s0.R, X: s0.X, swr, z0, approx: !!res.mirrorMix, capDb,
       gain: dB(mx.g), el: mx.el, az: mx.az, fb: (fbRaw => (Math.abs(fbRaw) < 1e-9 ? 0 : fbRaw))(dB(front.tot) - dB(back.tot)),
       pol: front.h >= front.v ? 'Horizontal' : 'Vertical',
       gainH: dB(front.h), gainV: dB(front.v)
     };
+  }
+
+  /* ---------- angle summary and RDF ----------
+   * Both work on one sampling of the pattern over the visible sky (skyGrid): every `de` degrees of elevation from the
+   * horizon (free space: from -90) to the zenith, every `da` degrees of azimuth. All averages are averages of LINEAR
+   * power gain weighted by solid angle (dOmega = cos(el) d el d az), never averages of dB values.
+   * The elevation weights integrate a gain that is piecewise linear between the samples exactly, so a constant gain
+   * returns the exact solid angle; the azimuth sum is the periodic trapezoid rule.
+   * "V" and "H" are the theta and phi components, as everywhere else in the program. */
+  const RAD = Math.PI / 180;
+  function skyGrid(pat, hasGround, opts) {
+    const de = (opts && opts.de) || 1, da = (opts && opts.da) || 4;
+    const e0 = hasGround ? 0 : -90, nE = Math.round((90 - e0) / de) + 1, nA = Math.round(360 / da);
+    if (!(de > 0 && da > 0) || Math.abs((nE - 1) * de - (90 - e0)) > 1e-9 || Math.abs(nA * da - 360) > 1e-9) throw new Error('Sky grid: the steps must divide 90 and 360 degrees');
+    const els = Array.from({ length: nE }, (_, i) => e0 + i * de), azs = Array.from({ length: nA }, (_, i) => i * da);
+    const tot = new Float64Array(nE * nA), v = new Float64Array(nE * nA), h = new Float64Array(nE * nA);
+    for (let i = 0; i < nE; i++) for (let j = 0; j < nA; j++) {
+      const G = pat.gain(els[i], azs[j]), k = i * nA + j;
+      if (!(G.v >= 0 && G.h >= 0 && Number.isFinite(G.v + G.h))) throw new Error('The pattern is not finite at ' + els[i] + '° elevation, ' + azs[j] + '° azimuth');
+      v[k] = G.v; h[k] = G.h; tot[k] = G.v + G.h;
+    }
+    return { els, azs, de, da, e0, nA, tot, v, h, hasGround: !!hasGround, gain: pat.gain };
+  }
+  function gridIndex(grid, el, what) {
+    const i = Math.round((el - grid.e0) / grid.de);
+    if (!Number.isFinite(el) || i < 0 || i >= grid.els.length || Math.abs(grid.els[i] - el) > 1e-9) throw new Error(what + ': ' + el + '° is not an elevation of the sky grid (' + grid.e0 + ' to 90° in steps of ' + grid.de + '°)');
+    return i;
+  }
+  // band of elevations [a, b] (deg), all azimuths: solid angle, solid-angle mean of the linear gains, and the largest samples
+  function bandStats(grid, a, b) {
+    const ia = gridIndex(grid, a, 'Band start'), ib = gridIndex(grid, b, 'Band end');
+    if (ib <= ia) throw new Error('Band: the end elevation must be above the start');
+    const hR = grid.de * RAD, daR = grid.da * RAD, nA = grid.nA;
+    const sum = { tot: 0, v: 0, h: 0 }, peak = { tot: { g: -1 }, v: { g: -1 }, h: { g: -1 } };
+    let horizE = 0;
+    for (let i = ia; i <= ib; i++) {
+      const e = grid.els[i] * RAD, c = Math.cos(e), se2 = Math.sin(e) ** 2;
+      // integral of the hat function of node i times cos(el), clipped to the band
+      const w = ((i > ia ? c - Math.cos(e - hR) : 0) + (i < ib ? c - Math.cos(e + hR) : 0)) / hR + (i === ia ? -Math.sin(e) : 0) + (i === ib ? Math.sin(e) : 0);
+      let rt = 0, rv = 0, rh = 0;
+      for (let j = 0; j < nA; j++) {
+        const k = i * nA + j; rt += grid.tot[k]; rv += grid.v[k]; rh += grid.h[k];
+        for (const p of ['tot', 'v', 'h']) if (grid[p][k] > peak[p].g) peak[p] = { g: grid[p][k], el: grid.els[i], az: grid.azs[j] };
+      }
+      sum.tot += w * rt * daR; sum.v += w * rv * daR; sum.h += w * rh * daR; horizE += w * (rh + rv * se2) * daR;
+    }
+    const sr = 2 * Math.PI * (Math.sin(b * RAD) - Math.sin(a * RAD));
+    return { el0: a, el1: b, sr, integral: sum, mean: { tot: sum.tot / sr, v: sum.v / sr, h: sum.h / sr }, peak,
+      horizE: sum.tot > 0 ? horizE / sum.tot : null };   // share of the band's power whose E field is horizontal
+  }
+  /* H / V by angle. Two elevation bands, all azimuths:
+   *   low  (default 5-30 deg):  mean and peak of V and of H. `dominant` is 'V' or 'H' only when the two means differ by
+   *        at least `margin` dB (default 3), otherwise null: no dominance is claimed.
+   *   high (default 60-90 deg): mean and peak of the total field. These are the angles a near-vertical-incidence (NVIS)
+   *        path would use; whether such a path exists depends on the ionosphere, which is not modelled, so this is a
+   *        candidate figure, not a propagation prediction. Close to the zenith theta and phi are both horizontal
+   *        E fields (which is which depends only on the azimuth), so no V/H dominance is derived there; `horizE` gives
+   *        the share of the power whose E field is horizontal (never below sin^2(60 deg) = 75 % in the default band).
+   *   `favoured` is 'high' or 'low' only when the mean total gains of the two bands differ by at least `margin` dB. */
+  const ANGLE_BANDS = { low: [5, 30], high: [60, 90], margin: 3 };
+  function angleSummary(grid, opts) {
+    const o = Object.assign({}, ANGLE_BANDS, opts);
+    const fin = x => (Number.isFinite(x) ? x : null);
+    const dbs = b => Object.assign(b, { meanDb: { tot: dB(b.mean.tot), v: dB(b.mean.v), h: dB(b.mean.h) },
+      peakDb: { tot: dB(b.peak.tot.g), v: dB(b.peak.v.g), h: dB(b.peak.h.g) } });
+    const low = dbs(bandStats(grid, o.low[0], o.low[1])), high = dbs(bandStats(grid, o.high[0], o.high[1]));
+    const some = low.mean.tot > 1e-30 && high.mean.tot > 1e-30;
+    // a component that is absent has no dB value: no difference is given, and the other one dominates
+    const hasV = low.mean.v > 1e-30, hasH = low.mean.h > 1e-30;
+    low.vMinusH = hasV && hasH ? fin(low.meanDb.v - low.meanDb.h) : null;
+    low.dominant = low.vMinusH == null ? (hasV ? 'V' : hasH ? 'H' : null) : low.vMinusH >= o.margin ? 'V' : low.vMinusH <= -o.margin ? 'H' : null;
+    const highMinusLow = some ? fin(high.meanDb.tot - low.meanDb.tot) : null;
+    return { low, high, margin: o.margin, highMinusLow, favoured: highMinusLow == null ? null : highMinusLow >= o.margin ? 'high' : highMinusLow <= -o.margin ? 'low' : null };
+  }
+  /* Receiving directivity factor: RDF = 10 log10( G(desired direction) / mean G over the noise ), in dB.
+   *   desired {el, az} (required): the direction the wanted signal arrives from; its total-field gain is the numerator.
+   *   domain [el0, el1]: the elevations noise arrives from, all azimuths, spread evenly per unit solid angle
+   *        (default: the whole visible sky, horizon to zenith over ground, the full sphere in free space).
+   *   pol 'tot' | 'v' | 'h': the polarization component that receives the noise (default 'tot': unpolarized noise).
+   *   ref '4pi' | 'domain': the solid angle the noise integral is divided by. '4pi' is the published convention
+   *        (RDF = directivity; forward gain minus average gain): over ground it is 3.01 dB above the mean over the
+   *        hemisphere, in free space the two are the same. 'domain' is the plain mean over the noise domain.
+   * Named background assumptions (RDF_BACKGROUNDS):
+   *   sky: noise from the whole visible sky, unpolarized, '4pi'. Comparable with published RDF tables.
+   *   low: noise only from 0-30 deg elevation, unpolarized, mean over that band. Not comparable with `sky` in absolute
+   *        value: it answers how much the desired direction stands above the low-angle average.
+   * Losses cancel (numerator and denominator are the same pattern), so RDF is a pattern-shape figure. It says nothing
+   * about real noise, which is neither uniform nor known here. */
+  const RDF_BACKGROUNDS = { sky: { domain: null, pol: 'tot', ref: '4pi' }, low: { domain: [0, 30], pol: 'tot', ref: 'domain' } };
+  function rdf(grid, opts) {
+    const o = Object.assign({}, RDF_BACKGROUNDS.sky, opts), d = o.desired;
+    if (!d || !Number.isFinite(d.el) || !Number.isFinite(d.az)) throw new Error('RDF needs a desired direction {el, az}');
+    if (d.el < grid.e0 || d.el > 90) throw new Error('RDF: the desired elevation ' + d.el + '° is outside the pattern');
+    if (!['tot', 'v', 'h'].includes(o.pol)) throw new Error('RDF: unknown polarization ' + o.pol);
+    if (o.ref !== '4pi' && o.ref !== 'domain') throw new Error('RDF: unknown reference ' + o.ref);
+    const dom = o.domain || [grid.e0, 90];
+    if (o.ref === '4pi' && (dom[0] !== grid.e0 || dom[1] !== 90)) throw new Error('RDF: the 4 pi reference needs the whole visible sky as the noise domain');
+    const b = bandStats(grid, dom[0], dom[1]);
+    const gDes = grid.gain(d.el, d.az).tot, mean = b.integral[o.pol] / (o.ref === '4pi' ? 4 * Math.PI : b.sr);
+    const ok = gDes > 1e-30 && mean > 1e-30 && Number.isFinite(gDes / mean);
+    return { rdf: ok ? 10 * Math.log10(gDes / mean) : null, desired: { el: d.el, az: d.az }, gDes, gDesDb: dB(gDes), mean, meanDb: dB(mean), domain: dom, sr: b.sr, pol: o.pol, ref: o.ref };
+  }
+  /* Polarization, for display only (nothing here feeds back into the solve). Two different things, kept apart:
+   *   share / vMinusH / kind: how the radiated power over the whole visible sky divides between the H (phi) and the
+   *        V (theta) component, linear power weighted by solid angle. `kind` is 'mixed' when the two are within
+   *        `margin` dB (default 3), else 'H' or 'V'; `pure` when the weaker one is at least `pure` dB down (default 20)
+   *        or absent. null when nothing is radiated. This is what the H and V plots show, summed over direction.
+   *   peak: the theta and phi gains toward one direction {el, az} (the total-field maximum). These are the LOCAL
+   *        spherical components: at elevation el the theta unit vector is tilted el from the vertical, so of the
+   *        theta power only cos^2(el) is a vertical E field in space. `horizE` is the share of the power toward that
+   *        direction whose E field is horizontal in space, (h + v sin^2 el) / (h + v); `nearZenith` (el >= `zenith`,
+   *        default 60 deg, the start of the high band) marks directions where theta and phi are both nearly
+   *        horizontal and which of the two is larger depends on the azimuth only.
+   * Neither says which wire radiates what: every component is the sum over all the currents of one coupled solution. */
+  const POL_RULE = { margin: 3, pure: 20, zenith: ANGLE_BANDS.high[0] };
+  function polarization(grid, peak, opts) {
+    const o = Object.assign({}, POL_RULE, opts);
+    if (!peak || !Number.isFinite(peak.el) || !Number.isFinite(peak.az)) throw new Error('Polarization needs a direction {el, az}');
+    const b = bandStats(grid, grid.e0, 90), P = b.integral, some = P.tot > 1e-30;
+    const hasV = some && P.v > 1e-30 * P.tot, hasH = some && P.h > 1e-30 * P.tot;
+    const vMinusH = hasV && hasH ? 10 * Math.log10(P.v / P.h) : null;
+    const kind = !some ? null : vMinusH == null ? (hasV ? 'V' : 'H') : Math.abs(vMinusH) < o.margin ? 'mixed' : vMinusH > 0 ? 'V' : 'H';
+    const G = grid.gain(peak.el, peak.az), tot = G.v + G.h, s2 = Math.sin(peak.el * RAD) ** 2;
+    return { share: some ? { h: P.h / P.tot, v: P.v / P.tot } : null, vMinusH, kind, pure: some && (vMinusH == null || Math.abs(vMinusH) >= o.pure),
+      margin: o.margin, pureDb: o.pure, horizE: b.horizE,
+      peak: { el: peak.el, az: peak.az, vDb: dB(G.v), hDb: dB(G.h), vMinusH: G.v > 1e-30 && G.h > 1e-30 ? dB(G.v) - dB(G.h) : null,
+        horizE: tot > 1e-30 ? (G.h + G.v * s2) / tot : null, nearZenith: peak.el >= o.zenith } };
+  }
+  /* Summary of one analyze() result for the user interface. Flags that make every figure in it approximate:
+   *   approx:  currents over the perfect mirror with a real-ground pattern (see analyze); the pattern shape is not exact.
+   *   coarse:  the sky grid misses the main lobe (its largest sample is over 1 dB below the refined maximum), so the
+   *            averages are unreliable for this narrow a beam.
+   *   overUnity: the pattern holds over 5 % more power than the sources supply, which is not physical. */
+  function patternSummary(a, model, opts) {
+    const hasGround = ((model.ground || {}).type | 0) > 0;
+    const grid = skyGrid(a.pat, hasGround, opts);
+    const desired = { el: a.el, az: a.az };
+    const sky = rdf(grid, Object.assign({}, RDF_BACKGROUNDS.sky, { desired }));
+    const gridMax = grid.tot.reduce((m, x) => Math.max(m, x), 0), skyPower = sky.mean;
+    const strip = b => ({ el0: b.el0, el1: b.el1, meanDb: b.meanDb, peakDb: b.peakDb, horizE: b.horizE, vMinusH: b.vMinusH, dominant: b.dominant,
+      peakAt: { tot: [b.peak.tot.el, b.peak.tot.az], v: [b.peak.v.el, b.peak.v.az], h: [b.peak.h.el, b.peak.h.az] } });
+    const out = { hasGround, approx: !!a.approx, coarse: !(gridMax * 1.2589 >= sky.gDes), overUnity: skyPower > 1.05, skyPower, desired,
+      rdf: { sky: { rdf: sky.rdf, meanDb: sky.meanDb, domain: sky.domain, ref: sky.ref } }, hv: null };
+    if (hasGround) {
+      const low = rdf(grid, Object.assign({}, RDF_BACKGROUNDS.low, { desired }));
+      out.rdf.low = { rdf: low.rdf, meanDb: low.meanDb, domain: low.domain, ref: low.ref };
+      const s = angleSummary(grid);
+      out.hv = { low: strip(s.low), high: strip(s.high), margin: s.margin, highMinusLow: s.highMinusLow, favoured: s.favoured };
+    }
+    out.pol = polarization(grid, desired);
+    out.uncertain = out.approx || out.coarse || out.overUnity;
+    return out;
   }
 
   /* ---------- MAA files ---------- */
@@ -1110,7 +1395,7 @@
         }
       } else if (/source/.test(h)) {
         const n = parseInt(nums(next() || '0')[0], 10) || 0;
-        for (let k = 0; k < n; k++) { const v = nums(next() || ''); model.sources.push({ pos: v[0], phase: +v[1] || 0, mag: v[2] !== undefined ? +v[2] : 1 }); }
+        for (let k = 0; k < n; k++) { const v = nums(next() || ''); model.sources.push({ pos: v[0], phase: +v[1] || 0, mag: v[2] !== undefined ? +v[2] : 1, ratio: 1 }); }
       } else if (/load/.test(h)) {
         const n = parseInt(nums(next() || '0')[0], 10) || 0;
         for (let k = 0; k < n; k++) {
@@ -1126,11 +1411,13 @@
         const v = nums(next() || '');
         model.ground.type = Math.min(2, Math.max(0, parseInt(v[0], 10) || 0));
         model.ground.height = +v[1] || 0;
-        model.material = parseInt(v[2], 10) || 0;
+        // MMANA material numbers above 3 have no match here and were always lossless; Sommerwire's own
+        // materials 4 and up come from a 'Sommerwire MAT' line instead
+        model.material = (m => (m >= 0 && m <= 3 ? m : 0))(parseInt(v[2], 10) || 0);
         model.z0 = +v[3] || 50;
       } else if (/comment/.test(h)) {
         const rest = []; let c; while ((c = next()) !== null) rest.push(c);
-        const keep = [];
+        const keep = [], extra = [];
         rest.forEach(line => {
           const hh = /^\s*(?:Sommerwire|WireModel) HOUSE:\s*(.*)$/i.exec(line);
           if (hh) {
@@ -1138,12 +1425,22 @@
             model.objects.push({ type: 'house', x: +v[0] || 0, y: +v[1] || 0, len: +v[2] || 10, wid: +v[3] || 8, eave: +v[4] || 0, ridge: +v[5] || 0, rot: +v[6] || 0, roof: v[7] === 'metal' ? 'metal' : 'none', grid: +v[8] || 1, gutters: v[9] === 'metal' ? 'metal' : 'none', pipes: +v[10] || 0, rEarth: v[11] !== undefined ? +v[11] || 0 : 50 });
             return;
           }
+          const ex = /^\s*Sommerwire (SRC|LOAD|INS|MAT|BOOM):\s*(.*)$/i.exec(line);
+          if (ex) { extra.push([ex[1].toUpperCase(), ex[2].split(/[,\t]+/).map(x => x.trim())]); return; }
           const mm = /^\s*(?:Sommerwire|WireModel) TL:\s*(.*)$/i.exec(line);
           if (!mm) { keep.push(line); return; }
           const v = mm[1].split(/[,\t]+/).map(x => x.trim());
-          model.tls.push({ p1: v[0], p2: v[1], z0: +v[2] || 50, vf: +v[3] || 1, len: +v[4] > 0 ? +v[4] : '', rev: v[5] === '1' });
+          model.tls.push({ p1: v[0], p2: v[1], z0: +v[2] || 50, vf: +v[3] || 1, len: +v[4] > 0 ? +v[4] : '', rev: v[5] === '1', loss: +v[6] > 0 ? +v[6] : '', lossF: +v[7] > 0 ? +v[7] : '' });
         });
         model.comment = keep.join('\n').trim();
+        // Sommerwire extensions that MMANA's own sections have no room for
+        extra.forEach(([kind, v]) => {
+          if (kind === 'SRC') { const s = model.sources[(+v[0] || 0) - 1]; if (s) s.ratio = +v[1] > 0 ? +v[1] : 1; }
+          else if (kind === 'LOAD') { const d = model.loads[(+v[0] || 0) - 1]; if (d) { d.Qc = +v[1] || 0; d.Cp = +v[2] || 0; } }
+          else if (kind === 'INS') model.ins = { t: +v[0] || 0, er: +v[1] || 1, tand: +v[2] || 0, wires: v.slice(3).join(',') };
+          else if (kind === 'BOOM') model.boom = { d: +v[0] || 0, mount: ['bonded', 'insulated'].includes(v[1]) ? v[1] : 'none', axis: ['x', 'y', 'z'].includes(v[2]) ? v[2] : 'x' };
+          else if (kind === 'MAT') { const m = parseInt(v[0], 10); if (m >= 0 && m < MATERIALS.length) model.material = m; }
+        });
       }
     }
     if (!model.freq) model.freq = 14.0;
@@ -1160,10 +1457,18 @@
     L.push('*** Load ***', model.loads.length + ',\t1');
     model.loads.forEach(d => L.push(d.type === 1 ? d.pos + ',\t1,\t' + d.R + ',\t' + d.X : d.pos + ',\t' + (d.type === 2 ? 2 : 0) + ',\t' + d.L + ',\t' + d.C + ',\t' + (d.Q || 0)));
     L.push('*** Segmentation ***', [model.seg.dm1, model.seg.dm2, model.seg.sc, model.seg.ec].join(',\t'));
-    L.push('*** G/H/M/R/AzEl/X ***', [model.ground.type, (+model.ground.height).toFixed(2), model.material | 0, (+model.z0).toFixed(1), 120, 60, 0.0].join(',\t'));
-    const tl = (model.tls || []).map(t => 'Sommerwire TL: ' + [t.p1, t.p2, +t.z0 || 50, +t.vf || 1, +t.len > 0 ? +t.len : 0, t.rev ? 1 : 0].join(', '));
+    // MMANA gets its nearest material (steel as iron, brass as copper); Sommerwire's own is named in a separate line
+    const mat = model.material | 0;
+    L.push('*** G/H/M/R/AzEl/X ***', [model.ground.type, (+model.ground.height).toFixed(2), [0, 1, 2, 3, 3, 3, 1][mat] ?? 0, (+model.z0).toFixed(1), 120, 60, 0.0].join(',\t'));
+    const tl = (model.tls || []).map(t => 'Sommerwire TL: ' + [t.p1, t.p2, +t.z0 || 50, +t.vf || 1, +t.len > 0 ? +t.len : 0, t.rev ? 1 : 0].concat(+t.loss > 0 ? [+t.loss, +t.lossF > 0 ? +t.lossF : 0] : []).join(', '));
+    const ext = [];
+    if (mat > 3) ext.push('Sommerwire MAT: ' + mat);
+    model.sources.forEach((s, i) => { if (+s.ratio > 0 && +s.ratio !== 1) ext.push('Sommerwire SRC: ' + (i + 1) + ', ' + +s.ratio); });
+    model.loads.forEach((d, i) => { if (d.type !== 1 && (+d.Qc > 0 || +d.Cp > 0)) ext.push('Sommerwire LOAD: ' + (i + 1) + ', ' + (+d.Qc || 0) + ', ' + (+d.Cp || 0)); });
+    const bm = model.boom; if (bm && +bm.d > 0 && (bm.mount === 'bonded' || bm.mount === 'insulated')) ext.push('Sommerwire BOOM: ' + [+bm.d, bm.mount, bm.axis || 'x'].join(', '));
+    const ins = model.ins; if (ins && +ins.t > 0) ext.push('Sommerwire INS: ' + [+ins.t, +ins.er || 1, +ins.tand || 0].join(', ') + (ins.wires && String(ins.wires).trim() ? ', ' + String(ins.wires).trim() : ''));
     const ho = (model.objects || []).filter(o => o.type === 'house').map(o => 'Sommerwire HOUSE: ' + [o.x, o.y, o.len, o.wid, o.eave, o.ridge, o.rot, o.roof, o.grid, o.gutters || 'none', +o.pipes || 0, +o.rEarth || 0].map(v => (typeof v === 'number' ? +(+v).toFixed(4) : v)).join(', '));
-    L.push('### Comment ###', [model.comment || ''].concat(tl, ho).filter(x => x !== '').join('\r\n'));
+    L.push('### Comment ###', [model.comment || ''].concat(tl, ho, ext).filter(x => x !== '').join('\r\n'));
     return L.join('\r\n') + '\r\n';
   }
 
@@ -1222,11 +1527,11 @@
     let cost = 0; const per = [];
     for (const f of freqs) {
       let r;
-      if (needPat) { const a = analyze(model, f); r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }; }
+      if (needPat) { const a = analyze(model, f); r = { f, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx }; }
       else {
-        const s = solve(model, f).sources[0];
+        const res = solve(model, f), s = res.sources[0];
         const g = divC(s.R - z0, s.X, s.R + z0, s.X), gm = Math.hypot(g[0], g[1]);
-        r = { f, R: s.R, X: s.X, swr: gm >= 1 ? Infinity : (1 + gm) / (1 - gm), gain: NaN, fb: NaN, el: NaN };
+        r = { f, R: s.R, X: s.X, swr: gm >= 1 ? Infinity : (1 + gm) / (1 - gm), gain: NaN, fb: NaN, el: NaN, approx: !!res.mirrorMix };
       }
       let c = 0;
       if (goals.swr.w) c += goals.swr.w * Math.max(0, Math.min(r.swr, 50) - goals.swr.target);
@@ -1236,11 +1541,12 @@
       if (goals.el.w) c += goals.el.w * Math.abs(r.el - goals.el.target) / 5;
       cost += c; per.push(r);
     }
-    return { cost: cost / freqs.length, per };
+    return { cost: cost / freqs.length, per, approx: per.some(r => r.approx) };
   }
 
   /* Bounded Nelder–Mead on variables scaled to [0,1], restarted with smaller steps. step() runs one evaluation. */
   function makeOptimizer(model, vars, goals, freqs, maxEval) {
+    checkGroundGeometry(model);
     const n = vars.length;
     const lo = vars.map(v => +v.min), hi = vars.map(v => +v.max);
     const clamp = t => Math.min(1, Math.max(0, t));
@@ -1252,10 +1558,17 @@
       const vals = toVals(x);
       let r;
       try { r = evalGoals(applyVars(model, vars, vals), freqs, goals); if (!Number.isFinite(r.cost)) r.cost = 1e6; }
-      catch (e) { r = { cost: 1e6, per: [] }; }
-      const pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
+      catch (e) {
+        if (!st.start) throw e;
+        r = { cost: 1e6, per: [] };
+      }
+      let pen = x.reduce((s, t) => s + (t < 0 ? -t : t > 1 ? t - 1 : 0), 0) * 10;
+      // A trial that makes a wire touch the ground switches the whole model to the perfect mirror (approximate
+      // impedance, and over real ground an approximate, often too high gain). That is a change of model, not an
+      // improvement, so when the start was a proper solve such trials are ruled out.
+      if (st.start && !st.start.approx && r.approx) { pen += 1000; st.switched = (st.switched || 0) + 1; }
       const c = r.cost + pen;
-      if (!st.start) st.start = { cost: c, vals, per: r.per };
+      if (!st.start) st.start = { cost: c, vals, per: r.per, approx: !!r.approx };
       if (!st.best || c < st.best.cost) st.best = { cost: c, vals, per: r.per, x: x.map(clamp) };
       st.history.push(st.best.cost);
       return c;
@@ -1304,6 +1617,6 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, patternSummary, ANGLE_BANDS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
     varValue, applyVars, evalGoals, makeOptimizer };
 })(typeof globalThis !== 'undefined' ? globalThis : self);

@@ -1,6 +1,6 @@
 require(require('path').join(__dirname,'../../../engine.js')); const MM=globalThis.MM;
 const {execFileSync}=require('child_process'), fs=require('fs'), path=require('path');
-const NEC=process.env.NEC2C||path.join(__dirname,'../bin/nec2c'), DIR=path.join(__dirname,'../decks');
+const NEC=process.env.NEC2C||path.join(__dirname,'../bin/nec2c'), DIR=require('./run-directory')(__filename);
 // case: {name, f, wires:[{a:[x,y,z], b:[...], r, n (segments)}], feed:{wire, end:'c'|'b'}, ground:'free'|'pec'|'real', eps, sig}
 function runNEC(cs, dens, tag) {
   const L=[`CM ${cs.name}`,'CE'];
@@ -9,7 +9,7 @@ function runNEC(cs, dens, tag) {
   L.push(cs.ground==='free'?'GE 0':'GE 1');
   if(cs.ground==='pec') L.push('GN 1'); if(cs.ground==='real') L.push(`GN 2 0 0 0 ${cs.eps} ${cs.sig}`);
   const fw=cs.wires[cs.feed.wire], seg=cs.feed.end==='c'?(fw._nn+1)/2:1;
-  L.push(`EX 0 ${cs.feed.wire+1} ${seg} 0 1 0`, `FR 0 1 0 0 ${cs.f} 0`, 'RP 0 90 1 1000 0 0 1 0', 'EN');
+  L.push(`EX 0 ${cs.feed.wire+1} ${seg} 0 1 0`, `FR 0 1 0 0 ${cs.f} 0`, 'RP 0 91 1 1000 0 0 1 0', 'EN');
   const inp=path.join(DIR,tag+'.nec'), out=path.join(DIR,tag+'.out'); fs.writeFileSync(inp,L.join('\n')+'\n');
   const t=Date.now(); execFileSync(NEC,['-i'+tag+'.nec','-o'+tag+'.out'],{cwd:DIR}); const ms=Date.now()-t;
   const txt=fs.readFileSync(out,'utf8');
@@ -24,7 +24,7 @@ function runWM(cs, dens, nf) {
   const ground=cs.ground==='free'?{type:0}:cs.ground==='pec'?{type:1}:{type:2,height:0,eps:cs.eps,sigma:cs.sig,nf};
   const m={wires,sources:[{pos:'w'+(cs.feed.wire+1)+cs.feed.end,phase:0,mag:1}],loads:[],tls:[],seg:{dm1:400,dm2:40,sc:2,ec:1},ground,material:0,z0:50};
   const t=Date.now(); const res=MM.solve(m,cs.f); const ms=Date.now()-t; const p=MM.makePattern(res,m);
-  let g=-999, el=null; for(let e=0;e<=89;e+=1){ const v=10*Math.log10(p.gain(e,0).tot); if(v>g){g=v; el=e;} }
+  let g=-999, el=null; for(let e=0;e<=90;e+=1){ const v=10*Math.log10(p.gain(e,0).tot); if(v>g){g=v; el=e;} }
   return {Z:[res.sources[0].R,res.sources[0].X],g,el,ms,N:res.N};
 }
 const lam=c=>299.792458/c;

@@ -1,6 +1,15 @@
 <meta charset="utf-8">
 <title>Sommerwire</title>
 <link rel="icon" href="brand/icon.svg" type="image/svg+xml">
+<script>
+// Visitor count (GoatCounter, no cookies): only on the GitHub Pages site.
+if (location.hostname === 'koenvdh.github.io') {
+  const gc = document.createElement('script');
+  gc.async = true; gc.src = 'https://gc.zgo.at/count.js';
+  gc.dataset.goatcounter = 'https://sommerwire.goatcounter.com/count';
+  document.head.appendChild(gc);
+}
+</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,6 +46,9 @@ header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px
 .brand-text { display: grid; gap: 1px; }
 .brand h1 { font-family: var(--f-body); font-weight: 700; font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; line-height: 1.1; color: var(--logo-a); background: linear-gradient(100deg, var(--logo-a), var(--logo-b)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .brand .ver { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); letter-spacing: 0.04em; opacity: 0.85; }
+.tube { margin: 4px 0 10px; }
+.tube summary { cursor: pointer; color: var(--accent); font-size: 13px; padding: 4px 0; }
+.tube .row { align-items: end; }
 .brand span { color: var(--muted); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 500; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button, select, input { font: inherit; color: inherit; }
@@ -57,7 +69,15 @@ label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .ro .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .ro .v { font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ro .v small { font-size: 12px; color: var(--muted); }
+.ro .s { font-size: 11px; line-height: 1.3; color: var(--muted); }
+.ro .v, .ro .s { transition: opacity 0.15s; }
+.readout.stale .v, .readout.stale .s { opacity: 0.5; transition-delay: 0.6s; }
 .v.good { color: var(--good); } .v.warn { color: var(--warn); } .v.bad { color: var(--bad); }
+.bandres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: var(--muted); }
+.bandres .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.bandres button { font-family: var(--f-mono); font-size: 12px; padding: 3px 9px; font-variant-numeric: tabular-nums; }
+.bandres button.on { border-color: var(--accent); }
+.bandres .good { color: var(--good); } .bandres .warn { color: var(--warn); } .bandres .bad { color: var(--bad); }
 .status { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); min-height: 20px; flex-wrap: wrap; }
 .pill { display: inline-block; padding: 1px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.03em; border: 1px solid currentColor; }
 .pill.ok { color: var(--good); } .pill.stale { color: var(--warn); } .pill.err { color: var(--bad); } .pill.busy { color: var(--accent); }
@@ -149,7 +169,9 @@ kbd { font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px
 .coord { position: absolute; left: 8px; top: 8px; font-family: var(--f-mono); font-size: 11.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 7px; pointer-events: none; max-width: calc(100% - 16px); }
 .legend i.bandkey { border: 0; height: 10px; width: 16px; background: var(--trace3); opacity: 0.3; border-radius: 2px; }
 .bandsum { display: grid; gap: 8px; }
-.bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
+#patSum, #polDetail { margin-top: 12px; display: grid; gap: 8px; min-width: 0; }
+#polDetail:empty { display: none; }
+#patSum h3, #polDetail h3, .bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
 table.results td.good { color: var(--good); } table.results td.warn { color: var(--warn); } table.results td.bad { color: var(--bad); }
 footer { color: var(--muted); font-size: 12px; max-width: 80ch; display: grid; gap: 6px; }
 footer p { margin: 0; }
@@ -179,12 +201,15 @@ footer a { color: var(--accent); }
   <section class="readout" aria-label="Latest result">
     <div class="ro"><div class="k">Frequency</div><div class="v" id="roF">–</div></div>
     <div class="ro wide"><div class="k">Impedance (Ω)</div><div class="v" id="roZ">–</div></div>
-    <div class="ro"><div class="k" id="roSwrK">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
-    <div class="ro"><div class="k">Gain</div><div class="v" id="roG">–</div></div>
-    <div class="ro"><div class="k">F/B</div><div class="v" id="roFB">–</div></div>
-    <div class="ro"><div class="k">Elevation</div><div class="v" id="roEl">–</div></div>
-    <div class="ro"><div class="k">Polarization</div><div class="v" id="roPol">–</div></div>
+    <div class="ro"><div class="k" id="roSwrK" title="SWR at the feedpoint, from the feed impedance beside it: one coupled solution of every modelled wire (vertical and horizontal legs and the return path alike), not from the far field. No polarization or pattern view changes it.">SWR 50 Ω</div><div class="v" id="roSWR">–</div></div>
+    <div class="ro"><div class="k" title="Largest total-field gain (H and V power together) over all directions, in dBi relative to the power accepted by the sources. Its direction is under Elevation and on the Far field tab.">Max gain</div><div class="v" id="roG">–</div></div>
+    <div class="ro"><div class="k" title="Front-to-back: the total-field maximum against the direction 180° away in azimuth at the same elevation. For a maximum near the zenith both directions are almost overhead, so F/B is near 0 dB and says little.">F/B</div><div class="v" id="roFB">–</div></div>
+    <div class="ro"><div class="k" title="Receiving directivity factor, a separate figure from F/B: gain toward an assumed desired direction (the total-field maximum) minus the mean gain over assumed noise directions (the whole visible sky, even per solid angle, unpolarized). Point at the value for the direction used. ≈ marks an approximate pattern; n/a means no figure could be made.">RDF all-sky</div><div class="v" id="roRdf">–</div><div class="s" id="roRdfS"></div></div>
+    <div class="ro"><div class="k" title="Elevation of the total-field maximum">Elevation</div><div class="v" id="roEl">–</div></div>
+    <div class="ro"><div class="k" title="Named from the whole pattern: how the radiated power over all directions divides between the H (φ) and V (θ) components. Mixed H+V: within 3 dB of each other. Mostly H or V: 3 dB or more. Horizontal or Vertical: 20 dB or more. Point at the value for the components toward the maximum.">Polarization</div><div class="v" id="roPol">–</div><div class="s" id="roPolS"></div></div>
   </section>
+  <div id="bandAntenna" hidden></div>
+  <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
   <div class="status" id="status"></div>
 
   <nav class="tabs" role="tablist">
@@ -210,24 +235,34 @@ footer a { color: var(--accent); }
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Wires</h2><button type="button" id="addWire">Add wire</button></div>
+      <details class="tube"><summary>Add a tube element (telescoping sections)</summary>
+        <p class="hint">Builds a straight element along Y from tube sections, centre outward: each section as half-length in metres × diameter in mm, for example <span class="mono">1.2x32, 1.2x25, 1.5x20, 1.55x16</span>. The centre section becomes one wire across the middle (feed it at its centre, <span class="mono">c</span>), the others one wire per side. Sommerwire calculates the steps in diameter directly; see Help, Tube elements.</p>
+        <div class="row">
+          <label class="fld"><span>Position X (m)</span><input id="tbX" inputmode="decimal" value="0"></label>
+          <label class="fld"><span>Height Z (m)</span><input id="tbZ" inputmode="decimal" value="10"></label>
+          <label class="fld" style="flex:1 1 300px;max-width:420px"><span>Sections, centre outward</span><input id="tbS" style="width:100%" spellcheck="false" autocomplete="off" value="1.2x32, 1.2x25, 1.5x20, 1.55x16"></label>
+          <button type="button" id="tbAdd" style="align-self:end">Add element</button>
+        </div>
+        <p class="hint" id="tbMsg"></p>
+      </details>
       <div class="tscroll"><table id="wireTbl"><thead><tr><th>#</th><th>X1</th><th>Y1</th><th>Z1</th><th>X2</th><th>Y2</th><th>Z2</th><th>R mm</th><th>Seg</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="grid2">
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center"><h2>Sources</h2><button type="button" id="addSrc">Add source</button></div>
-        <p class="hint">Position <span class="mono">w1c</span> = wire 1 centre, <span class="mono">w1b</span> = begin, <span class="mono">w1e</span> = end. Voltage sources.</p>
-        <div class="tscroll"><table id="srcTbl"><thead><tr><th>#</th><th>Position</th><th>Phase °</th><th>Volts</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="hint">Position <span class="mono">w1c</span> = wire 1 centre, <span class="mono">w1b</span> = begin, <span class="mono">w1e</span> = end. Voltage sources. Balun n:1 puts an ideal transformer at the feed point (4 for a 4:1 unun, 49 for an EFHW's 49:1): the impedance and SWR are then those the feed line sees.</p>
+        <div class="tscroll"><table id="srcTbl"><thead><tr><th>#</th><th>Position</th><th>Phase °</th><th>Volts</th><th>Balun n:1</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="card">
         <div class="row" style="justify-content:space-between;align-items:center"><h2>Loads</h2><button type="button" id="addLoad">Add load</button></div>
-        <p class="hint">Series L/C, a parallel L/C trap (Q is the coil's), or a fixed R + jX. Leave L or C at 0 to leave it out.</p>
-        <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
+        <p class="hint">Series L/C, a parallel L/C trap, or a fixed R + jX. Leave L or C at 0 to leave it out. Q is the coil's, Q C the capacitor's (empty = lossless); Cp is the coil's own self-capacitance, across the coil.</p>
+        <div class="tscroll"><table id="loadTbl"><thead><tr><th>#</th><th>Position</th><th>Type</th><th>L µH</th><th>C pF</th><th>Q</th><th>Q C</th><th>Cp pF</th><th>R Ω</th><th>X Ω</th><th></th></tr></thead><tbody></tbody></table></div>
       </div>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Transmission lines</h2><button type="button" id="addTl">Add line</button></div>
-      <p class="hint">An ideal, lossless line between two feed points, connected across the gap at each end like NEC's TL card. It does not radiate or couple to the wires, so it suits coax. Leave Length empty for the straight distance between the ends; the velocity factor makes the line electrically longer. Reversed swaps the two conductors at the far end. A source on a line end drives the line and the wire gap together.</p>
-      <div class="tscroll"><table id="tlTbl"><thead><tr><th>#</th><th>End 1</th><th>End 2</th><th>Z0 Ω</th><th>VF</th><th>Length m</th><th>Reversed</th><th></th></tr></thead><tbody></tbody></table></div>
+      <p class="hint">A line between two feed points, connected across the gap at each end like NEC's TL card. It does not radiate or couple to the wires, so it suits coax. Leave Length empty for the straight distance between the ends; the velocity factor makes the line electrically longer. Loss is the matched loss in dB per 100 m from the cable's data sheet; with "at MHz" it is scaled to other frequencies with √f, without it the same loss is used at every frequency. Reversed swaps the two conductors at the far end. A source on a line end drives the line and the wire gap together.</p>
+      <div class="tscroll"><table id="tlTbl"><thead><tr><th>#</th><th>End 1</th><th>End 2</th><th>Z0 Ω</th><th>VF</th><th>Length m</th><th>Loss dB/100 m</th><th>at MHz</th><th>Reversed</th><th></th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Buildings</h2><button type="button" id="addHouse">Add house</button></div>
@@ -257,6 +292,7 @@ footer a { color: var(--accent); }
         <label class="fld chk"><input type="checkbox" id="showSeg" checked><span>Segments</span></label>
         <label class="fld chk"><input type="checkbox" id="showCur" checked><span>Currents</span></label>
         <label class="fld chk"><input type="checkbox" id="edLobe" checked><span>Far field</span></label>
+        <label class="fld" title="Which part of the far field is drawn around the antenna and on the two cuts beside it. Every choice uses the same scale: 0 dB is the total-field maximum."><span>Far-field view</span><select id="edPol" aria-label="Far field shown in the editor"><option value="tot">Total</option><option value="h">H only</option><option value="v">V only</option><option value="hv">H + V</option></select></label>
         <label class="fld chk" title="Turns the model slowly; stops while you point at it or edit, and starts again a few seconds after"><input type="checkbox" id="edSpin" checked><span>Auto-rotate</span></label>
       </div>
       <div class="edgrid">
@@ -276,6 +312,7 @@ footer a { color: var(--accent); }
         </div>
       </div>
       <div class="legend" id="viewLegend"></div>
+      <div class="legend" id="edLobeLegend"></div>
     </div>
   </section>
 
@@ -294,18 +331,29 @@ footer a { color: var(--accent); }
         <label class="fld"><span>SWR reference (Ω)</span><input id="cZ0" inputmode="decimal"></label>
       </div>
       <div class="row">
+        <label class="fld"><span>Insulation (mm, 0 = bare)</span><input id="iT" inputmode="decimal"></label>
+        <label class="fld"><span>Insulation εr</span><input id="iEr" inputmode="decimal" title="PVC about 3–3.5, polyethylene 2.3, PTFE 2.1"></label>
+        <label class="fld"><span>Loss tangent</span><input id="iTd" inputmode="decimal" title="PVC about 0.01–0.05, PE and PTFE below 0.001"></label>
+        <label class="fld"><span>Insulated wires</span><input id="iW" placeholder="all" spellcheck="false" autocomplete="off" title="Empty for all wires, or a list such as 1-3, 5"></label>
+      </div>
+      <div class="row">
+        <label class="fld"><span>Boom correction</span><select id="bMount"><option value="none">None (elements in free space)</option><option value="bonded">Through a metal boom, bonded</option><option value="insulated">Through a metal boom, insulated</option></select></label>
+        <label class="fld"><span>Boom diameter (mm)</span><input id="bD" inputmode="decimal"></label>
+        <label class="fld"><span>Boom along</span><select id="bAx"><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option></select></label>
+      </div>
+      <div class="row">
         <label class="fld"><span>DM1 (fine)</span><input id="sDm1" inputmode="decimal"></label>
         <label class="fld"><span>DM2 (coarse)</span><input id="sDm2" inputmode="decimal"></label>
         <label class="fld"><span>SC</span><input id="sSc" inputmode="decimal"></label>
         <label class="fld" style="grid-auto-flow:column;align-items:center;gap:6px;align-self:center"><input type="checkbox" id="autoCalc" checked style="width:auto"><span>Recalculate on every edit</span></label>
       </div>
-      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that is good above about 0.1 λ but underestimates ground loss close to the soil. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
+      <p class="hint">With Real ground, the impedance is solved with Sommerfeld integrals, as NEC-2 does: exact for a flat homogeneous ground, so wires a few centimetres above the soil (radials, low dipoles, feed lines) come out right, ground loss included. "Complex image" is a faster approximation that underestimates ground loss closer to the soil than about 0.2 λ. "Perfect mirror" reproduces MININEC and MMANA-GAL. If any wire touches the ground, the whole impedance is solved over the perfect mirror; buried wires are not supported. The far field uses Fresnel reflection. Tapered segments run from λ/(SC·DM1) at wire ends to λ/DM2 in the middle.</p>
       <ul class="warns" id="warnList"></ul>
     </div>
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center"><h2>Results</h2><button type="button" id="clearRes" class="ghost">Clear list</button></div>
       <p class="hint">Each calculation adds a row so you can compare changes. The newest row is highlighted.</p>
-      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th>Gain dBi</th><th>F/B dB</th><th>Elev °</th><th>Ground</th><th>H m</th><th>Pol</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
+      <div class="tscroll"><table class="results" id="resTbl"><thead><tr><th>#</th><th>Antenna</th><th>MHz</th><th>R Ω</th><th>jX Ω</th><th>SWR</th><th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th><th title="Elevation of the total-field maximum">Elev °</th><th>Ground</th><th>H m</th><th title="Named from the whole pattern: the H / V split of the radiated power over all directions (see the Far field tab)">Polarization</th><th>Unknowns</th></tr></thead><tbody></tbody></table></div>
       <div id="srcRes"></div>
     </div>
   </section>
@@ -316,7 +364,7 @@ footer a { color: var(--accent); }
       <div class="row" style="justify-content:space-between;align-items:center">
         <h2>Far-field patterns</h2>
         <div class="toolbar">
-          <select id="polSel" aria-label="Polarization shown"><option value="tot">Total field</option><option value="h">Horizontal</option><option value="v">Vertical</option><option value="all">All three</option></select>
+          <select id="polSel" aria-label="Polarization shown"><option value="tot">Total field</option><option value="h">Horizontal</option><option value="v">Vertical</option><option value="hv">Horizontal + vertical</option><option value="all">All three</option></select>
           <button type="button" id="holdBtn">Hold for comparison</button>
           <button type="button" id="dropHold" class="ghost" hidden>Clear held</button>
         </div>
@@ -326,6 +374,8 @@ footer a { color: var(--accent); }
         <div class="fld"><span id="elTitle">Elevation</span><div class="canvasbox polar"><canvas id="elPlot"></canvas></div></div>
       </div>
       <div class="legend" id="patLegend"></div>
+      <div id="patSum"></div>
+      <div id="polDetail"></div>
       <p class="hint">Scale: dB relative to the maximum, rings at −3, −6, −10, −20 and −30 dB. Azimuth 0° is the +X axis, counter-clockwise, matching the top view.</p>
     </div>
     <div class="card">
@@ -340,7 +390,7 @@ footer a { color: var(--accent); }
       </div>
       <div class="canvasbox view3d" id="ffBox"><canvas id="ff3d"></canvas><div class="overlay-note">Drag to rotate · wheel or pinch to zoom</div></div>
       <div class="legend" id="ffLegend"></div>
-      <p class="hint">Same scale as the plots above: distance from the centre is dB relative to the maximum, down to −40 dB, sampled every 5°. It follows the polarization chosen above ("All three" shows the total field).</p>
+      <p class="hint">Same scale as the plots above: distance from the centre is dB relative to the maximum, down to −40 dB, sampled every 5°. It follows the polarization chosen above ("Horizontal + vertical" and "All three" show the total field).</p>
     </div>
   </section>
 
@@ -416,6 +466,7 @@ footer a { color: var(--accent); }
 
   <footer>
     <p class="author">Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> with the help of Claude Opus 5.5 in November 2026 · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
+    <p class="author">Contributions by <b>ON6URE Joeri Van Dooren</b> (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>): the RF.Guru EFHW inverted-L examples with dual-band results, the horizontal + vertical pattern view, the below-ground wire check and the clearing of sweep results after a model edit.</p>
     <p>Sommerwire is an independent thin-wire moment-method solver in the MININEC style (pulse currents at nodes, reduced kernel, image ground). It reads and writes the plain-text .maa layout used by MMANA-GAL so you can bring models across, but it is not MMANA-GAL and its numbers can differ slightly. The optimizer is a bounded Nelder–Mead search, restarted with smaller steps.</p>
   </footer>
 </div>
@@ -432,6 +483,7 @@ footer a { color: var(--accent); }
 <script src="engine.js"></script>
 <script src="hexgen.js"></script>
 <script src="structgen.js"></script>
+<script src="efhwgen.js"></script>
 <script>
 (() => {
 'use strict';
@@ -442,6 +494,8 @@ const fmt = (x, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '–');
 
 const NF_MODES = ['sommerfeld', 'complex', 'perfect'];
 /* ---------------- examples ---------------- */
+// bands (MHz): only on multiband examples whose comment states the frequencies; the first is the design frequency.
+// Every full calculation also solves the other bands (see example bands below).
 const yagiEl = (x, L, r) => ({ x1: String(x), y1: String(-L / 2), z1: '0', x2: String(x), y2: String(L / 2), z2: '0', r: String(r), seg: '-1' });
 const invH = Math.sqrt(10.18 * 10.18 - 25).toFixed(3);
 const q = 5.6, qh = q / 2;
@@ -450,6 +504,7 @@ const EXAMPLES = [
   { name: '3-element Yagi, 20 m', freq: 14.15, wires: [yagiEl(0, 10.75, 10), yagiEl(3.2, 10.15, 10), yagiEl(6.6, 9.62, 10)],
     sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 15, eps: 13, sigma: 0.005 }, material: 2, z0: 50,
     comment: 'Boom along X, elements parallel to Y, 10 mm radius aluminium tube.' },
+  {"name": "3-element Yagi, 20 m, telescoping aluminium tubes on a 50 mm boom", "freq": 14.175, "wires": [{"x1": "0", "y1": "-1.2", "z1": "0", "x2": "0", "y2": "1.2", "z2": "0", "r": "16", "seg": "-1"}, {"x1": "0", "y1": "1.2", "z1": "0", "x2": "0", "y2": "2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "0", "y1": "-1.2", "z1": "0", "x2": "0", "y2": "-2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "0", "y1": "2.4", "z1": "0", "x2": "0", "y2": "3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "0", "y1": "-2.4", "z1": "0", "x2": "0", "y2": "-3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "0", "y1": "3.9", "z1": "0", "x2": "0", "y2": "5.773", "z2": "0", "r": "8", "seg": "-1"}, {"x1": "0", "y1": "-3.9", "z1": "0", "x2": "0", "y2": "-5.773", "z2": "0", "r": "8", "seg": "-1"}, {"x1": "2.92", "y1": "-1.2", "z1": "0", "x2": "2.92", "y2": "1.2", "z2": "0", "r": "16", "seg": "-1"}, {"x1": "2.92", "y1": "1.2", "z1": "0", "x2": "2.92", "y2": "2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "2.92", "y1": "-1.2", "z1": "0", "x2": "2.92", "y2": "-2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "2.92", "y1": "2.4", "z1": "0", "x2": "2.92", "y2": "3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "2.92", "y1": "-2.4", "z1": "0", "x2": "2.92", "y2": "-3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "2.92", "y1": "3.9", "z1": "0", "x2": "2.92", "y2": "5.275", "z2": "0", "r": "8", "seg": "-1"}, {"x1": "2.92", "y1": "-3.9", "z1": "0", "x2": "2.92", "y2": "-5.275", "z2": "0", "r": "8", "seg": "-1"}, {"x1": "5.98", "y1": "-1.2", "z1": "0", "x2": "5.98", "y2": "1.2", "z2": "0", "r": "16", "seg": "-1"}, {"x1": "5.98", "y1": "1.2", "z1": "0", "x2": "5.98", "y2": "2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "5.98", "y1": "-1.2", "z1": "0", "x2": "5.98", "y2": "-2.4", "z2": "0", "r": "12.5", "seg": "-1"}, {"x1": "5.98", "y1": "2.4", "z1": "0", "x2": "5.98", "y2": "3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "5.98", "y1": "-2.4", "z1": "0", "x2": "5.98", "y2": "-3.9", "z2": "0", "r": "10", "seg": "-1"}, {"x1": "5.98", "y1": "3.9", "z1": "0", "x2": "5.98", "y2": "4.891", "z2": "0", "r": "8", "seg": "-1"}, {"x1": "5.98", "y1": "-3.9", "z1": "0", "x2": "5.98", "y2": "-4.891", "z2": "0", "r": "8", "seg": "-1"}], "sources": [{"pos": "w8c", "phase": 0, "mag": 1}], "loads": [], "ground": {"type": 2, "height": 15, "eps": 13, "sigma": 0.005}, "material": 2, "z0": 50, "boom": {"d": 50, "mount": "bonded", "axis": "x"}, "comment": "Self-supporting 3-element Yagi of telescoping aluminium tube, 15 m high, boom along X (6 m), beams toward +X. Every element has the same taper, centre outward per side: 1.2 m of 32 mm, 1.2 m of 25 mm, 1.5 m of 20 mm, then a 16 mm tip: reflector (w1-w7) tip 1.873 m, total 11.546 m; driven element (w8-w14) tip 1.375 m, total 10.550 m, fed at its centre w8c; director (w15-w21) tip 0.991 m, total 9.782 m, at 2.92 and 5.98 m along the boom. The elements are bonded through a 50 mm metal boom: the boom correction is on (Calculate tab), so these are the lengths to cut. Direct 50 ohm feed: SWR 1.3 at 14.0-14.2 MHz and 1.6 at 14.35, about 12.3 dBi at 15 m over average ground, F/B 21-27 dB. Tuned in Sommerwire; not built or measured."},
   { name: 'Half-wave dipole, 20 m', freq: 14.05, wires: [{ x1: '0', y1: '-5.17', z1: '0', x2: '0', y2: '5.17', z2: '0', r: '0.8', seg: '-1' }],
     sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 0, height: 10, eps: 13, sigma: 0.005 }, material: 0, z0: 50, comment: 'Free space reference dipole.' },
   { name: 'Inverted V, 40 m', freq: 7.1, wires: [
@@ -494,8 +549,8 @@ const EXAMPLES = [
       { x1: '-13.9', y1: '0', z1: '10', x2: '-0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
       { x1: '-0.1', y1: '0', z1: '10', x2: '0.1', y2: '0', z2: '10', r: '1', seg: '-1' },
       { x1: '0.1', y1: '0', z1: '10', x2: '27.8', y2: '0', z2: '10', r: '1', seg: '-1' }],
-    sources: [{ pos: 'w2c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200,
-    comment: "41.7 m flat top at 10 m, fed one third from the end (13.9 m / 27.8 m). SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 balun. Resonant near 80, 40, 20, 17, 12 and 10 m." },
+    sources: [{ pos: 'w2c', phase: 0, mag: 1, ratio: 4 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: "41.7 m flat top at 10 m, fed one third from the end (13.9 m / 27.8 m). Fed through an ideal 4:1 balun (Balun 4 on the source), so the impedance and SWR shown are those the 50 ohm coax sees; the Calculate tab also gives the impedance at the antenna. Resonant near 80, 40, 20, 17, 12 and 10 m." },
   { name: "G5RV, 2 × 15.55 m with 450 Ω ladder line", freq: 14.175, wires: [
       { x1: '0', y1: '-15.55', z1: '10', x2: '0', y2: '15.55', z2: '10', r: '1', seg: '-1' },
       { x1: '0', y1: '-0.05', z1: '1', x2: '0', y2: '0.05', z2: '1', r: '1', seg: '1' }],
@@ -522,8 +577,8 @@ const EXAMPLES = [
       { x1: '10.5', y1: '10.5', z1: '10', x2: '-10.5', y2: '10.5', z2: '10', r: '1', seg: '-1' },
       { x1: '-10.5', y1: '10.5', z1: '10', x2: '-10.5', y2: '-10.5', z2: '10', r: '1', seg: '-1' },
       { x1: '-10.5', y1: '-10.5', z1: '10', x2: '-0.05', y2: '-10.5', z2: '10', r: '1', seg: '-1' }],
-    sources: [{ pos: 'w1c', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200,
-    comment: 'Square full-wave loop, 21 m sides, flat at 10 m, fed at the middle of one side. About 100 ohm at resonance (3.65 MHz) and 200-400 ohm on the higher bands. SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 balun; most bands still need a tuner (often it is fed with ladder line instead). Mostly high-angle radiation on 80 and 40 m.' },
+    sources: [{ pos: 'w1c', phase: 0, mag: 1, ratio: 4 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: 'Square full-wave loop, 21 m sides, flat at 10 m, fed at the middle of one side. At the antenna about 100 ohm at resonance (3.65 MHz) and 200-400 ohm on the higher bands. Fed through an ideal 4:1 balun (Balun 4 on the source) into 50 ohm coax; most bands still need a tuner (often it is fed with ladder line instead). Mostly high-angle radiation on 80 and 40 m.' },
   { name: "Moxon rectangle, 20 m", freq: 14.175, wires: [
       { x1: '1.167', y1: '-3.858', z1: '12', x2: '0', y2: '-3.858', z2: '12', r: '0.8', seg: '-1' },
       { x1: '0', y1: '-3.858', z1: '12', x2: '0', y2: '3.858', z2: '12', r: '0.8', seg: '-1' },
@@ -571,10 +626,10 @@ const EXAMPLES = [
       { x1: '7.5178', y1: '-2.3676', z1: '15', x2: '7.5178', y2: '2.3676', z2: '15', r: '8', seg: '-1' },
       { x1: '8.086', y1: '-2.1308', z1: '15', x2: '8.086', y2: '2.1308', z2: '15', r: '8', seg: '-1' },
       { x1: '8.5974', y1: '-1.9177', z1: '15', x2: '8.5974', y2: '1.9177', z2: '15', r: '8', seg: '-1' }],
-    sources: [{ pos: 'w11c', phase: 0, mag: 1 }], loads: [],
+    sources: [{ pos: 'w11c', phase: 0, mag: 1, ratio: 2 }], loads: [],
     tls: [{ p1: 'w1c', p2: 'w2c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w2c', p2: 'w3c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w3c', p2: 'w4c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w4c', p2: 'w5c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w5c', p2: 'w6c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w6c', p2: 'w7c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w7c', p2: 'w8c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w8c', p2: 'w9c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w9c', p2: 'w10c', z0: 130, vf: 1, len: '', rev: true }, { p1: 'w10c', p2: 'w11c', z0: 130, vf: 1, len: '', rev: true }],
-    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 2, z0: 100,
-    comment: "Eleven elements (tau 0.9, sigma 0.06), 11 m down to 3.8 m, 16 mm aluminium tube, 8.6 m boom along X at 15 m; beams toward +X (the short end). The elements are fed by a 130 ohm line that is reversed (transposed) between each pair, modelled as ideal transmission lines; the source is on the shortest element. Feed impedance 70-110 ohm across 14-30 MHz, so the SWR reference is 100 ohm (an ideal 2:1 balun): SWR below about 1.5, F/B 16-35 dB, about 12 dBi with the ground reflection. No stub termination behind the longest element." },
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 2, z0: 50,
+    comment: "Eleven elements (tau 0.9, sigma 0.06), 11 m down to 3.8 m, 16 mm aluminium tube, 8.6 m boom along X at 15 m; beams toward +X (the short end). The elements are fed by a 130 ohm line that is reversed (transposed) between each pair, modelled as ideal transmission lines; the source is on the shortest element. Feed impedance 70-110 ohm across 14-30 MHz, fed through an ideal 2:1 balun (Balun 2 on the source) into 50 ohm coax: SWR below about 1.5, F/B 16-35 dB, about 12 dBi with the ground reflection. No stub termination behind the longest element." },
   { name: "Inverted-L, 160 m, elevated radials", freq: 1.84, wires: [
       { x1: '0', y1: '0', z1: '2.5', x2: '0', y2: '0', z2: '15', r: '1', seg: '-1' },
       { x1: '0', y1: '0', z1: '15', x2: '45.5', y2: '0', z2: '15', r: '1', seg: '-1' },
@@ -638,12 +693,15 @@ const EXAMPLES = [
       { x1: '0', y1: '0', z1: '0', x2: '0', y2: '0', z2: '2.5', r: '1', seg: '-1' },
       { x1: '0', y1: '0', z1: '2.5', x2: '150', y2: '0', z2: '2.5', r: '1', seg: '-1' },
       { x1: '150', y1: '0', z1: '2.5', x2: '150', y2: '0', z2: '0', r: '1', seg: '-1' }],
-    sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [{ pos: 'w3e', type: 1, L: 0, C: 0, Q: 0, R: 470, X: 0 }],
-    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 450,
-    comment: "Receive-only wire: 150 m at 2.5 m height with a vertical drop to ground at each end, fed at the near end (SWR reference 450 ohm = a 9:1 transformer) and terminated with 470 ohm at the far end; it receives best toward +X, the terminated end. Approximate: because the wires touch the ground, the impedance and currents are solved over perfect ground, so the ground losses that shape a real Beverage are missing. Take its gain (about -10 dBi on 160 m) and F/B (about 10 dB on 160 m, more on 80 and 40 m) as indicative only." },
+    sources: [{ pos: 'w1b', phase: 0, mag: 1, ratio: 9 }], loads: [{ pos: 'w3e', type: 1, L: 0, C: 0, Q: 0, R: 470, X: 0 }],
+    ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50,
+    comment: "Receive-only wire: 150 m at 2.5 m height with a vertical drop to ground at each end, fed at the near end through a 9:1 transformer into 50 ohm coax (Balun 9 on the source) and terminated with 470 ohm at the far end; it receives best toward +X, the terminated end. Approximate: because the wires touch the ground, the impedance and currents are solved over perfect ground, so the ground losses that shape a real Beverage are missing. Take its gain (about -10 dBi on 160 m) and F/B (about 10 dB on 160 m, more on 80 and 40 m) as indicative only." },
   { name: 'G3TXQ hexbeam, tuned per band, 50 Ω coax centre', build: 'hextable', centre: 'coax', tuned: true },
-  { name: 'EFOC29 end-fed, flat top at 8 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 200, comment: 'EFOC29: 29 m radiator, end-fed through a 4:1 unun. Wire 2 is the outside of the coax shield, the first 12 m from the feedpoint up to the ferrite choke (modelled as an open end). SWR reference 200 ohm = 50 ohm coax after an ideal 4:1 unun. Radiator radius 1 mm and shield radius 5 mm are assumptions.' },
-  { name: 'EFHW-8010 end-fed half-wave, 80–10 m, inverted V', maa: "EFHW-8010\n*\n30.000\n***Wires***\n4\n0.0039,\t0,\t-1.1446,\t-0.2274,\t0,\t3.0794,\t8.000e-4,\t-1\n17.8791,\t0,\t11.1691,\t37.4889,\t0,\t2.9241,\t8.000e-4,\t-1\n-0.2446,\t0,\t2.8721,\t17.8791,\t0,\t11.1691,\t8.000e-4,\t-1\n-0.2274,\t0,\t3.0794,\t-0.2446,\t0,\t2.8721,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw4b,\t0.0,\t1.0\n*** Load ***\n2,\t1\nw4b,\t0,\t0,\t100,\t0\nw4c,\t0,\t1.5,\t0,\t0\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t10.00,\t1,\t2450.0,\t120,\t60,\t0\n### Comment ###\n" },
+  { name: 'EFOC29 end-fed, flat top at 8 m', freq: 3.6, wires: [{ x1: '0', y1: '0', z1: '8', x2: '29', y2: '0', z2: '8', r: '1', seg: '-1' }, { x1: '0', y1: '0', z1: '8', x2: '0', y2: '-10.392', z2: '2', r: '5', seg: '-1' }], sources: [{ pos: 'w1b', phase: 0, mag: 1, ratio: 4 }], loads: [], ground: { type: 2, height: 0, eps: 13, sigma: 0.005 }, material: 1, z0: 50, comment: 'EFOC29: 29 m radiator, end-fed through a 4:1 unun. Wire 2 is the outside of the coax shield, the first 12 m from the feedpoint up to the ferrite choke (modelled as an open end). The unun is the Balun 4 on the source (ideal, lossless), so the impedance and SWR shown are those the 50 ohm coax sees. Radiator radius 1 mm and shield radius 5 mm are assumptions.' },
+  { name: 'EFHW-8010 end-fed half-wave, 80–10 m, inverted V', maa: "EFHW-8010\n*\n30.000\n***Wires***\n4\n0.0039,\t0,\t-1.1446,\t-0.2274,\t0,\t3.0794,\t8.000e-4,\t-1\n17.8791,\t0,\t11.1691,\t37.4889,\t0,\t2.9241,\t8.000e-4,\t-1\n-0.2446,\t0,\t2.8721,\t17.8791,\t0,\t11.1691,\t8.000e-4,\t-1\n-0.2274,\t0,\t3.0794,\t-0.2446,\t0,\t2.8721,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw4b,\t0.0,\t1.0\n*** Load ***\n2,\t1\nw4b,\t0,\t0,\t100,\t0\nw4c,\t0,\t1.5,\t0,\t0\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t10.00,\t1,\t50.0,\t120,\t60,\t0\n### Comment ###\nEFHW-8010 end-fed half-wave for 80-10 m as an inverted V, fed through a 49:1 unun: the source's Balun 49 (ideal, lossless), so the impedance and SWR shown are those the 50 ohm coax sees. The unun's own loss, often 0.5-1 dB, is not included.\nSommerwire SRC: 1, 49" },
+  // pol: the far-field view these inverted-Ls open with (H and V traces on the same cuts); the menu keeps every mode
+  Object.assign(rfGuruEfhwInvL('16080'), { pol: 'hv' }),
+  Object.assign(rfGuruEfhwInvL('8040'), { pol: 'hv' }),
   { name: 'DX Commander vertical, fed against the ground', maa: "DX Commander, fed against the ground\n*\n7.15\n***Wires***\n19\n-0.06,\t0.1,\t0.01,\t0.06,\t0.1,\t0.00995,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.00995,\t0.11,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.06,\t-0.1,\t0.01,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t-0.06,\t-0.1,\t0.01,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t-0.11,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t-0.06,\t0.1,\t0.01,\t8.000e-04,\t-1\n-0.06,\t0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.00995,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t-0.11,\t0.0,\t10.36,\t8.000e-04,\t-1\n-0.06,\t0.1,\t0.01,\t-0.06,\t0.1,\t3.83,\t8.000e-04,\t-1\n0.06,\t0.1,\t0.01,\t0.06,\t0.1,\t2.5,\t8.000e-04,\t-1\n0.11,\t0.0,\t0.01,\t0.11,\t0.0,\t7.34,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t0.06,\t-0.1,\t5.24,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t-0.06,\t-0.1,\t3.0,\t8.000e-04,\t-1\n0.06,\t-0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.06,\t-0.1,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n-0.11,\t0.0,\t0.01,\t0.0,\t0.0,\t0.01,\t8.000e-04,\t-1\n0.0,\t0.0,\t0.01,\t0.0,\t0.0,\t0.0,\t8.000e-04,\t-1\n***Source***\n1,\t0\nw19e,\t0.0,\t1.0\n***Load***\n0,\t0\n***Segmentation***\n800,\t80,\t2.0,\t2\n***G/H/M/R/AzEl/X***\n2,\t0.0,\t1,\t50.0,\t120,\t60,\t0.0" },
   { name: 'DX Commander vertical, 16 × 5 m radials', maa: "DX Commander, 16 x 5 m radials\n*\n7.150\n***Wires***\n35\n-0.06,\t0.1,\t0.11,\t0.06,\t0.1,\t0.11,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.11,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.06,\t-0.1,\t0.11,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t-0.06,\t-0.1,\t0.11,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t-0.11,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t-0.06,\t0.1,\t0.11,\t8.000e-4,\t-1\n-0.06,\t0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t-0.11,\t0.0,\t10.46,\t8.000e-4,\t-1\n-0.06,\t0.1,\t0.11,\t-0.06,\t0.1,\t3.93,\t8.000e-4,\t-1\n0.06,\t0.1,\t0.11,\t0.06,\t0.1,\t2.6,\t8.000e-4,\t-1\n0.11,\t0.0,\t0.11,\t0.11,\t0.0,\t7.44,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t0.06,\t-0.1,\t5.34,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t-0.06,\t-0.1,\t3.1,\t8.000e-4,\t-1\n0.06,\t-0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.06,\t-0.1,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n-0.11,\t0.0,\t0.11,\t0.0,\t0.0,\t0.11,\t8.000e-4,\t-1\n0,\t0,\t0.11,\t0,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t5,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t4.6194,\t1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t3.5355,\t3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t1.9134,\t4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t0,\t5,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-1.9134,\t4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-3.5355,\t3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-4.6194,\t1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-5,\t0,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-4.6194,\t-1.9134,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-3.5355,\t-3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t-1.9134,\t-4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t0,\t-5,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t1.9134,\t-4.6194,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t3.5355,\t-3.5355,\t0.05,\t8.000e-4,\t-1\n0,\t0,\t0.05,\t4.6194,\t-1.9134,\t0.05,\t8.000e-4,\t-1\n*** Source ***\n1,\t1\nw19b,\t0.0,\t1.0\n*** Load ***\n0,\t1\n*** Segmentation ***\n800,\t80,\t2,\t2\n*** G/H/M/R/AzEl/X ***\n2,\t0.00,\t1,\t50.0,\t120,\t60,\t0\n### Comment ###\nRadiator raised 10 cm; feed wire w19 runs from the radiator hub down to the radial hub. 16 radials of 5 m, 5 cm above the ground." },
   { name: 'Dual-band Yagi pair, 2 m and 70 cm, on a mast', maa: "Yagi total 9 elements dual band\n*\n435.0\n***Wires***\n22\n0.0,\t0.0,\t0.5065,\t0.0,\t0.0,\t-0.5065,\t0.004,\t-1\n0.11,\t0.0,\t0.1715,\t0.11,\t0.0,\t-0.1715,\t0.004,\t-1\n0.26,\t0.01,\t0.4865,\t0.26,\t0.01,\t-0.4865,\t0.006,\t-1\n0.308,\t0.0,\t0.1595,\t0.308,\t0.0,\t-0.1595,\t0.004,\t-1\n0.44,\t0.0,\t0.156,\t0.44,\t0.0,\t-0.156,\t0.004,\t-1\n0.465,\t0.0,\t0.4595,\t0.465,\t0.0,\t-0.4595,\t0.004,\t-1\n0.75,\t0.0,\t0.1335,\t0.75,\t0.0,\t-0.1335,\t0.004,\t-1\n0.965,\t0.0,\t0.1415,\t0.965,\t0.0,\t-0.1415,\t0.004,\t-1\n0.985,\t0.0,\t0.4395,\t0.985,\t0.0,\t-0.4395,\t0.004,\t-1\n1.0,\t0.0,\t0.0,\t-0.5,\t0.0,\t0.0,\t0.02,\t-1\n-0.5,\t0.0,\t0.0,\t-0.5,\t0.0,\t3.0,\t0.02,\t-1\n-0.5,\t0.0,\t0.0,\t-0.5,\t0.0,\t-15.0,\t0.02,\t-1\n-0.5,\t0.0,\t0.0,\t-0.5,\t1.5,\t0.0,\t0.004,\t-1\n-0.5,\t0.5,\t0.5068,\t-0.5,\t0.5,\t-0.5068,\t0.004,\t-1\n-0.5,\t0.61,\t0.1715,\t-0.5,\t0.61,\t-0.1715,\t0.004,\t-1\n-0.51,\t0.76,\t0.4865,\t-0.51,\t0.76,\t-0.4865,\t0.006,\t-1\n-0.5,\t0.808,\t0.1595,\t-0.5,\t0.808,\t-0.1595,\t0.004,\t-1\n-0.5,\t0.94,\t0.156,\t-0.5,\t0.94,\t-0.156,\t0.004,\t-1\n-0.5,\t0.965,\t0.4595,\t-0.5,\t0.965,\t-0.4595,\t0.004,\t-1\n-0.5,\t1.25,\t0.1335,\t-0.5,\t1.25,\t-0.1335,\t0.004,\t-1\n-0.5,\t1.465,\t0.1415,\t-0.5,\t1.465,\t-0.1415,\t0.004,\t-1\n-0.5,\t1.485,\t0.4395,\t-0.5,\t1.485,\t-0.4395,\t0.004,\t-1\n***Source***\n2,\t0\nw3c,\t0.0,\t1.0\nw16c,\t0.0,\t1.0\n***Load***\n0,\t1\n***Segmentation***\n800,\t80,\t2.0,\t2\n***G/H/M/R/AzEl/X***\n2,\t15.0,\t4,\t50.0,\t120,\t60,\t0.0" },
@@ -654,6 +712,9 @@ function normalize(m) {
   m.ground = Object.assign({ type: 0, height: 0, eps: 13, sigma: 0.005, nf: 'sommerfeld' }, m.ground || {});
   m.loads = m.loads || []; m.sources = m.sources || []; m.tls = m.tls || []; m.objects = m.objects || [];
   m.material = m.material | 0; m.z0 = +m.z0 || 50; m.comment = m.comment || '';
+  m.ins = Object.assign({ t: 0, er: 3.5, tand: 0.02, wires: '' }, m.ins || {});
+  m.boom = Object.assign({ d: 50, mount: 'none', axis: 'x' }, m.boom || {});
+  m.bands = (Array.isArray(m.bands) ? m.bands : []).map(Number).filter(f => f > 0);
   return m;
 }
 
@@ -663,6 +724,19 @@ const S = { opt: { vars: [], running: false, best: null, start: null, history: [
 function numObjects() {
   const lam = MM.lambdaOf(+S.model.freq || 14), ev = v => MM.evalExpr(v, lam);
   return (S.model.objects || []).map(o => ({ type: 'house', x: ev(o.x) || 0, y: ev(o.y) || 0, len: ev(o.len) || 10, wid: ev(o.wid) || 8, eave: ev(o.eave) || 0, ridge: ev(o.ridge) || 0, rot: ev(o.rot) || 0, roof: o.roof === 'metal' ? 'metal' : 'none', grid: ev(o.grid) || 1, gutters: o.gutters === 'metal' ? 'metal' : 'none', pipes: +o.pipes || 0, rEarth: Math.max(0, ev(o.rEarth) || 0) }));
+}
+// "1-3, 5" -> [0, 1, 2, 4]; empty or "all" -> every wire of the model (not the house wires)
+function insWires(spec, n) {
+  const t = String(spec || '').trim();
+  if (!t || /^all$/i.test(t)) return Array.from({ length: n }, (_, i) => i);
+  const out = new Set();
+  for (const part of t.split(/[,;\s]+/).filter(Boolean)) {
+    const m = /^w?(\d+)(?:\s*-\s*w?(\d+))?$/i.exec(part);
+    if (!m) throw new Error('Insulated wires: "' + part + '" is not a wire number or range such as 1-3.');
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let k = Math.min(a, b); k <= Math.max(a, b); k++) if (k >= 1 && k <= n) out.add(k - 1);
+  }
+  return [...out];
 }
 function numericModel() {
   const m = S.model, lam = MM.lambdaOf(+m.freq || 14);
@@ -674,9 +748,11 @@ function numericModel() {
   // earth resistance of each downpipe: a resistor at its foot (where it meets the ground)
   const objLoads = exp.earth.filter(e => e.R > 0).map(e => ({ pos: 'w' + (base + e.index + 1) + 'b', type: 1, L: 0, C: 0, Q: 0, R: e.R, X: 0 }));
   if (bad >= 0) throw new Error('Wire ' + (bad + 1) + ' has a value that is not a number or valid expression.');
-  return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag })),
-    loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
-    tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev }; }),
+  return { name: m.name, freq: +m.freq, wires, sources: m.sources.map(s => ({ pos: s.pos, phase: +s.phase || 0, mag: s.mag === '' ? 1 : +s.mag, ratio: +s.ratio > 0 ? +s.ratio : 1 })),
+    loads: m.loads.map(l => ({ pos: l.pos, type: +l.type | 0, L: +l.L || 0, C: +l.C || 0, Q: +l.Q || 0, Qc: +l.Qc || 0, Cp: +l.Cp || 0, R: +l.R || 0, X: +l.X || 0 })).concat(objLoads),
+    tls: (m.tls || []).map(t => { const L = MM.evalExpr(t.len, lam); return { p1: t.p1, p2: t.p2, z0: +t.z0 || 50, vf: +t.vf || 1, len: Number.isFinite(L) && L > 0 ? L : '', rev: !!t.rev, loss: +t.loss > 0 ? +t.loss : 0, lossF: +t.lossF > 0 ? +t.lossF : 0 }; }),
+    boom: m.boom && m.boom.mount !== 'none' && +m.boom.d > 0 ? { d: +m.boom.d, mount: m.boom.mount, axis: m.boom.axis || 'x' } : null,
+    ins: m.ins && +m.ins.t > 0 ? { t: +m.ins.t, er: Math.max(1, +m.ins.er || 1), tand: Math.max(0, +m.ins.tand || 0), wires: insWires(m.ins.wires, base) } : null,
     seg: { dm1: +m.seg.dm1 || 400, dm2: +m.seg.dm2 || 40, sc: +m.seg.sc || 2, ec: +m.seg.ec || 1 },
     ground: { type: +m.ground.type | 0, height: +m.ground.height || 0, eps: +m.ground.eps || 13, sigma: Number.isFinite(+m.ground.sigma) && m.ground.sigma !== '' ? +m.ground.sigma : 0.005, nf: NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld' },
     material: +m.material | 0, z0: +m.z0 || 50 };
@@ -689,7 +765,7 @@ self.onmessage = (e) => {
   if (kind === 'opt') {
     try {
       const o = MM.makeOptimizer(model, e.data.vars, e.data.goals, e.data.freqs, e.data.maxEval);
-      const snap = () => ({ evals: o.evals, maxEval: e.data.maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+      const snap = () => ({ evals: o.evals, maxEval: e.data.maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history, switched: o.switched || 0 });
       let t = 0;
       while (!o.step()) { const now = Date.now(); if (now - t > 300) { t = now; self.postMessage({ id, progress: snap() }); } }
       self.postMessage({ id, ok: true, data: snap() });
@@ -703,7 +779,7 @@ self.onmessage = (e) => {
       const pts = [];
       for (const fi of fl) {
         const a = MM.analyze(model, fi);
-        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el };
+        const pt = { f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx };
         pts.push(pt); self.postMessage({ id, progress: { pt, done: pts.length, of: fl.length } });
       }
       self.postMessage({ id, ok: true, data: pts });
@@ -738,8 +814,9 @@ function pack(model, f) {
   for (let d = 0; d < 360; d += 5) gAzs.push(d);
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
   const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
-  return { grid, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
-    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, ground: g, height: model.ground.height };
+  let sum = null; try { sum = MM.patternSummary(a, model); } catch (err) { r.warnings.push('No angle summary or RDF: ' + (err.message || err)); }
+  return { grid, sum, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, earthed: r.earthed, ground: g, height: model.ground.height };
 }`;
 let worker = null, workerUrl = null;
 const pending = new Map();
@@ -758,7 +835,7 @@ async function startWorker() {
     worker.onerror = () => { worker = null; };
   } catch (e) { worker = null; workerUrl = null; }
 }
-const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history });
+const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history, switched: o.switched || 0 });
 // main-thread fallback mirrors the worker
 const fallback = (() => { const self = { postMessage: () => {} }; let fn; try { fn = new Function('self', 'MM', WORKER_SRC + '; return { pack };')(self, MM); } catch (e) { fn = null; } return fn; })();
 function job(msg, onProgress, w) {
@@ -782,7 +859,7 @@ function job(msg, onProgress, w) {
       if (msg.kind === 'calc') return resolve(fallback.pack(msg.model, msg.f));
       if (msg.kind === 'sweep') {
         const pts = [];
-        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el }); }
+        for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx }); }
         return resolve(pts);
       }
       if (msg.kind === 'res') {
@@ -800,20 +877,28 @@ function setStatus(kind, text) {
   const lab = { ok: 'Calculated', stale: 'Model changed', err: 'Error', busy: 'Calculating' }[kind];
   $('#status').innerHTML = '<span class="pill ' + cls + '">' + lab + '</span><span></span>';
   $('#status span:last-child').textContent = text || '';
+  // results on screen that belong to an earlier model (or frequency) are dimmed until the next result arrives
+  const ro = $('.readout');
+  if (ro) { const old = !!(S.last && S.dirty); ro.classList.toggle('stale', old); ro.title = old ? 'From the last calculation: the model has changed since then. Calculate to update.' : ''; }
 }
 function swrClass(s) { return s <= 1.5 ? 'good' : s <= 2.5 ? 'warn' : 'bad'; }
 function renderReadout() {
   const r = S.last;
   const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
-  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roEl', '#roPol'].forEach(i => set(i, '–')); return; }
+  const sub = (id, o) => { $(id).title = o.title; $(id + 'S').textContent = o.s; };
+  if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].forEach(i => set(i, '–')); sub('#roRdf', { title: '', s: '' }); sub('#roPol', { title: '', s: '' }); return; }
   set('#roF', fmt(r.f, 3) + ' <small>MHz</small>');
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
   set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
-  set('#roG', fmt(r.gain, 2) + ' <small>dBi</small>');
+  set('#roG', (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + ' <small>dBi</small>');
+  $('#roG').title = r.approx ? 'Approximate: currents over a perfect mirror, pattern over real ground' + (r.capDb > 0 ? '; limited by ' + r.capDb.toFixed(1) + ' dB so radiated power does not exceed input power' : '') + '. See the warning on the Calculate tab.' : '';
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
-  set('#roPol', r.pol);
+  // RDF and polarization come from the angle summary of the same result (r.sum); F/B, gain and SWR do not need it
+  const rd = rdfReadout(r), po = polReadout(r);
+  set('#roRdf', rd.v); sub('#roRdf', rd);
+  set('#roPol', po.v); sub('#roPol', po);
 }
 
 /* ---------------- tables ---------------- */
@@ -825,12 +910,12 @@ function renderTables() {
     WCOLS.map(c => '<td>' + cellInput(w[c], 'id="w' + i + c + '" data-t="w" data-i="' + i + '" data-c="' + c + '" aria-label="Wire ' + (i + 1) + ' ' + c + '"') + '</td>').join('') +
     '<td class="x"><button type="button" data-del="w" data-i="' + i + '" aria-label="Delete wire ' + (i + 1) + '">×</button></td></tr>').join('');
   $('#srcTbl tbody').innerHTML = m.sources.map((s, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
-    ['pos', 'phase', 'mag'].map(c => '<td>' + cellInput(s[c], 'id="s' + i + c + '" data-t="s" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
+    ['pos', 'phase', 'mag', 'ratio'].map(c => '<td>' + cellInput(s[c], 'id="s' + i + c + '" data-t="s" data-i="' + i + '" data-c="' + c + '"' + (c === 'ratio' ? ' placeholder="1"' : '')) + '</td>').join('') +
     '<td class="x"><button type="button" data-del="s" data-i="' + i + '" aria-label="Delete source">×</button></td></tr>').join('');
   $('#loadTbl tbody').innerHTML = m.loads.map((l, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
     '<td>' + cellInput(l.pos, 'id="l' + i + 'pos" data-t="l" data-i="' + i + '" data-c="pos"') + '</td>' +
     '<td><select id="l' + i + 'type" data-t="l" data-i="' + i + '" data-c="type"><option value="0"' + (l.type == 0 ? ' selected' : '') + '>Series L / C</option><option value="2"' + (l.type == 2 ? ' selected' : '') + '>Parallel L / C (trap)</option><option value="1"' + (l.type == 1 ? ' selected' : '') + '>R + jX</option></select></td>' +
-    ['L', 'C', 'Q', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
+    ['L', 'C', 'Q', 'Qc', 'Cp', 'R', 'X'].map(c => '<td>' + cellInput(l[c], 'id="l' + i + c + '" data-t="l" data-i="' + i + '" data-c="' + c + '"' + ((l.type == 1) === ['L', 'C', 'Q', 'Qc', 'Cp'].includes(c) ? ' disabled' : '')) + '</td>').join('') +
     '<td class="x"><button type="button" data-del="l" data-i="' + i + '" aria-label="Delete load">×</button></td></tr>').join('');
   $('#objTbl tbody').innerHTML = (m.objects || []).map((o, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
     ['x', 'y', 'len', 'wid', 'eave', 'ridge', 'rot'].map(c => '<td>' + cellInput(o[c], 'id="o' + i + c + '" data-t="o" data-i="' + i + '" data-c="' + c + '"') + '</td>').join('') +
@@ -841,7 +926,7 @@ function renderTables() {
     '<td>' + cellInput(o.rEarth ?? 50, 'id="o' + i + 'rEarth" data-t="o" data-i="' + i + '" data-c="rEarth" title="0 = perfect earth connection"') + '</td>' +
     '<td class="x"><button type="button" data-del="o" data-i="' + i + '" aria-label="Delete house ' + (i + 1) + '">×</button></td></tr>').join('');
   $('#tlTbl tbody').innerHTML = (m.tls || []).map((t, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
-    ['p1', 'p2', 'z0', 'vf', 'len'].map(c => '<td>' + cellInput(t[c], 'id="t' + i + c + '" data-t="t" data-i="' + i + '" data-c="' + c + '"' + (c === 'len' ? ' placeholder="straight"' : '')) + '</td>').join('') +
+    ['p1', 'p2', 'z0', 'vf', 'len', 'loss', 'lossF'].map(c => '<td>' + cellInput(t[c], 'id="t' + i + c + '" data-t="t" data-i="' + i + '" data-c="' + c + '"' + (c === 'len' ? ' placeholder="straight"' : c === 'loss' ? ' placeholder="0"' : '')) + '</td>').join('') +
     '<td><input type="checkbox" id="t' + i + 'rev" data-t="t" data-i="' + i + '" data-c="rev"' + (t.rev ? ' checked' : '') + ' aria-label="Line ' + (i + 1) + ' reversed"></td>' +
     '<td class="x"><button type="button" data-del="t" data-i="' + i + '" aria-label="Delete line ' + (i + 1) + '">×</button></td></tr>').join('');
   validateCells();
@@ -861,6 +946,8 @@ function renderModelFields() {
   $('#cGround').value = m.ground.type; $('#cHeight').value = m.ground.height;
   $('#cEps').value = m.ground.eps; $('#cSig').value = +(m.ground.sigma * 1000).toFixed(3); $('#cNf').value = NF_MODES.includes(m.ground.nf) ? m.ground.nf : 'sommerfeld'; $('#cNf').disabled = m.ground.type !== 2;
   $('#cMat').value = m.material; $('#cZ0').value = m.z0;
+  $('#bMount').value = m.boom.mount; $('#bD').value = m.boom.d; $('#bAx').value = m.boom.axis; $('#bD').disabled = $('#bAx').disabled = m.boom.mount === 'none';
+  $('#iT').value = m.ins.t || 0; $('#iEr').value = m.ins.er; $('#iTd').value = m.ins.tand; $('#iW').value = m.ins.wires || '';
   $('#sDm1').value = m.seg.dm1; $('#sDm2').value = m.seg.dm2; $('#sSc').value = m.seg.sc;
   const gOn = m.ground.type > 0; $('#cHeight').disabled = !gOn; $('#cEps').disabled = m.ground.type !== 2; $('#cSig').disabled = m.ground.type !== 2;
   $('#swFrom').value = $('#swFrom').value || '';
@@ -874,7 +961,7 @@ function setSweepDefaults() {
 function loadModel(m, keepFreq) {
   S.model = normalize(m);
   if (!keepFreq) S.calcFreq = +m.freq;
-  S.sweep = null; S.held = null; $('#dropHold').hidden = true;
+  S.held = null; $('#dropHold').hidden = true;
   renderModelFields(); renderTables(); setSweepDefaults(); drawSweep();
   edReset();
   S.opt.vars = []; S.opt.best = null; S.opt.start = null; S.opt.history = [];
@@ -885,7 +972,8 @@ function loadModel(m, keepFreq) {
 
 /* ---------------- edits ---------------- */
 let calcTimer = null;
-function changed(immediate) {
+function changed(immediate, modelEdited = true) {
+  if (modelEdited) { invalidateSweep(); invalidateBands(); }
   S.dirty = true;
   validateCells();
   setStatus('stale', 'Press Calculate to update the results.');
@@ -932,10 +1020,10 @@ $('#addTl').onclick = () => {
   renderTables(); changed();
 };
 $('#addLoad').onclick = () => { S.model.loads.push({ pos: 'w1c', type: 0, L: 1, C: 0, Q: 0, R: 0, X: 0 }); renderTables(); changed(); };
-$('#mName').oninput = e => { S.model.name = e.target.value; };
+$('#mName').oninput = e => { S.model.name = e.target.value; renderBands(); };
 $('#mComment').oninput = e => { S.model.comment = e.target.value; };
 $('#mFreq').oninput = e => { const v = +e.target.value; if (v > 0) { const sync = Math.abs(S.calcFreq - S.model.freq) < 1e-9; S.model.freq = v; $('#mLambda').textContent = fmt(MM.lambdaOf(v), 3) + ' m'; if (sync) { S.calcFreq = v; $('#cFreq').value = v; setSweepDefaults(); } changed(); } };
-$('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(); } };
+$('#cFreq').oninput = e => { const v = +e.target.value; if (v > 0) { S.calcFreq = v; setSweepDefaults(); changed(false, false); } };
 $('#cGround').onchange = e => { S.model.ground.type = +e.target.value; renderModelFields(); changed(); };
 $('#cHeight').oninput = e => { S.model.ground.height = +e.target.value || 0; changed(); };
 $('#cEps').oninput = e => { S.model.ground.eps = +e.target.value || 13; changed(); };
@@ -943,6 +1031,30 @@ $('#cSig').oninput = e => { S.model.ground.sigma = (+e.target.value || 0) / 1000
 $('#cNf').onchange = e => { S.model.ground.nf = e.target.value; changed(); };
 $('#cMat').onchange = e => { S.model.material = +e.target.value; changed(); };
 $('#cZ0').oninput = e => { S.model.z0 = +e.target.value || 50; changed(); };
+$('#bMount').onchange = e => { S.model.boom.mount = e.target.value; renderModelFields(); changed(); };
+$('#bD').oninput = e => { const v = +e.target.value; if (v > 0) { S.model.boom.d = v; changed(); } };
+$('#bAx').onchange = e => { S.model.boom.axis = e.target.value; changed(); };
+$('#tbAdd').onclick = () => {
+  const msg = $('#tbMsg'), x = +$('#tbX').value || 0, z = +$('#tbZ').value || 0;
+  const secs = $('#tbS').value.split(/[,;]+/).map(t => t.trim()).filter(Boolean).map(t => t.split(/\s*[x×*]\s*/i).map(Number));
+  if (!secs.length || secs.some(p => p.length !== 2 || !(p[0] > 0) || !(p[1] > 0))) { msg.textContent = 'Write each section as half-length × diameter, for example 1.2x32 (metres × millimetres).'; return; }
+  pushUndo();
+  const f = v => String(+v.toFixed(4)), first = S.model.wires.length + 1;
+  let y = secs[0][0];
+  S.model.wires.push({ x1: f(x), y1: f(-y), z1: f(z), x2: f(x), y2: f(y), z2: f(z), r: String(secs[0][1] / 2), seg: '-1' });
+  for (let i = 1; i < secs.length; i++) {
+    const y2 = y + secs[i][0], r = String(secs[i][1] / 2);
+    S.model.wires.push({ x1: f(x), y1: f(y), z1: f(z), x2: f(x), y2: f(y2), z2: f(z), r, seg: '-1' });
+    S.model.wires.push({ x1: f(x), y1: f(-y), z1: f(z), x2: f(x), y2: f(-y2), z2: f(z), r, seg: '-1' });
+    y = y2;
+  }
+  msg.textContent = 'Added wires w' + first + '–w' + S.model.wires.length + ', total length ' + (2 * y).toFixed(3) + ' m. The centre is w' + first + 'c.';
+  renderTables(); changed(); edFit();
+};
+$('#iT').oninput = e => { S.model.ins.t = Math.max(0, +e.target.value || 0); changed(); };
+$('#iEr').oninput = e => { const v = +e.target.value; if (v >= 1) { S.model.ins.er = v; changed(); } };
+$('#iTd').oninput = e => { const v = +e.target.value; if (v >= 0) { S.model.ins.tand = v; changed(); } };
+$('#iW').oninput = e => { S.model.ins.wires = e.target.value; changed(); };
 ['dm1', 'dm2', 'sc'].forEach(k => { $('#s' + k[0].toUpperCase() + k.slice(1)).oninput = e => { const v = +e.target.value; if (v > 0) { S.model.seg[k] = v; changed(); } }; });
 MM.MATERIALS.forEach((m, i) => { const o = document.createElement('option'); o.value = i; o.textContent = m.name; $('#cMat').appendChild(o); });
 
@@ -968,9 +1080,11 @@ async function calculate(opts) {
     S.dirty = now !== key;
     if (!live) { S.history.unshift(r); if (S.history.length > 40) S.history.pop(); renderResults(); }
     renderReadout(); drawView(); drawPatterns(); drawSmith(); drawEdPolar();
-    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
+    const mirrorNote = r.ground === 2 && r.earthed && r.earthed.length ? ' · impedance over the perfect mirror because ' + r.earthed.slice(0, 4).map(w => 'w' + (w + 1)).join(', ') + (r.earthed.length > 4 ? ' …' : '') + (r.earthed.length > 1 ? ' touch' : ' touches') + ' the ground' : '';
+    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + mirrorNote + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
     $('#warnList').innerHTML = r.warnings.map(w => '<li></li>').join('');
     $$('#warnList li').forEach((li, i) => li.textContent = r.warnings[i]);
+    if (!live && !S.dirty) await calcBands(model, key, r);
   } catch (e) {
     setStatus('err', e.message);
   } finally {
@@ -979,15 +1093,61 @@ async function calculate(opts) {
   }
 }
 $('#calcBtn').onclick = calculate;
+
+/* ---------------- example bands ---------------- */
+// A multiband example lists its band frequencies in S.model.bands. After each full calculation the other bands are
+// solved as well (the main result is reused for its own band), so the strip under the readout always shows the model
+// as it is now. A model edit clears the strip at once and drops band results still on their way.
+let bandVersion = 0;
+function invalidateBands() { bandVersion++; S.bandRes = null; renderBands(); }
+async function calcBands(model, key, main) {
+  const fl = S.model.bands || [];
+  if (!fl.length) { S.bandRes = null; renderBands(); return; }
+  if (S.bandRes && S.bandRes.key === key) { renderBands(); return; }
+  const version = ++bandVersion, rows = [];
+  for (const f of fl) {
+    const r = Math.abs(f - main.f) < 1e-9 ? main : await job({ kind: 'calc', model, f });
+    if (version !== bandVersion) return;
+    rows.push(r);
+  }
+  S.bandRes = { key, rows };
+  renderBands();
+  drawPatterns();
+}
+function renderBands() {
+  const box = $('#bandRes'), fl = (S.model && S.model.bands) || [];
+  const title = $('#bandAntenna');
+  title.textContent = fl.length ? (S.model.name || '').trim() : '';
+  title.hidden = !title.textContent;
+  box.hidden = !fl.length;
+  if (!fl.length) { box.innerHTML = ''; return; }
+  const rows = S.bandRes && S.bandRes.rows;
+  const z = r => fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1) + ' Ω';
+  // F/B and RDF per band, each toward that band's own total-field maximum; RDF needs the angle summary (n/a without one)
+  const rdf = r => { const s = r.sum, v = s && s.rdf && s.rdf.sky ? s.rdf.sky.rdf : null; return 'RDF ' + (v == null ? 'n/a' : (s.uncertain ? '≈ ' : '') + fmt(v, 2) + ' dB'); };
+  const pat = r => (Number.isFinite(r.fb) ? ' · F/B ' + fmt(r.fb, 1) + ' dB · ' + rdf(r) : '');
+  box.innerHTML = '<span class="k">Bands</span>' + fl.map((f, i) => {
+    const r = rows && rows[i];
+    return '<button type="button"' + (Math.abs(f - S.calcFreq) < 1e-9 ? ' class="on"' : '') + ' data-band="' + f + '" title="Use ' + f + ' MHz as the calculation frequency">' + f + ' MHz' +
+      (r ? ' · SWR <span class="' + swrClass(r.swr) + '">' + (Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</span> · ' + z(r) + pat(r) : ' · –') + '</button>';
+  }).join('') + (rows ? (rows.some(r => r && Number.isFinite(r.fb)) ? '<span title="RDF assumes the wanted signal arrives from the total-field maximum of that band and noise from the whole visible sky, even per solid angle, unpolarized. ≈: approximate pattern; n/a: no figure. F/B compares that maximum with the opposite azimuth at the same elevation.">RDF: all-sky noise, toward each band’s own maximum</span>' : '') : '<span>Not calculated for the current model yet.</span>');
+}
+$('#bandRes').onclick = e => {
+  const b = e.target.closest('[data-band]'); if (!b) return;
+  S.calcFreq = +b.dataset.band; $('#cFreq').value = S.calcFreq; setSweepDefaults(); changed(true, false);
+  if (!$('#autoCalc').checked) calculate();
+};
 const GNAME = ['Free', 'Perfect', 'Real'];
 function renderResults() {
   $('#resTbl tbody').innerHTML = S.history.map((r, i) => '<tr class="' + (i === 0 ? 'latest' : '') + '"><td>' + (S.history.length - i) + '</td><td class="nm"></td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 2) + '</td><td>' + fmt(r.X, 2) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') +
-    '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + r.pol + '</td><td>' + r.N + '</td></tr>').join('');
+    '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 2) + '</td><td>' + fmt(r.el, 1) + '</td><td>' + GNAME[r.ground] + '</td><td>' + (r.ground ? fmt(r.height, 1) : '–') + '</td><td>' + (r.sum && r.sum.uncertain ? '≈ ' : '') + polLabel(r.sum && r.sum.pol) + '</td><td>' + r.N + '</td></tr>').join('');
   $$('#resTbl td.nm').forEach((td, i) => td.textContent = S.history[i].name || '');
   const r = S.last;
-  if (r && r.sources.length > 1) {
-    $('#srcRes').innerHTML = '<div class="tscroll"><table class="results"><thead><tr><th>Source</th><th>R Ω</th><th>jX Ω</th><th>|I| A</th><th>Power W</th></tr></thead><tbody>' +
-      r.sources.map(s => '<tr><td>' + s.spec.replace(/</g, '') + '</td><td>' + fmt(s.R, 2) + '</td><td>' + fmt(s.X, 2) + '</td><td>' + fmt(Math.hypot(s.Ir, s.Ii), 4) + '</td><td>' + fmt(s.P, 4) + '</td></tr>').join('') + '</tbody></table></div>';
+  if (r && (r.sources.length > 1 || r.sources.some(s => s.ratio !== 1))) {
+    const xf = r.sources.some(s => s.ratio !== 1), z = (R, X) => fmt(R, 1) + (X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(X), 1);
+    const sw = s => { const g = Math.hypot(s.R - r.z0, s.X) / Math.hypot(s.R + r.z0, s.X), v = (1 + g) / (1 - g); return g < 1 && v < 100 ? fmt(v, 2) : '> 99'; };
+    $('#srcRes').innerHTML = '<div class="tscroll"><table class="results"><thead><tr><th>Source</th><th>R Ω</th><th>jX Ω</th><th>SWR ' + (+r.z0).toFixed(0) + ' Ω</th>' + (xf ? '<th>Balun</th><th>At the antenna Ω</th>' : '') + '<th>|I| A</th><th>Power W</th></tr></thead><tbody>' +
+      r.sources.map(s => '<tr><td>' + s.spec.replace(/</g, '') + '</td><td>' + fmt(s.R, 2) + '</td><td>' + fmt(s.X, 2) + '</td><td>' + sw(s) + '</td>' + (xf ? '<td>' + (s.ratio !== 1 ? +s.ratio.toFixed(3) + ':1' : '–') + '</td><td>' + z(s.Rant, s.Xant) + '</td>' : '') + '<td>' + fmt(Math.hypot(s.Ir, s.Ii), 4) + '</td><td>' + fmt(s.P, 4) + '</td></tr>').join('') + '</tbody></table></div>';
   } else $('#srcRes').innerHTML = '';
 }
 $('#clearRes').onclick = () => { S.history = S.last ? [S.last] : []; renderResults(); };
@@ -1365,34 +1525,41 @@ function drawView() {
       const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
       Wv.forEach(ww => [ww.a, ww.b].forEach(p => { for (let k = 0; k < 3; k++) { mn[k] = Math.min(mn[k], p[k]); mx[k] = Math.max(mx[k], p[k]); } }));
       const ctr = [0, 1, 2].map(k => (mn[k] + mx[k]) / 2), Rl = V.span * 0.65;
-      const G = S.last.grid, nE = G.els.length, nA = G.azs.length, ref = S.last.gain;
-      const px = new Float64Array(nE * nA), py = new Float64Array(nE * nA), pd = new Float64Array(nE * nA), pt = new Float64Array(nE * nA);
-      for (let i = 0; i < nE; i++) {
-        const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
-        for (let j = 0; j < nA; j++) {
-          const kk = i * nA + j, a = G.azs[j] * Math.PI / 180, t = Math.max(0, (G.tot[kk] - ref + 40) / 40), rr = t * Rl;
-          const q = P([ctr[0] + rr * ce * Math.cos(a), ctr[1] + rr * ce * Math.sin(a), ctr[2] + rr * se]);
-          px[kk] = q[0]; py[kk] = q[1]; pd[kk] = q[2]; pt[kk] = t;
-        }
-      }
+      // one surface per layer (total, H, V, or H and V together). Every layer uses the same radial scale and the same
+      // 0 dB, the total-field maximum, so the shapes of the components can be compared with each other and with the total.
+      const G = S.last.grid, nE = G.els.length, nA = G.azs.length, ref = S.last.gain, M = nE * nA;
+      const layers = lobeLayers($('#edPol').value), nL = layers.length;
+      const px = new Float64Array(nL * M), py = new Float64Array(nL * M), pd = new Float64Array(nL * M), pt = new Float64Array(nL * M);
       const quads = [];
-      for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
-        const a = i * nA + j, b = i * nA + (j + 1) % nA, cc = (i + 1) * nA + (j + 1) % nA, d = (i + 1) * nA + j;
-        const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4; if (tt <= 0) continue;
-        quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt]);
-      }
+      layers.forEach((layer, li) => {
+        const arr = G[layer.key], o = li * M;
+        for (let i = 0; i < nE; i++) {
+          const e = G.els[i] * Math.PI / 180, ce = Math.cos(e), se = Math.sin(e);
+          for (let j = 0; j < nA; j++) {
+            const kk = o + i * nA + j, a = G.azs[j] * Math.PI / 180, t = Math.max(0, (arr[kk - o] - ref + 40) / 40), rr = t * Rl;
+            const q = P([ctr[0] + rr * ce * Math.cos(a), ctr[1] + rr * ce * Math.sin(a), ctr[2] + rr * se]);
+            px[kk] = q[0]; py[kk] = q[1]; pd[kk] = q[2]; pt[kk] = t;
+          }
+        }
+        for (let i = 0; i < nE - 1; i++) for (let j = 0; j < nA; j++) {
+          const a = o + i * nA + j, b = o + i * nA + (j + 1) % nA, cc = o + (i + 1) * nA + (j + 1) % nA, d = o + (i + 1) * nA + j;
+          const tt = (pt[a] + pt[b] + pt[cc] + pt[d]) / 4; if (tt <= 0) continue;
+          quads.push([a, b, cc, d, (pd[a] + pd[b] + pd[cc] + pd[d]) / 4, tt, li]);
+        }
+      });
       quads.sort((p1, p2) => p1[4] - p2[4]);
-      const Lc = css('--cur-light') || '46%';
+      const Lc = css('--cur-light') || '46%', fixed = layers.map(l => l.color && css(l.color));
       c.save(); c.lineWidth = 0.6;
-      for (const [a, b, cc, d, , tt] of quads) {
+      for (const [a, b, cc, d, , tt, li] of quads) {
         c.beginPath(); c.moveTo(px[a], py[a]); c.lineTo(px[b], py[b]); c.lineTo(px[cc], py[cc]); c.lineTo(px[d], py[d]); c.closePath();
-        const col = 'hsl(' + (215 - 205 * tt) + ' 70% ' + Lc + ')';
-        c.globalAlpha = 0.13; c.fillStyle = col; c.fill();
-        c.globalAlpha = 0.32; c.strokeStyle = col; c.stroke();
+        const col = fixed[li] || 'hsl(' + (215 - 205 * tt) + ' 70% ' + Lc + ')';
+        c.globalAlpha = fixed[li] ? 0.1 : 0.13; c.fillStyle = col; c.fill();
+        c.globalAlpha = fixed[li] ? 0.45 : 0.32; c.strokeStyle = col; c.stroke();
       }
       c.restore();
     }
   }
+  $('#edLobeLegend').innerHTML = edLobeLegendHtml(S.last, $('#edPol').value, S.dirty, $('#edLobe').checked);
   // wires, coloured by current when the result matches the model
   const fresh = S.last && !S.dirty && $('#showCur').checked;
   if (fresh) {
@@ -1627,7 +1794,7 @@ function drawPolar(cv, series, half, ref) {
 function drawPatterns() {
   const az = $('#azPlot'); if (!az.offsetParent) return;
   const r = S.last;
-  if (!r) { prep(az); prep($('#elPlot')); return; }
+  if (!r) { prep(az); prep($('#elPlot')); $('#patSum').innerHTML = ''; $('#polDetail').innerHTML = ''; return; }
   const mode = $('#polSel').value;
   const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
   const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
@@ -1635,8 +1802,8 @@ function drawPatterns() {
     const out = [];
     if (heldCut) out.push({ pts: pick(heldCut, 1), color: muted, dash: true, width: 1.5 });
     if (mode === 'tot' || mode === 'all') out.push({ pts: pick(cut, 1), color: acc });
-    if (mode === 'h' || mode === 'all') out.push({ pts: pick(cut, 2), color: mode === 'all' ? tr2 : acc });
-    if (mode === 'v' || mode === 'all') out.push({ pts: pick(cut, 3), color: mode === 'all' ? tr3 : acc });
+    if (mode === 'h' || mode === 'all' || mode === 'hv') out.push({ pts: pick(cut, 2), color: mode === 'h' ? acc : tr2 });
+    if (mode === 'v' || mode === 'all' || mode === 'hv') out.push({ pts: pick(cut, 3), color: mode === 'v' ? acc : tr3 });
     return out;
   };
   const ref = Math.max(r.gain, S.held ? S.held.gain : -999);
@@ -1644,27 +1811,160 @@ function drawPatterns() {
   drawPolar($('#elPlot'), build(r.cutEl, S.held && S.held.cutEl), r.ground > 0, ref);
   $('#azTitle').textContent = 'Azimuth at ' + fmt(r.el, 1) + '° elevation · max ' + fmt(r.gain, 2) + ' dBi';
   $('#elTitle').textContent = 'Elevation toward ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB';
+  // H + V: both polarization components of the same cuts, against the same 0 dB (the total-field maximum)
+  const peak = (cut, col) => cut.reduce((b, p) => (p[col] > b[col] ? p : b));
+  const elOf = t => (t <= 90 ? t : t < 270 ? 180 - t : t - 360);
+  if (mode === 'hv') {
+    const pH = peak(r.cutEl, 2), pV = peak(r.cutEl, 3);
+    $('#elTitle').textContent = 'Elevation toward ' + fmt(r.az, 1) + '° azimuth · H and V polarization · H max ' + fmt(pH[2], 2) + ' dBi at ' + fmt(elOf(pH[0]), 0) + '°, V max ' + fmt(pV[3], 2) + ' dBi at ' + fmt(elOf(pV[0]), 0) + '°';
+  }
   let lg = '';
   if (mode === 'all') lg += '<span><i style="border-color:var(--accent)"></i>Total</span><span><i style="border-color:var(--trace2)"></i>Horizontal</span><span><i style="border-color:var(--trace3)"></i>Vertical</span>';
+  else if (mode === 'hv') lg += '<span><i style="border-color:var(--trace2)"></i>Horizontal polarization (H)</span><span><i style="border-color:var(--trace3)"></i>Vertical polarization (V)</span><span>0 dB = ' + fmt(r.gain, 2) + ' dBi, the total-field maximum (common to H and V) · ' + fmt(r.f, 3) + ' MHz</span>';
   else lg += '<span><i style="border-color:var(--accent)"></i>' + { tot: 'Total', h: 'Horizontal', v: 'Vertical' }[mode] + ' · ' + fmt(r.f, 3) + ' MHz</span>';
   if (S.held) lg += '<span><i class="dash" style="border-color:var(--muted)"></i>Held: <span class="heldName"></span></span>';
   $('#patLegend').innerHTML = lg;
   if (S.held) $('#patLegend .heldName').textContent = S.held.label;
+  // the other bands of a multiband example, when they were solved for this same model
+  const bandRows = S.bandRes && S.bandRes.rows;
+  const shown = bandRows && bandRows.some(x => Math.abs(x.f - r.f) < 1e-9) ? bandRows.map(x => (Math.abs(x.f - r.f) < 1e-9 ? r : x)) : [r];
+  $('#patSum').innerHTML = patSummaryHtml(shown);
+  $('#polDetail').innerHTML = polDetailHtml(shown);
   drawFF3D();
+}
+/* Angle summary under the cuts: what Max gain and F/B measure, V and H at low angles, the total field at high angles,
+   and RDF (see MM.angleSummary and MM.rdf). A verdict is printed only when the engine found one; otherwise "neither". */
+function patSummaryHtml(rows) {
+  rows = rows.filter(r => r && r.sum);
+  if (!rows.length) return '';
+  const d2 = x => (x == null || !Number.isFinite(x) ? '–' : fmt(x, 2)), dir = (el, az) => fmt(el, 1) + '° el, ' + fmt(az, 1) + '° az';
+  const hv = rows.some(r => r.sum.hv), m = hv ? rows.find(r => r.sum.hv).sum.hv : null;
+  const lo = m && m.low.el0 + '–' + m.low.el1 + '°', hi = m && m.high.el0 + '–' + m.high.el1 + '°', mg = m && m.margin;
+  const pol = h => (h.low.dominant ? h.low.dominant + ' dominant' : 'neither dominates');
+  const fav = h => (h.favoured ? h.favoured + ' angles favoured' : 'neither favoured');
+  const body = rows.map(r => {
+    const s = r.sum, h = s.hv, q = s.uncertain ? '≈ ' : '';
+    return '<tr><td>' + fmt(r.f, 3) + '</td><td>' + (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + dir(r.el, r.az) + '</td><td>' + fmt(r.fb, 1) + '</td>' +
+      (hv ? (h ? '<td>' + q + d2(h.low.meanDb.v) + ' / ' + d2(h.low.meanDb.h) + '</td><td>' + d2(h.low.peakDb.v) + ' / ' + d2(h.low.peakDb.h) + '</td><td>' + d2(h.low.vMinusH) + ' · ' + pol(h) +
+        '</td><td>' + q + d2(h.high.meanDb.tot) + ' / ' + d2(h.high.peakDb.tot) + '</td><td>' + d2(h.highMinusLow) + ' · ' + fav(h) + '</td>' : '<td>–</td><td>–</td><td>–</td><td>–</td><td>–</td>') : '') +
+      '<td>' + q + d2(s.rdf.sky.rdf) + '</td>' + (hv ? '<td>' + (s.rdf.low ? q + d2(s.rdf.low.rdf) : '–') + '</td>' : '') + '</tr>';
+  }).join('');
+  const why = [];
+  if (rows.some(r => r.sum.approx)) why.push('the currents were solved over a perfect mirror while the pattern uses real-ground reflection, so the pattern shape is approximate');
+  if (rows.some(r => r.sum.coarse)) why.push('the main lobe is narrower than the 1° × 4° averaging grid');
+  if (rows.some(r => r.sum.overUnity)) why.push('the pattern holds more power than the sources supply');
+  return '<h3>Gain, F/B' + (hv ? ', H / V by angle' : '') + ' and RDF</h3><div class="tscroll"><table class="results" id="patSumTbl"><thead><tr><th>MHz</th>' +
+    '<th title="Largest total-field gain over all directions">Max gain dBi</th><th title="Direction of the total-field maximum; also the desired direction for RDF">Toward</th>' +
+    '<th title="Total-field maximum against the direction 180° away in azimuth at the same elevation">F/B dB</th>' +
+    (hv ? '<th>Low ' + lo + ' mean V / H dBi</th><th>Low ' + lo + ' peak V / H dBi</th><th>Low-angle V − H dB</th><th>High ' + hi + ' total mean / peak dBi</th><th>High − low mean dB</th>' : '') +
+    '<th title="Desired direction: the total-field maximum. Noise: the whole visible sky, even per solid angle, unpolarized; 4π reference (directivity), as in published RDF tables">RDF all-sky dB</th>' +
+    (hv ? '<th title="Desired direction: the total-field maximum. Noise: only from 0–30° elevation, even per solid angle, unpolarized; relative to the mean over that band">RDF low-angle noise dB</th>' : '') +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<p class="hint"><b>Max gain</b> is the largest total-field gain (H and V power together) over all directions; <b>F/B</b> compares it with the direction 180° away in azimuth at the same elevation, so for a maximum near the zenith it is close to 0 dB and says little. ' +
+    (hv ? '<b>Low ' + lo + '</b> and <b>high ' + hi + '</b> cover all azimuths; every mean is a mean of linear power weighted by solid angle. V or H “dominant” and high or low “favoured” appear only for a difference of at least ' + mg + ' dB; otherwise neither is claimed. ' +
+      'The high band holds the angles a near-vertical (NVIS) path would use: a candidate figure, not a propagation prediction, since the ionosphere is not modelled. Close to the zenith both components are horizontal fields, so the high band uses the total. ' : '') +
+    '<b>RDF</b> = gain toward the maximum minus the mean gain over the assumed noise directions' + (hv ? '; the two columns assume different noise and are not comparable in absolute value' : '') + '. It describes the pattern shape, not real noise.' +
+    (why.length ? ' <b>≈ approximate:</b> ' + why.join('; ') + '.' : '') + '</p>';
+}
+/* Polarization and RDF wording for the readout, the results list and the Far field tab. All of it is read from the
+   angle summary of a result (r.sum, see MM.patternSummary); nothing here asks for a new solve.
+   Three things are kept apart:
+   1. the label: how the radiated power over ALL directions divides between the H (phi) and V (theta) components;
+   2. the two components toward the total-field maximum, which are local spherical components: near the zenith both
+      are nearly horizontal fields in space, so a larger "V" there is not vertical polarization;
+   3. the geometry of the wires, which is not a statement about the field of any one wire. */
+function polLabel(p) {
+  if (!p || !p.kind) return 'n/a';
+  return p.kind === 'mixed' ? 'Mixed H+V' : p.pure ? (p.kind === 'H' ? 'Horizontal' : 'Vertical') : 'Mostly ' + p.kind;
+}
+function approxWhy(s) {
+  const why = [];
+  if (s.approx) why.push('the currents were solved over a perfect mirror while the pattern uses real-ground reflection, so the pattern shape is approximate');
+  if (s.coarse) why.push('the main lobe is narrower than the 1° × 4° averaging grid');
+  if (s.overUnity) why.push('the pattern holds more power than the sources supply');
+  return why;
+}
+const noSummary = s => (s ? 'the pattern holds no power there.' : 'no angle summary could be made for it (see the warnings on the Calculate tab).');
+function polReadout(r) {
+  const s = r && r.sum, p = s && s.pol;
+  if (!p || !p.kind) return { v: 'n/a', s: '', title: 'Polarization is not available for this result: ' + noSummary(s) };
+  const pc = x => Math.round(100 * x), hP = pc(p.share.h), k = p.peak, why = approxWhy(s);
+  const split = 'H (φ) ' + hP + ' %, V (θ) ' + (100 - hP) + ' % of the radiated power over all directions';
+  const what = p.kind === 'mixed' ? 'Mixed H+V: ' + split + ', within ' + p.margin + ' dB of each other, so neither names the antenna. Which one is stronger changes with direction: see the H and V cuts on the Far field tab.'
+    : polLabel(p) + ': ' + split + (p.pure ? ', ' + p.pureDb + ' dB or more apart.' : ', ' + p.margin + ' dB or more apart (under ' + p.pureDb + ' dB): the other component is still there in some directions.');
+  return { v: (s.uncertain ? '≈ ' : '') + polLabel(p), s: 'H ' + hP + ' % · V ' + (100 - hP) + ' % of radiated power',
+    title: (why.length ? 'Approximate: ' + why.join('; ') + '. ' : '') + what + ' Toward the maximum (' + fmt(k.el, 1) + '° elevation, ' + fmt(k.az, 1) + '° azimuth): V (θ) ' + fmt(k.vDb, 2) + ' dBi, H (φ) ' + fmt(k.hDb, 2) + ' dBi' +
+      (k.nearZenith ? '; this close to the zenith both are nearly horizontal fields in space (' + pc(k.horizE) + ' % of that field is horizontal), and which of the two is larger depends on the azimuth only.' : '.') +
+      ' H and V are field components of the whole antenna, not of single wires.' };
+}
+function rdfReadout(r) {
+  const s = r && r.sum, sky = s && s.rdf && s.rdf.sky;
+  if (!sky || sky.rdf == null) return { v: 'n/a', s: '', title: 'RDF is not available for this result: ' + noSummary(s) + ' F/B does not depend on it.' };
+  const q = s.uncertain ? '≈ ' : '', low = s.rdf.low && s.rdf.low.rdf != null ? s.rdf.low : null, why = approxWhy(s);
+  return { v: q + fmt(sky.rdf, 2) + ' <small>dB</small>', s: low ? 'low-angle noise ' + q + fmt(low.rdf, 2) + ' dB' : '',
+    title: (why.length ? 'Approximate: ' + why.join('; ') + '. ' : '') + 'RDF (receiving directivity factor) = gain toward the desired direction minus the mean gain over the noise directions. Assumed desired direction: the total-field maximum, ' +
+      fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth. Assumed noise: the whole visible sky, even per solid angle, unpolarized (4π reference, as in published RDF tables).' +
+      (low ? ' Low-angle noise: the same direction against noise from 0–30° elevation only, a different assumption that cannot be compared with the all-sky figure.' : '') +
+      ' It describes the pattern shape and is not a signal-to-noise prediction. F/B is a separate figure: two directions only.' };
+}
+// vertical and horizontal extent of the modelled conductors (m), from the solved segments [x0, y0, z0, x1, y1, z1, ...]
+function wireRuns(segs) {
+  let vert = 0, horiz = 0;
+  for (const g of segs || []) { vert += Math.abs(g[5] - g[2]); horiz += Math.hypot(g[3] - g[0], g[4] - g[1]); }
+  return { vert, horiz };
+}
+function polDetailHtml(rows) {
+  rows = rows.filter(r => r && r.sum && r.sum.pol && r.sum.pol.kind);
+  if (!rows.length) return '';
+  const pc = x => Math.round(100 * x), d2 = x => (x == null || !Number.isFinite(x) ? '–' : fmt(x, 2)), p0 = rows[0].sum.pol, run = wireRuns(rows[0].segs);
+  const body = rows.map(r => {
+    const p = r.sum.pol, k = p.peak, q = r.sum.uncertain ? '≈ ' : '';
+    return '<tr><td>' + fmt(r.f, 3) + '</td><td>' + q + polLabel(p) + '</td><td>' + pc(p.share.h) + ' / ' + (100 - pc(p.share.h)) + '</td><td>' + d2(p.vMinusH) + '</td><td>' + fmt(k.el, 1) + '° el, ' + fmt(k.az, 1) + '° az</td><td>' +
+      fmt(k.vDb, 2) + ' / ' + fmt(k.hDb, 2) + '</td><td>' + (k.horizE == null ? '–' : pc(k.horizE) + ' %' + (k.nearZenith ? ' · near the zenith: V and H are both horizontal fields' : '')) + '</td></tr>';
+  }).join('');
+  return '<h3>Polarization: what H and V mean here</h3><div class="tscroll"><table class="results" id="polTbl"><thead><tr><th>MHz</th>' +
+    '<th title="From the H / V split of the radiated power over all directions">Polarization</th><th title="Share of the radiated power in each component, all directions, linear power weighted by solid angle">All directions H / V %</th>' +
+    '<th title="Total V power over total H power, all directions">All directions V − H dB</th><th title="Direction of the total-field maximum">Maximum toward</th>' +
+    '<th title="The two components in that one direction">There V (θ) / H (φ) dBi</th><th title="Share of the field toward the maximum whose E vector is horizontal in space">There E horizontal in space</th>' +
+    '</tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<p class="hint"><b>Polarization</b> is named from the whole pattern: how the radiated power, summed over all directions, divides between the H and V components that the cuts above show. ' +
+    '“Mixed H+V” means the two are within ' + p0.margin + ' dB of each other; “Mostly H” or “Mostly V” a difference of ' + p0.margin + ' dB or more; plain “Horizontal” or “Vertical” ' + p0.pureDb + ' dB or more. Which one is stronger changes with direction, so read the cuts for the angle you need. ' +
+    '<b>Toward the maximum</b> the table gives both components in that one direction. H and V are the local spherical components θ and φ: at low angles V (θ) is close to a vertical field, but near the zenith both are nearly horizontal fields in space and which of them is larger depends on the azimuth only, so a larger V overhead is not vertical polarization. ' +
+    '<b>Wire geometry</b> is a third thing: this model has ' + fmt(run.vert, 2) + ' m of vertical run and ' + fmt(run.horiz, 2) + ' m of horizontal run. All wires carry one coupled current distribution and each field component is the sum over all of them, so H and V are not assigned to individual wires. ' +
+    'SWR comes from that same solution at the feedpoint and does not depend on anything shown here.</p>';
 }
 $('#polSel').onchange = drawPatterns;
 
-/* mini far-field plots beside the 3D editor */
+/* mini far-field plots beside the 3D editor, and the far field drawn around the antenna in it. Both follow the
+   "Far-field view" menu (#edPol): total, H only, V only, or H and V together. Every view is scaled against the same
+   0 dB, the total-field maximum, so the component shapes can be compared. H and V keep the colours of the 2D plots. */
+const LOBE_NAMES = { tot: 'total (H + V power)', h: 'H (φ) only', v: 'V (θ) only' };
+function lobeLayers(mode) {
+  const H = { key: 'h', color: '--trace2' }, Vt = { key: 'v', color: '--trace3' };
+  return mode === 'hv' ? [H, Vt] : mode === 'h' ? [H] : mode === 'v' ? [Vt] : [{ key: 'tot', color: null }];
+}
+function edLobeLegendHtml(r, mode, stale, shown) {
+  if (!r || !r.grid || !shown) return '';
+  const L = lobeLayers(mode);
+  const sw = l => '<i style="border-color:var(' + l.color + ')"></i>';
+  return (L.length > 1 ? '<span>Far field: H and V on one scale</span>' + L.map(l => '<span>' + sw(l) + (l.key === 'h' ? 'H (φ)' : 'V (θ)') + '</span>').join('')
+    : '<span>' + (L[0].color ? sw(L[0]) : '') + 'Far field: ' + LOBE_NAMES[L[0].key] + '</span>' + (L[0].color ? '' : '<span>Colour: level, blue (low) to red (high)</span>')) +
+    '<span>0 dB = ' + fmt(r.gain, 2) + ' dBi, the total-field maximum, for every view; −40 dB at the centre · ' + fmt(r.f, 3) + ' MHz</span>' +
+    (r.approx ? '<span>≈ approximate pattern</span>' : '') + (stale ? '<span>from the last calculation; the model has changed</span>' : '');
+}
 function drawEdPolar() {
   const az = $('#edAz'); if (!az || !az.offsetParent) return;
   const r = S.last;
   if (!r) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = ''; return; }
-  const acc = css('--accent');
-  drawPolar(az, [{ pts: r.cutAz.map(p => [p[0], p[1]]), color: acc }], false, r.gain);
-  drawPolar($('#edEl'), [{ pts: r.cutEl.map(p => [p[0], p[1]]), color: acc }], r.ground > 0, r.gain);
-  $('#edPolTxt').textContent = fmt(r.gain, 2) + ' dBi at ' + fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB';
+  const COL = { tot: 1, h: 2, v: 3 }, L = lobeLayers($('#edPol').value);
+  const series = cut => L.map(l => ({ pts: cut.map(p => [p[0], p[COL[l.key]]]), color: css(l.color || '--accent') }));
+  drawPolar(az, series(r.cutAz), false, r.gain);
+  drawPolar($('#edEl'), series(r.cutEl), r.ground > 0, r.gain);
+  const sky = r.sum && r.sum.rdf && r.sum.rdf.sky ? r.sum.rdf.sky.rdf : null;
+  $('#edPolTxt').textContent = fmt(r.gain, 2) + ' dBi at ' + fmt(r.el, 1) + '° elevation, ' + fmt(r.az, 1) + '° azimuth · F/B ' + fmt(r.fb, 1) + ' dB · RDF all-sky ' + (sky == null ? 'n/a' : (r.sum.uncertain ? '≈ ' : '') + fmt(sky, 2) + ' dB');
 }
 $('#edLobe').onchange = () => drawView();
+$('#edPol').onchange = () => { drawView(); drawEdPolar(); };
 
 /* ---------------- 3D far field ---------------- */
 const FV = { yaw: -0.6, pitch: 0.45, zoom: 1 };
@@ -1731,7 +2031,7 @@ function drawFF3D() {
   }
   c.fillStyle = muted; c.font = FONT();
   axes.forEach(([n, v]) => { const q = P(v[0], v[1], v[2]); c.fillText(n, q[0] + 4, q[1] - 4); });
-  const pol = { tot: 'Total field', all: 'Total field', h: 'Horizontal', v: 'Vertical' }[mode];
+  const pol = { tot: 'Total field', all: 'Total field', hv: 'Total field', h: 'Horizontal', v: 'Vertical' }[mode];
   $('#ffLegend').innerHTML = '<span>−40 dB<span class="ramp"></span>0 dB = ' + fmt(r.gain, 2) + ' dBi max</span><span>' + pol + ' · ' + fmt(r.f, 3) + ' MHz</span>';
 }
 (function ffInput() {
@@ -1968,7 +2268,7 @@ function renderBandTable() {
     const best = pts.reduce((a, b) => (b.swr < a.swr ? b : a));
     return '<tr><td>' + lab + '</td><td>' + fmt(lo, 3) + '–' + fmt(hi, 3) + '</td><td class="' + swrClass(best.swr) + '">' + sw(best.swr) + ' at ' + fmt(best.f, 3) + '</td>' +
       '<td>' + sw(pts[0].swr) + ' / ' + sw(pts[pts.length - 1].swr) + '</td><td>' + fmt(best.R, 1) + (best.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(best.X), 1) + '</td>' +
-      '<td>' + fmt(Math.max(...pts.map(p => p.gain)), 2) + '</td><td>' + fmt(Math.max(...pts.map(p => p.fb)), 1) + '</td><td>' + pts.length + '</td></tr>';
+      '<td>' + (pts.some(p => p.approx) ? '≈ ' : '') + fmt(Math.max(...pts.map(p => p.gain)), 2) + '</td><td>' + fmt(Math.max(...pts.map(p => p.fb)), 1) + '</td><td>' + pts.length + '</td></tr>';
   }).join('');
   box.innerHTML = rows ? '<h3>Per band</h3><div class="tscroll"><table class="results"><thead><tr><th>Band</th><th>MHz</th><th>Best SWR</th><th>SWR at band edges</th><th>Z at best SWR (Ω)</th><th>Max gain dBi</th><th>Max F/B dB</th><th>Points</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '';
 }
@@ -2008,10 +2308,24 @@ $('#swPer').oninput = updateSweepControls; $('#swStep').oninput = updateSweepCon
 // Sweep points are shared round-robin over several workers (one per spare CPU core), and the
 // charts fill in as points arrive.
 let sweepRun = null;
+let sweepVersion = 0;
+function invalidateSweep() {
+  if (!sweepRun && !S.sweep) return;
+  sweepVersion++;
+  if (sweepRun) sweepRun.stop();
+  S.sweep = null;
+  S.sweepSegs = null;
+  $('#swRun').textContent = 'Run sweep';
+  $('#swStatus').textContent = 'Model changed. Run the sweep again.';
+  drawSweep();
+}
 function runSweep(model, fl) {
   const n = fl.length;
   const K = workerUrl ? Math.max(1, Math.min(n, (navigator.hardwareConcurrency || 4) - 1, 8)) : 0;
-  if (!K) return job({ kind: 'sweep', model, freqs: fl }).then(pts => ({ pts, K: 1 }));
+  if (!K) return new Promise((resolve, reject) => {
+    sweepRun = { stop: () => { sweepRun = null; reject(new Error('Stopped')); } };
+    job({ kind: 'sweep', model, freqs: fl }).then(pts => resolve({ pts, K: 1 }), reject);
+  });
   return new Promise((resolve, reject) => {
     // each worker takes the next frequency when it is free; the highest (slowest) frequencies go first
     const got = [], ws = [], queue = fl.slice().sort((a, b) => b - a);
@@ -2031,6 +2345,7 @@ function runSweep(model, fl) {
     for (let w = 0; w < K; w++) {
       const wk = makeWorker(); ws.push(wk);
       wk.onmessage = e => {
+        if (done) return;
         if (e.data.progress) {
           got.push(e.data.progress.pt);
           $('#swStatus').textContent = 'Sweeping… ' + got.length + ' of ' + n + ' points on ' + K + ' cores';
@@ -2059,18 +2374,24 @@ $('#swRun').onclick = async () => {
     if (!(from > 0 && to > from)) { $('#swStatus').textContent = 'Set a start frequency below the end frequency.'; return; }
     fl = Array.from({ length: cnt }, (_, i) => from + (to - from) * i / (cnt - 1));
   }
+  const version = ++sweepVersion;
   const n = fl.length;
+  S.sweep = [];
   $('#swRun').textContent = 'Stop'; $('#swStatus').textContent = 'Sweeping…';
   const t0 = performance.now();
   try {
     S.sweepSegs = segs;
+    drawSweep();
     const r = await runSweep(model, fl);
+    if (version !== sweepVersion) return;
     S.sweep = r.pts;
     $('#swStatus').textContent = n + ' points in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s' + (r.K > 1 ? ' on ' + r.K + ' cores' : '');
   } catch (e) {
+    if (version !== sweepVersion) return;
     if (e.message === 'Stopped') { S.sweep = e.pts || S.sweep; $('#swStatus').textContent = 'Stopped after ' + (e.pts ? e.pts.length : 0) + ' of ' + n + ' points.'; }
     else $('#swStatus').textContent = e.message;
   }
+  sweepRun = null;
   drawSweep();
   $('#swRun').textContent = 'Run sweep';
 };
@@ -2081,7 +2402,7 @@ $('#resBtn').onclick = async () => {
     const r = await job({ kind: 'res', model, f: S.calcFreq });
     if (Math.abs(r.X) > 1) { $('#swStatus').textContent = 'No resonance found near ' + fmt(S.calcFreq, 3) + ' MHz.'; return; }
     $('#swStatus').textContent = 'Resonant at ' + fmt(r.f, 4) + ' MHz. Set as calculation frequency.';
-    S.calcFreq = +r.f.toFixed(4); $('#cFreq').value = S.calcFreq; changed(true);
+    S.calcFreq = +r.f.toFixed(4); $('#cFreq').value = S.calcFreq; changed(true, false);
     if (!$('#autoCalc').checked) calculate();
     drawSweep();
   } catch (e) { $('#swStatus').textContent = e.message; }
@@ -2188,7 +2509,7 @@ function readGoals() {
 function renderOptTable() {
   const st = S.opt.start, b = S.opt.best;
   if (!st || !b) { $('#optTbl tbody').innerHTML = '<tr><td colspan="8" style="color:var(--muted)">No run yet.</td></tr>'; return; }
-  const row = (lab, r) => '<tr><td>' + lab + '</td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 1) + '</td><td>' + fmt(r.X, 1) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</td><td>' + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 1) + '</td><td>' + fmt(r.el, 1) + '</td></tr>';
+  const row = (lab, r) => '<tr><td>' + lab + '</td><td>' + fmt(r.f, 3) + '</td><td>' + fmt(r.R, 1) + '</td><td>' + fmt(r.X, 1) + '</td><td>' + (r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</td><td>' + (r.approx && Number.isFinite(r.gain) ? '≈ ' : '') + fmt(r.gain, 2) + '</td><td>' + fmt(r.fb, 1) + '</td><td>' + fmt(r.el, 1) + '</td></tr>';
   $('#optTbl tbody').innerHTML = st.per.map(r => row('Start', r)).join('') + b.per.map((r, i) => row('Best', r).replace('<tr>', '<tr class="latest">')).join('');
 }
 function drawOpt() {
@@ -2224,7 +2545,9 @@ $('#optStart').onclick = async () => {
   try {
     const res = await job({ kind: 'opt', model, vars: specs, goals, freqs, maxEval }, optProgress, S.opt.worker);
     S.opt.running = false; optProgress(res);
-    optStatus('Finished after ' + res.evals + ' steps · cost ' + fmt(res.start.cost, 3) + ' → ' + fmt(res.best.cost, 3) + '. Press "Apply best to model" to keep it.');
+    optStatus('Finished after ' + res.evals + ' steps · cost ' + fmt(res.start.cost, 3) + ' → ' + fmt(res.best.cost, 3) + '. Press "Apply best to model" to keep it.' +
+      (res.switched ? ' ' + res.switched + ' trial' + (res.switched > 1 ? 's' : '') + ' made a wire touch the ground, which switches the whole model to the approximate perfect mirror; ' + (res.switched > 1 ? 'they were' : 'it was') + ' ruled out.' : '') +
+      (res.start && res.start.approx ? ' Note: the model already touches the ground, so impedance and gain are approximate (≈) throughout.' : ''));
   } catch (e) {
     S.opt.running = false;
     if (e.message === 'Stopped') optStatus('Stopped' + (S.opt.best ? ' · best cost ' + fmt(S.opt.best.cost, 3) + '. You can still apply it.' : '.'));
@@ -2302,7 +2625,10 @@ function modelFromMAA(text) {
 $('#exampleSel').onchange = e => {
   if (e.target.value === '') return;
   const ex = EXAMPLES[+e.target.value];
+  if (ex.pol) $('#polSel').value = ex.pol;
+  if (ex.pol && $('#edPol option[value="' + ex.pol + '"]')) $('#edPol').value = ex.pol;
   S.history = []; loadModel(ex.build === 'hextable' ? hexTableModel(ex.centre, ex.tuned) : ex.maa ? modelFromMAA(ex.maa) : clone(ex)); e.target.value = '';
+  drawPatterns();
 };
 $('#openBtn').onclick = () => $('#fileIn').click();
 $('#fileIn').onchange = e => {
@@ -2365,7 +2691,7 @@ $('#closeDlg').onclick = () => $('#saveDlg').close();
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.0.1', SW_DATE = '2026-11-26';
+const SW_VERSION = '1.4.6', SW_DATE = '2026-11-27';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(() => {
   loadModel(clone(EXAMPLES[0]));

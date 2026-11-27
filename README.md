@@ -13,21 +13,30 @@ writes MMANA-GAL `.maa` files.
 
 Its distinguishing feature is the real-ground model: the impedance over lossy soil is solved with Sommerfeld
 integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
-come out right, ground loss included. That is where the name comes from.
+agree with NEC-2, ground loss included. That is where the name comes from.
 
 Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
+
+Contributions by **ON6URE Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
+inverted-L examples with their dual-band results and sourced dimensions, the horizontal + vertical pattern view, the
+check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
+for these.
 
 ## Features
 
 - **Geometry** as editable tables (with expressions such as `R/4` or `33*F`) or drawn in a **3D editor** with snapping,
   wire splitting, undo/redo and live recalculation while you drag.
-- **Sources, loads** (series L–C with Q, parallel L–C traps, or R + jX) and **transmission lines** (ideal lines across feed gaps, like
-  NEC's TL card), for example a coax centre line in a hexbeam.
+- **Sources** with an optional ideal balun or unun (4:1, 49:1…), **loads** (series L–C or parallel L–C traps with coil and
+  capacitor loss and coil self-capacitance, or R + jX) and **transmission lines** across feed gaps, like NEC's TL card, with
+  velocity factor and cable loss, for example a coax centre line in a hexbeam.
+- **Insulated wire** (thin-sheath approximation, as NEC-4) and wire materials from copper to magnetic steel.
+- **Tube elements**: build telescoping Yagi elements from their sections; steps in diameter are solved directly (no
+  NEC-2-style substitution needed), and the DL6WU/G3SEK boom correction handles elements through a metal boom.
 - **Ground**: free space, perfect ground, or real ground with εr and conductivity. Impedance over real ground with
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
 - **Buildings**: a house beside the antenna with a metal roof as a wire grid, rain gutters and downpipes to earth.
-- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern.
+- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF). The readout shows RDF beside F/B and names the polarization from the whole pattern (for example *Mixed H+V*), apart from the components toward the maximum; the 3D editor can draw the total, H, V or H + V far field on one scale. SWR always comes from the feedpoint of the coupled solve of all wires, never from the pattern.
 - **HF, VHF and UHF**: the same solver from 160 m to 23 cm; long passive wires such as masts are coarsened automatically
   when a VHF/UHF model would otherwise exceed the 2500-unknown limit.
 - **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, both 2 m and 70 cm at once (split axis), or the whole
@@ -35,9 +44,9 @@ Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opu
   R/jX, gain and F/B charts, a Smith chart and a per-band summary. Runs on all processor cores.
 - **Optimizer** (bounded Nelder–Mead) for lengths, positions and load values against SWR, jX, gain, F/B and
   elevation goals over several frequencies.
-- **Examples**: Yagi, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, ZS6BKW, delta loop, horizontal loop, Moxon,
+- **Examples**: Yagi, a 20 m Yagi of telescoping tubes on a metal boom, dipoles, inverted V, ground plane, quad loop, loaded dipole, 80/40 m trap dipole, fan dipole, OCF dipole, G5RV, ZS6BKW, delta loop, horizontal loop, Moxon,
   two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, 40/20 m trap vertical, 160 m Beverage, a G3TXQ 5-band hexbeam tuned per band,
-  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
+  an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, RF.Guru EFHW16080 (160/80 m, 68:1) and EFHW8040 (80/40 m, 70:1) end-fed inverted-Ls, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
@@ -56,13 +65,56 @@ python3 -m http.server 8000
 from the repository folder, then open <http://localhost:8000>. Any static web host works too, for example GitHub
 Pages serving the repository root.
 
+## RF.Guru EFHW inverted-L examples: provenance and assumptions
+
+Built by [efhwgen.js](efhwgen.js); checked by `node --test tests/`. Sources (RF.Guru, retrieved 2026-11-26):
+[low-band inverted-L and 68:1 / 70:1 ratios](https://shop.rf.guru/pages/why-rf-guru-recommends-only-inverted-l-for-160-80m-and-80m-40m-with-68-70-1-transformers-for-end-fed-antennas),
+[EFHW16080 product](https://shop.rf.guru/products/2024-efhw16080-4000),
+[EFHW16080 technical overview](https://shop.rf.guru/pages/efhw16080-inverted-l-technical-overview),
+[EFHW8040 product](https://shop.rf.guru/products/2024-efhw8040-4000).
+
+| | EFHW16080, 160/80 m | EFHW8040, 80/40 m |
+|---|---|---|
+| Transformer (sourced) | 68:1 | 70:1 |
+| Wire (sourced) | ~82 m, 2 mm | 41 m, 2 mm |
+| Layout (sourced) | ~18–20 m vertical, rest horizontal, horizontal ≥ 15 m, feed ≥ 1 m | horizontal 10–15 m, feed ≥ 1 m (best 2–5 m) |
+| Return (sourced) | coax shield as counterpoise, choke ~8 m from the feed | choke ~4 m from the feed |
+| Modelled (representative) | feed 3.7 m, bend 16 m (mast cap): 12.3 m vertical + 69.7 m horizontal (custom vertical length below the published ~18–20 m range) | feed 1 m, bend 13.5 m: 12.5 m vertical + 28.36 m horizontal (horizontal inside the published 10–15 m range) |
+| Return wire (representative) | 8 m shield exterior, feed down to 0.5 m, 5 mm radius | 4 m shield exterior, feed down to 1 m, 5 mm radius |
+
+The 68:1 and 70:1 values are impedance ratios, entered as the source's ideal *Balun n:1* (the ideal turns ratios,
+about 8.25:1 and 8.37:1, are not what the solver takes). The choke is ideal (open end of the shield wire). Lower-
+conductivity soil (εr 5, 1 mS/m), Sommerfeld ground; every wire is above the soil so the perfect-mirror fallback is not
+triggered, which is why the optional ground stake is left out. Not modelled: XLPE insulation (thickness not published),
+transformer loss and parasitics, choke impedance, sag and surroundings. The EFHW8040 uses 40.86 m total as a modelled
+compromise: with the rest of the geometry fixed, the horizontal length alone does not align both SWR dips, so 28.36 m
+minimises the larger SWR at the two band frequencies (2.45 at 3.65 MHz and 2.45 at 7.10 MHz; a 1 kHz scan places the
+dips at 3.522 and 7.260 MHz, SWR 1.08 and 1.50). The EFHW16080 keeps the full 82 m; its feed and bend heights come from an
+engine grid search (feed 1–4 m, bend 10–16 m, 0.5 m then 0.1 m steps) for the lowest larger SWR at 1.85 and 3.65 MHz:
+4.43 and 1.87 (dips at 1.740 and 3.594 MHz). The bend lands on the 16 m cap, and the 1.85 MHz SWR only spans 4.43–4.53
+over the whole searched range: the fixed length, not the heights, keeps the 160 m dip below the band. RF.Guru advises
+fine-tuning on site. The examples calculate both listed band frequencies by default (the strip under the readout shows SWR and
+impedance at each), and open the Pattern tab in *Horizontal + vertical*: the H and V polarization components of
+the same azimuth and elevation cuts, against one 0 dB reference (the total-field maximum).
+
+Under the cuts, a table gives an angle summary per band: mean and peak V and H gain at low angles (5–30°, all azimuths),
+mean and peak total gain at high angles (60–90°, the NVIS candidate range; a figure for how much goes up, not a propagation
+prediction), and RDF toward the total-field maximum for two stated noise assumptions (whole visible sky with the published
+4π convention, and 0–30° elevation only). Means are linear power weighted by solid angle. “Dominant” or “favoured” is
+printed only for a difference of 3 dB or more. In the model, on the lower band of each example the high angles are
+favoured (by 9.0 dB at 1.85 MHz and 7.4 dB at 3.65 MHz) and low-angle H exceeds V by 3.7 and 3.2 dB; on the upper band
+neither holds (high minus low 2.1 and 0.8 dB, V minus H −2.5 and −0.7 dB). The vertical section does not make either
+example V-dominant at low angles on this soil. Max gain and F/B keep their meaning (total-field maximum, and that maximum
+against the opposite azimuth at the same elevation) and are now labelled as such.
+These are model results, not measurements; no SWR, loss or gain figure from RF.Guru is reproduced.
+
 ## How it works
 
 - **Wires**: thin-wire method of moments in the MININEC style: pulse currents at the nodes, constant charge per
   segment, reduced kernel, point matching, k − 1 unknowns at a k-wire junction, tapered segmentation as in
   MMANA-GAL.
 - **Real ground**: the reflected field is split into a quasi-static image (the perfect mirror scaled by
-  (εc − 1)/(εc + 1), integrated with the exact kernel) and a smooth remainder from the Sommerfeld half-space
+  (εc − 1)/(εc + 1), integrated with the same reduced kernel as the wires) and a smooth remainder from the Sommerfeld half-space
   integrals, tabulated once per frequency and interpolated during the matrix fill: the same organisation as NEC-2,
   with the formulas derived independently and written without numerical cancellation.
 - **Far field**: sum over all segments with Fresnel reflection; gain relative to input power, so wire, load and
@@ -72,8 +124,9 @@ The Help tab describes every model in detail, with references.
 
 ## Validation
 
-Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and segmentation, average ground
-(εr 13, 5 mS/m), Sommerfeld ground in both:
+Compared with nec2c (the C translation of the public-domain NEC-2), same geometry and comparable segmentation (NEC-2
+feeds the centre of an odd segment, Sommerwire a node between even ones), average ground (εr 13, 5 mS/m), Sommerfeld
+ground in both. The gains are the peaks of one elevation cut:
 
 | Case | nec2c | Sommerwire |
 |---|---|---|
@@ -85,22 +138,26 @@ Compared with nec2c (the C translation of the public-domain NEC-2), same geometr
 
 Resistance agrees within 1–3 %, gain within 0.1 dB; the reactance offset of 1–4 Ω is the usual difference between
 MININEC- and NEC-style current expansions. On the DX Commander's small, crowded hub the codes differ more; a power
-balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it.
+balance over perfect ground shows NEC-2 losing about 20 % of the input power there while Sommerwire conserves it,
+which points to NEC-2 but does not prove either result. These are comparisons between programs, not measurements.
 The decks, outputs and scripts are in [validation/nec2c](validation/nec2c).
 
 ## Limitations
 
-Thin wires only; a wire touching the ground switches the impedance to the perfect mirror; no buried wires, layered
-soil or ground wave; dielectrics (insulated wire, walls) and baluns are not modelled; at most 2500 unknowns. The
+Thin wires only; a wire touching the ground switches the impedance to the perfect mirror, and the gain is then
+approximate (marked ≈, and limited so the pattern never holds more power than the feed supplies); no buried wires, layered
+soil or ground wave; walls and other dielectrics apart from wire insulation are not modelled; baluns are ideal
+transformers; at most 2500 unknowns. The
 Help tab lists these and the open questions in full.
 
 ## Repository layout
 
 ```
-index.html           the application, with engine.js, structgen.js, hexgen.js and help.html beside it
+index.html           the application, with engine.js, structgen.js, hexgen.js, efhwgen.js and help.html beside it
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 ```
 
@@ -109,6 +166,9 @@ validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 Sommerwire was written from published methods; no code from MMANA-GAL, MININEC or NEC was used. It builds on the
 work behind MININEC (Julian, Logan and Rockway), NEC-2 (Burke and Poggio), Sommerfeld's half-space solution, and
 MMANA-GAL, whose `.maa` format it shares. The hexbeam example follows Steve Hunt G3TXQ's broadband design.
+
+The RF.Guru EFHW inverted-L examples were modelled and contributed by Joeri Van Dooren ON6URE (RF.Guru) from RF.Guru's
+published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions).
 
 ## Licence
 
