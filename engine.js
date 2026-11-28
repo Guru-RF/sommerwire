@@ -200,6 +200,9 @@
   function table(c, Rmin, Rmax, thMax, opt) {
     opt = opt || {};
     const dx = Math.log(opt.q || 1.12), Rc = 2 * Math.PI / c.k0 / (opt.nl || 24) / dx, nt = Math.max(3, opt.nt || 18);
+    return buildTable(c, Rmin, Rmax, thMax, dx, Rc, nt);
+  }
+  function buildTable(c, Rmin, Rmax, thMax, dx, Rc, nt) {
     const xiOf = R => Math.log(R) + R / Rc;
     const x0 = xiOf(Rmin * 0.999) - dx, nr = Math.max(4, Math.ceil((xiOf(Rmax * 1.001) - x0) / dx) + 2);
     const th = Math.min(Math.PI / 2, thMax * 1.0001), dth = th / nt;
@@ -236,10 +239,58 @@
       out[4] = a4 * cr - a5 * ci; out[5] = a4 * ci + a5 * cr; out[6] = a6 * cr - a7 * ci; out[7] = a6 * ci + a7 * cr;
       return out;
     }
-    return { evalF, points: nr * NT, nr, nt };
+    return { evalF, points: nr * NT, nr, nt, bytes: T.byteLength };
   }
 
-  root.SOMM = { bj0, bj1, gauss, context, point, fields, wynn, table, integrand };
+  /* Exact-key table cache. A table is a pure function of the ground context and of (Rmin, Rmax, thMax, q, nl, nt),
+   * so a later request whose inputs are bit-for-bit the same gets the same table object back, and the solve is
+   * bit-identical to building it again. The key is the raw IEEE-754 bits of every number the build reads, so a
+   * neighbouring frequency, ground or geometry never matches: there is no reuse across frequency and no approximate
+   * match. Least recently used entries are dropped past maxEntries or maxBytes. Each thread (page, Web Worker,
+   * worker_thread) loads its own copy of the engine and so has its own cache; nothing is shared between threads. */
+  const TC = { map: new Map(), bytes: 0, maxEntries: 8, maxBytes: 8 << 20, hits: 0, misses: 0 };
+  const CTX_KEYS = ['k0', 'k1r', 'k1i', 'k1re', 'fine', 'er', 'eim', 'ep1r', 'ep1i', 'km1r', 'km1i'];
+  const tkF = new Float64Array(CTX_KEYS.length + 9), tkU = new Uint32Array(tkF.buffer);
+  function tableKey(c, Rmin, Rmax, thMax, dx, Rc, nt) {
+    let i = 0;
+    for (const n of CTX_KEYS) tkF[i++] = c[n];
+    tkF[i++] = c.G[0]; tkF[i++] = c.G[1]; tkF[i++] = c.pec ? 1 : 0;
+    tkF[i++] = Rmin; tkF[i++] = Rmax; tkF[i++] = thMax; tkF[i++] = dx; tkF[i++] = Rc; tkF[i++] = nt;
+    return tkU.join(',');
+  }
+  function cachedTable(c, Rmin, Rmax, thMax, opt) {
+    opt = opt || {};
+    const dx = Math.log(opt.q || 1.12), Rc = 2 * Math.PI / c.k0 / (opt.nl || 24) / dx, nt = Math.max(3, opt.nt || 18);
+    if (!(TC.maxEntries > 0)) return buildTable(c, Rmin, Rmax, thMax, dx, Rc, nt);
+    const key = tableKey(c, Rmin, Rmax, thMax, dx, Rc, nt);
+    let t = TC.map.get(key);
+    if (t) { TC.hits++; TC.map.delete(key); TC.map.set(key, t); return t; }
+    TC.misses++;
+    t = buildTable(c, Rmin, Rmax, thMax, dx, Rc, nt);
+    if (t.bytes <= TC.maxBytes) {
+      TC.map.set(key, t); TC.bytes += t.bytes;
+      for (const [k, v] of TC.map) {
+        if (TC.map.size <= TC.maxEntries && TC.bytes <= TC.maxBytes) break;
+        TC.map.delete(k); TC.bytes -= v.bytes;
+      }
+    }
+    return t;
+  }
+  const tableCache = {
+    stats: () => ({ entries: TC.map.size, bytes: TC.bytes, hits: TC.hits, misses: TC.misses, maxEntries: TC.maxEntries, maxBytes: TC.maxBytes }),
+    clear: () => { TC.map.clear(); TC.bytes = 0; TC.hits = 0; TC.misses = 0; },
+    // maxEntries 0 turns the cache off (and empties it)
+    configure: o => {
+      if (o && o.maxEntries !== undefined) TC.maxEntries = Math.max(0, o.maxEntries | 0);
+      if (o && o.maxBytes !== undefined) TC.maxBytes = Math.max(0, +o.maxBytes || 0);
+      for (const [k, v] of TC.map) {
+        if (TC.map.size <= TC.maxEntries && TC.bytes <= TC.maxBytes) break;
+        TC.map.delete(k); TC.bytes -= v.bytes;
+      }
+    }
+  };
+
+  root.SOMM = { bj0, bj1, gauss, context, point, fields, wynn, table, cachedTable, tableCache, integrand };
 })(typeof globalThis !== 'undefined' ? globalThis : self);
 
 (function (root) {
@@ -510,8 +561,16 @@
   }
 
   /* ---------- complex LU factorisation with partial pivoting (row-major, in place) ----------
-   * Factor once, then solve for as many right-hand sides as needed (sources and line ports). */
+   * Factor once, then solve for as many right-hand sides as needed (sources and line ports).
+   * Large matrices go through a blocked version (luFactorBlocked) because the simple column-by-column
+   * loop streams the whole trailing matrix through memory once per column. Both perform, for every
+   * matrix entry, the same updates with the same operands in the same order, so the factors are
+   * bit-identical; only the loop order (and so cache use) differs. */
+  const LU_BLOCK_MIN = 128, LU_NB = 32, LU_JB = 512;
   function luFactor(n, Ar, Ai) {
+    return n >= LU_BLOCK_MIN ? luFactorBlocked(n, Ar, Ai, LU_NB, LU_JB) : luFactorSimple(n, Ar, Ai);
+  }
+  function luFactorSimple(n, Ar, Ai) {
     const piv = new Int32Array(n);
     for (let c = 0; c < n; c++) {
       let p = c, best = -1;
@@ -533,6 +592,84 @@
         for (let j = c + 1; j < n; j++) {
           const ar = Ar[rc + j], ai = Ai[rc + j];
           Ar[rr + j] -= fr * ar - fi * ai; Ai[rr + j] -= fr * ai + fi * ar;
+        }
+      }
+    }
+    return { n, Ar, Ai, piv };
+  }
+  /* Blocked right-looking form of luFactorSimple. For a panel of nb columns [k, ke): factor the panel
+   * (pivot search, full-row swaps, updates restricted to panel columns), then bring the columns right of
+   * the panel up to date, nb column steps at a time, in strips of jb columns so the panel's U rows and the
+   * row being updated stay in cache. Entry (r, j) still receives the step-c update for c = 0, 1, ... in
+   * increasing order, each computed by the same expression from the same multiplier and the same final
+   * U entry, and a step skipped by the simple loop (zero entry below the pivot) is skipped here too
+   * (recorded in skip, because a multiplier that underflowed to zero is not skipped there). */
+  function luFactorBlocked(n, Ar, Ai, nb, jb) {
+    const piv = new Int32Array(n), skip = new Uint8Array(n * nb);
+    for (let k = 0; k < n; k += nb) {
+      const ke = Math.min(n, k + nb);
+      skip.fill(0);
+      for (let c = k; c < ke; c++) {
+        let p = c, best = -1;
+        for (let r = c; r < n; r++) { const m = Ar[r * n + c] ** 2 + Ai[r * n + c] ** 2; if (m > best) { best = m; p = r; } }
+        if (best === 0) throw new Error('Singular matrix — check that wires connect properly.');
+        piv[c] = p;
+        if (p !== c) {
+          for (let j = 0; j < n; j++) {
+            let t = Ar[c * n + j]; Ar[c * n + j] = Ar[p * n + j]; Ar[p * n + j] = t;
+            t = Ai[c * n + j]; Ai[c * n + j] = Ai[p * n + j]; Ai[p * n + j] = t;
+          }
+          const sc = c * nb, sp = p * nb;
+          for (let q = 0; q < c - k; q++) { const t = skip[sc + q]; skip[sc + q] = skip[sp + q]; skip[sp + q] = t; }
+        }
+        const rc = c * n, pr = Ar[rc + c], pi = Ai[rc + c], pm = pr * pr + pi * pi;
+        for (let r = c + 1; r < n; r++) {
+          const rr = r * n, xr = Ar[rr + c], xi = Ai[rr + c];
+          if (xr === 0 && xi === 0) { skip[r * nb + c - k] = 1; continue; }
+          const fr = (xr * pr + xi * pi) / pm, fi = (xi * pr - xr * pi) / pm;
+          Ar[rr + c] = fr; Ai[rr + c] = fi;
+          for (let j = c + 1; j < ke; j++) {
+            const ar = Ar[rc + j], ai = Ai[rc + j];
+            Ar[rr + j] -= fr * ar - fi * ai; Ai[rr + j] -= fr * ai + fi * ar;
+          }
+        }
+      }
+      if (ke === n) break;
+      // Columns right of the panel: row r takes steps c = k .. min(r, ke) - 1. Rows run upward in r, so
+      // the U row c used by row r was finished earlier in the same strip.
+      for (let j0 = ke; j0 < n; j0 += jb) {
+        const j1 = Math.min(n, j0 + jb);
+        for (let r = k + 1; r < n; r++) {
+          const rr = r * n, cEnd = r < ke ? r : ke, sr = r * nb - k;
+          let c = k;
+          // four steps per pass over the strip while none of them is skipped: the entry is loaded and
+          // stored once instead of four times, the subtractions are the same and in the same order
+          while (c + 4 <= cEnd) {
+            if (skip[sr + c] | skip[sr + c + 1] | skip[sr + c + 2] | skip[sr + c + 3]) break;
+            const f0r = Ar[rr + c], f0i = Ai[rr + c], f1r = Ar[rr + c + 1], f1i = Ai[rr + c + 1];
+            const f2r = Ar[rr + c + 2], f2i = Ai[rr + c + 2], f3r = Ar[rr + c + 3], f3i = Ai[rr + c + 3];
+            const r0 = c * n, r1 = r0 + n, r2 = r1 + n, r3 = r2 + n;
+            for (let j = j0; j < j1; j++) {
+              let xr = Ar[rr + j], xi = Ai[rr + j], ar = Ar[r0 + j], ai = Ai[r0 + j];
+              xr -= f0r * ar - f0i * ai; xi -= f0r * ai + f0i * ar;
+              ar = Ar[r1 + j]; ai = Ai[r1 + j];
+              xr -= f1r * ar - f1i * ai; xi -= f1r * ai + f1i * ar;
+              ar = Ar[r2 + j]; ai = Ai[r2 + j];
+              xr -= f2r * ar - f2i * ai; xi -= f2r * ai + f2i * ar;
+              ar = Ar[r3 + j]; ai = Ai[r3 + j];
+              xr -= f3r * ar - f3i * ai; xi -= f3r * ai + f3i * ar;
+              Ar[rr + j] = xr; Ai[rr + j] = xi;
+            }
+            c += 4;
+          }
+          for (; c < cEnd; c++) {
+            if (skip[sr + c]) continue;
+            const fr = Ar[rr + c], fi = Ai[rr + c], rc = c * n;
+            for (let j = j0; j < j1; j++) {
+              const ar = Ar[rc + j], ai = Ai[rc + j];
+              Ar[rr + j] -= fr * ar - fi * ai; Ai[rr + j] -= fr * ai + fi * ar;
+            }
+          }
         }
       }
     }
@@ -604,7 +741,7 @@
     }));
     halves.forEach(h => { Lmax = Math.max(Lmax, h.len); });
     const rhoMax = Math.hypot(x1 - x0, y1 - y0), Rmin = Math.max(2 * zmin, 1e-4);
-    const tab = SOMM.table(sctx, Rmin, Math.hypot(rhoMax, 2 * zmax) + 1e-6, Math.max(0.2, Math.atan2(rhoMax, Rmin)));
+    const tab = SOMM.cachedTable(sctx, Rmin, Math.hypot(rhoMax, 2 * zmax) + 1e-6, Math.max(0.2, Math.atan2(rhoMax, Rmin)));
     mesh.sommPoints = tab.points;
     const used = new Uint8Array(Hn);
     bases.forEach(b => [b.a, b.b].forEach(pp => { if (pp) used[pp.half] = 1; }));
@@ -1199,22 +1336,32 @@
 
   const dB = x => (x > 1e-30 ? 10 * Math.log10(x) : -300);
 
-  function analyze(model, f, opts) {
-    const res = solve(model, f);
-    const pat = makePattern(res, model);
-    const mx = pat.findMax();
-    const front = pat.gain(mx.el, mx.az), back = pat.gain(mx.el, (mx.az + 180) % 360);
+  // Feed impedance and SWR of the first source, from a solve alone: no pattern is needed for them
+  function feedpoint(res, model) {
     const s0 = res.sources[0];
     const z0 = +(model.z0 || 50);
     const gr = divC(s0.R - z0, s0.X, s0.R + z0, s0.X);
     const gm = Math.hypot(gr[0], gr[1]);
     const swr = gm >= 1 ? Infinity : (1 + gm) / (1 - gm);
+    return { R: s0.R, X: s0.X, swr, z0 };
+  }
+
+  function analyze(model, f, opts) {
+    return analyzeSolved(solve(model, f), model);
+  }
+  // analyze() for a solve already done (the same solve, so no second matrix fill or factorization)
+  function analyzeSolved(res, model) {
+    const f = res.f;
+    const pat = makePattern(res, model);
+    const mx = pat.findMax();
+    const front = pat.gain(mx.el, mx.az), back = pat.gain(mx.el, (mx.az + 180) % 360);
+    const { R, X, swr, z0 } = feedpoint(res, model);
     const capDb = pat.scale < 1 ? -dB(pat.scale) : 0;
     if (res.mirrorMix) res.warnings.push(capDb > 0
       ? 'Gain is approximate and was limited: the currents are solved over a perfect mirror while the pattern uses real-ground reflection. The pattern held ' + pat.ratio.toFixed(2) + ' times the input power, which is impossible, so all gains were lowered by ' + capDb.toFixed(1) + ' dB to make radiated power equal input power. The real gain is lower still, because the soil absorbs power. Impedance and SWR are those over the perfect mirror.'
       : 'Gain is approximate: the currents are solved over a perfect mirror while the pattern uses real-ground reflection, as MMANA-GAL does. Close to the ground this overstates gain.');
     return {
-      res, pat, f, R: s0.R, X: s0.X, swr, z0, approx: !!res.mirrorMix, capDb,
+      res, pat, f, R, X, swr, z0, approx: !!res.mirrorMix, capDb,
       gain: dB(mx.g), el: mx.el, az: mx.az, fb: (fbRaw => (Math.abs(fbRaw) < 1e-9 ? 0 : fbRaw))(dB(front.tot) - dB(back.tot)),
       pol: front.h >= front.v ? 'Horizontal' : 'Vertical',
       gainH: dB(front.h), gainV: dB(front.v)
@@ -1657,6 +1804,7 @@
     const sg = mesh.segs[loc.seg]; return loc.half % 2 ? sg.p1 : sg.p0;
   }
 
-  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, componentPeak, componentPeaks, patternSummary, ANGLE_BANDS, PEAK_WINDOWS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
-    varValue, applyVars, evalGoals, makeOptimizer };
+  root.MM = { skyGrid, bandStats, angleSummary, rdf, polarization, componentPeak, componentPeaks, patternSummary, ANGLE_BANDS, PEAK_WINDOWS, RDF_BACKGROUNDS, POL_RULE, boomFraction, straightGroups, complexDepth, portPoint, evalExpr, buildMesh, solve, makePattern, analyze, analyzeSolved, feedpoint, parseMAA, toMAA, parsePos, MATERIALS, lambdaOf, dB, C0,
+    varValue, applyVars, evalGoals, makeOptimizer,
+    _lu: { luFactor, luFactorSimple, luFactorBlocked, luSolve, LU_BLOCK_MIN } };   // internal, for tests and benchmarks
 })(typeof globalThis !== 'undefined' ? globalThis : self);

@@ -69,6 +69,7 @@ label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .ro .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .ro .v { font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ro .v small { font-size: 12px; color: var(--muted); }
+.ro .v.pending { color: var(--muted); }
 .ro .s { font-size: 11px; line-height: 1.3; color: var(--muted); }
 .ro .v, .ro .s { transition: opacity 0.15s; }
 .readout.stale .v, .readout.stale .s { opacity: 0.5; transition-delay: 0.6s; }
@@ -778,7 +779,13 @@ self.onmessage = (e) => {
     return;
   }
   try {
-    if (kind === 'calc') self.postMessage({ id, ok: true, data: pack(model, f) });
+    if (kind === 'calc') {
+      // Impedance first: feed Z and SWR need only the solve. The far field follows from the same solve; the cuts and
+      // the 3D grid only when asked for (want), else later from the cached solve (kind 'detail'), never by solving again.
+      const res = MM.solve(model, f), z = packZ(res, model, f);
+      if (e.data.early) self.postMessage({ id, progress: z });
+      self.postMessage({ id, ok: true, data: finish(z, res, model, e.data.want, id) });
+    } else if (kind === 'detail') self.postMessage({ id, ok: true, data: detail(e.data) });
     else if (kind === 'sweep') {
       const fl = e.data.freqs || Array.from({ length: n }, (_, i) => (n === 1 ? from : from + (to - from) * i / (n - 1)));
       const pts = [];
@@ -802,10 +809,29 @@ self.onmessage = (e) => {
   } catch (err) { self.postMessage({ id, ok: false, error: err.message || String(err) }); }
 };
 function pack(model, f) {
-  const a = MM.analyze(model, f);
-  const r = a.res, g = model.ground.type;
-  const segs = r.mesh.segs.map((s, i) => [s.p0[0], s.p0[1], s.p0[2], s.p1[0], s.p1[1], s.p1[2], r.segCur[i].mag]);
-  const az = [], el = [];
+  // the whole result in one go, as one calc job that asks for every part
+  const res = MM.solve(model, f);
+  return finish(packZ(res, model, f), res, model, { cuts: true, grid: true });
+}
+// Stage 1: what the solve alone gives (feed impedance, SWR, currents); no pattern evaluated
+function packZ(res, model, f) {
+  const fp = MM.feedpoint(res, model), g = model.ground.type;
+  const segs = res.mesh.segs.map((s, i) => [s.p0[0], s.p0[1], s.p0[2], s.p1[0], s.p1[1], s.p1[2], res.segCur[i].mag]);
+  return { stage: 'z', f, R: fp.R, X: fp.X, swr: fp.swr, z0: fp.z0, N: res.N, nseg: res.mesh.segs.length, sources: res.sources, Pin: res.Pin, segs,
+    warnings: res.warnings.slice(), earthed: res.earthed, ground: g, height: model.ground.height };
+}
+// Stage 2 on the same solve: maximum, F/B, angle summary (RDF, polarization, peaks), and the parts in want
+function finish(z, res, model, want, ref) {
+  const a = MM.analyzeSolved(res, model), r = a.res;
+  let sum = null; try { sum = MM.patternSummary(a, model); } catch (err) { r.warnings.push('No angle summary or RDF: ' + (err.message || err)); }
+  const out = Object.assign({}, z, { stage: 'done', sum, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
+    warnings: r.warnings.slice() }, want && want.cuts ? packCuts(a, model) : null, want && want.grid ? packGrid(a, model) : null);
+  if (ref != null) { out.ref = ref; remember(ref, { a, model }); }
+  return out;
+}
+// the two cuts through the maximum (1° steps)
+function packCuts(a, model) {
+  const g = model.ground.type, az = [], el = [];
   const toDb = x => MM.dB(x);
   for (let d = 0; d <= 360; d += 1) { const G = a.pat.gain(a.el, d); az.push([d, toDb(G.tot), toDb(G.h), toDb(G.v)]); }
   const tmax = g > 0 ? 180 : 360;
@@ -814,14 +840,27 @@ function pack(model, f) {
     if (t <= 90) { e = t; z = a.az; } else if (t < 270) { e = 180 - t; z = a.az + 180; } else { e = t - 360; z = a.az; }
     const G = a.pat.gain(e, ((z % 360) + 360) % 360); el.push([t, toDb(G.tot), toDb(G.h), toDb(G.v)]);
   }
+  return { cutAz: az, cutEl: el };
+}
+// the 5° grid of the 3D pattern
+function packGrid(a, model) {
+  const g = model.ground.type, toDb = x => MM.dB(x);
   const gEls = [], gAzs = [], gT = [], gH = [], gV = [];
   for (let e = g > 0 ? 0 : -90; e <= 90; e += 5) gEls.push(e);
   for (let d = 0; d < 360; d += 5) gAzs.push(d);
   for (const e of gEls) for (const d of gAzs) { const G = a.pat.gain(e, d); gT.push(toDb(G.tot)); gH.push(toDb(G.h)); gV.push(toDb(G.v)); }
-  const grid = { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV };
-  let sum = null; try { sum = MM.patternSummary(a, model); } catch (err) { r.warnings.push('No angle summary or RDF: ' + (err.message || err)); }
-  return { grid, sum, f, R: a.R, X: a.X, swr: a.swr, z0: a.z0, approx: a.approx, capDb: a.capDb, gain: a.gain, gainH: a.gainH, gainV: a.gainV, fb: a.fb, el: a.el, az: a.az, pol: a.pol,
-    N: r.N, nseg: r.mesh.segs.length, sources: r.sources, Pin: r.Pin, segs, cutAz: az, cutEl: el, warnings: r.warnings, earthed: r.earthed, ground: g, height: model.ground.height };
+  return { grid: { els: gEls, azs: gAzs, tot: gT, h: gH, v: gV } };
+}
+// Recent solved results by job id, so the cuts and the grid can be added later without a second solve.
+// A result that is no longer here (evicted, or the worker was replaced) is solved again, and the reply says so.
+const SOLVED = new Map(), SOLVED_MAX = 12;
+function remember(ref, v) { SOLVED.delete(ref); SOLVED.set(ref, v); while (SOLVED.size > SOLVED_MAX) SOLVED.delete(SOLVED.keys().next().value); }
+function detail(m) {
+  let c = SOLVED.get(m.ref), resolved = false;
+  if (c) remember(m.ref, c);
+  else { c = { a: MM.analyze(m.model, m.f), model: m.model }; resolved = true; remember(m.ref, c); }
+  const w = m.want || {};
+  return Object.assign({ ref: m.ref, resolved }, w.cuts ? packCuts(c.a, c.model) : null, w.grid ? packGrid(c.a, c.model) : null);
 }`;
 let worker = null, workerUrl = null;
 const pending = new Map();
@@ -842,7 +881,10 @@ async function startWorker() {
 }
 const snapOpt = (o, maxEval) => ({ evals: o.evals, maxEval, best: o.best && { cost: o.best.cost, vals: o.best.vals, per: o.best.per }, start: o.start, history: o.history, switched: o.switched || 0 });
 // main-thread fallback mirrors the worker
-const fallback = (() => { const self = { postMessage: () => {} }; let fn; try { fn = new Function('self', 'MM', WORKER_SRC + '; return { pack };')(self, MM); } catch (e) { fn = null; } return fn; })();
+// (the same packZ / finish / detail as the worker, with its own cache of solved results)
+const fallback = (() => { const self = { postMessage: () => {} }; let fn; try { fn = new Function('self', 'MM', WORKER_SRC + '; return { pack, packZ, finish, detail };')(self, MM); } catch (e) { fn = null; } return fn; })();
+// lets the browser paint (the impedance) before the main-thread fallback goes on with the far field
+const afterPaint = fn => { let done = false; const go = () => { if (!done) { done = true; setTimeout(fn, 0); } }; if (typeof requestAnimationFrame === 'function') requestAnimationFrame(go); setTimeout(go, 50); };
 function job(msg, onProgress, w) {
   const id = ++S.seq;
   w = w || worker;
@@ -861,7 +903,13 @@ function job(msg, onProgress, w) {
         };
         return tick();
       }
-      if (msg.kind === 'calc') return resolve(fallback.pack(msg.model, msg.f));
+      if (msg.kind === 'calc') {
+        const res = MM.solve(msg.model, msg.f), z = fallback.packZ(res, msg.model, msg.f);
+        const rest = () => { try { resolve(fallback.finish(z, res, msg.model, msg.want, id)); } catch (e) { reject(e); } };
+        if (msg.early && onProgress) { onProgress(Object.assign({}, z)); return afterPaint(rest); }
+        return rest();
+      }
+      if (msg.kind === 'detail') return resolve(fallback.detail(Object.assign({ id }, msg)));
       if (msg.kind === 'sweep') {
         const pts = [];
         for (const fi of msg.freqs) { const a = MM.analyze(msg.model, fi); pts.push({ f: fi, R: a.R, X: a.X, swr: a.swr, gain: a.gain, fb: a.fb, el: a.el, approx: a.approx }); }
@@ -897,12 +945,21 @@ function renderReadout() {
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
   $('#roSwrK').textContent = 'SWR ' + (+r.z0).toFixed(0) + ' Ω';
   set('#roSWR', Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99', swrClass(r.swr));
+  // impedance first: until the far field of this same solve arrives, its tiles say so instead of showing older values
+  if (r.stage === 'z') {
+    const why = r.detailError ? 'Far field not available: ' + r.detailError : 'Computing the far field of this solve…';
+    ['#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].concat(PK).forEach(i => { set(i, r.detailError ? 'n/a' : '…', 'pending'); $(i).title = why; });
+    ['#roRdf', '#roPol'].concat(PK).forEach(i => $(i + 'S').textContent = '');
+    $('#roGS').textContent = '';
+    return;
+  }
   set('#roG', (r.approx ? '≈ ' : '') + fmt(r.gain, 2) + ' <small>dBi</small>');
   $('#roG').title = r.approx ? 'Approximate: currents over a perfect mirror, pattern over real ground' + (r.capDb > 0 ? '; limited by ' + r.capDb.toFixed(1) + ' dB so radiated power does not exceed input power' : '') + '. See the warning on the Calculate tab.' : '';
   // total field: the H and V power together, toward its own maximum; the H and V peaks below are searched apart from it
   $('#roGS').textContent = 'total H+V · ' + fmt(r.el, 1) + '° el, ' + fmt(r.az, 1) + '° az';
   set('#roFB', r.ground === 0 && Math.abs(r.fb) < 0.05 ? fmt(r.fb, 1) + ' <small>dB</small>' : fmt(r.fb, 1) + ' <small>dB</small>');
   set('#roEl', fmt(r.el, 1) + '<small>°</small>');
+  $('#roFB').title = $('#roEl').title = '';
   // RDF and polarization come from the angle summary of the same result (r.sum); F/B, gain and SWR do not need it
   const rd = rdfReadout(r), po = polReadout(r);
   set('#roRdf', rd.v); sub('#roRdf', rd);
@@ -1083,28 +1140,72 @@ async function calculate(opts) {
   let model;
   try { model = numericModel(); } catch (e) { setStatus('err', e.message); return; }
   const key = JSON.stringify(model);
+  const edited = () => { let now = null; try { now = JSON.stringify(numericModel()); } catch (e) { now = null; } return now !== key; };
   S.calcBusy = true;
   if (!live) setStatus('busy', 'Solving…');
   try {
     const t0 = performance.now();
-    const r = await job({ kind: 'calc', model, f: S.calcFreq });
+    // The selected band of a multiband model, already solved for this same model and frequency: reuse it, no new solve
+    const band = S.bandRes && S.bandRes.key === key ? S.bandRes.rows.find(x => x && Math.abs(x.f - S.calcFreq) < 1e-9) : null;
+    let r = band;
+    if (!r) {
+      // A full calculation shows the impedance and SWR as soon as the solve is done; the far field follows from the
+      // same solve. Live results (while dragging) come in one piece, so the views do not flicker at drag rate.
+      const showZ = z => {
+        z.name = S.model.name; z.ms = performance.now() - t0;
+        S.last = z; S.dirty = edited();
+        renderReadout(); drawView(); drawPatterns(); drawSmith(); drawEdPolar();
+        setStatus('busy', 'Impedance and SWR ready (' + z.N + ' unknowns, ' + Math.round(z.ms) + ' ms) · computing the far field…');
+        showWarnings(z.warnings);
+      };
+      r = await job({ kind: 'calc', model, f: S.calcFreq, want: detailWanted(), early: !live }, live ? null : showZ);
+      RSRC.set(r, model);
+    }
     r.name = S.model.name; r.ms = performance.now() - t0;
     S.last = r;
-    let now = null; try { now = JSON.stringify(numericModel()); } catch (e) { now = null; }
-    S.dirty = now !== key;
+    S.dirty = edited();
     if (!live) { S.history.unshift(r); if (S.history.length > 40) S.history.pop(); renderResults(); }
     renderReadout(); drawView(); drawPatterns(); drawSmith(); drawEdPolar();
     const mirrorNote = r.ground === 2 && r.earthed && r.earthed.length ? ' · impedance over the perfect mirror because ' + r.earthed.slice(0, 4).map(w => 'w' + (w + 1)).join(', ') + (r.earthed.length > 4 ? ' …' : '') + (r.earthed.length > 1 ? ' touch' : ' touches') + ' the ground' : '';
-    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + Math.round(r.ms) + ' ms' + mirrorNote + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
-    $('#warnList').innerHTML = r.warnings.map(w => '<li></li>').join('');
-    $$('#warnList li').forEach((li, i) => li.textContent = r.warnings[i]);
+    setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + (band ? 'from the band results' : Math.round(r.ms) + ' ms') + mirrorNote + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
+    showWarnings(r.warnings);
     if (!live && !S.dirty) await calcBands(model, key, r);
   } catch (e) {
+    // the impedance may already be on screen; then only its far field is missing, and the views say so
+    if (S.last && S.last.stage === 'z') { S.last.detailError = e.message; renderReadout(); drawView(); drawPatterns(); drawEdPolar(); }
     setStatus('err', e.message);
   } finally {
     S.calcBusy = false;
     if (S.calcAgain) { const k = S.calcAgain; S.calcAgain = null; calculate(k === 'live' ? { live: true } : undefined); }
   }
+}
+function showWarnings(list) {
+  $('#warnList').innerHTML = list.map(w => '<li></li>').join('');
+  $$('#warnList li').forEach((li, i) => li.textContent = list[i]);
+}
+/* The cuts and the 3D grid are drawn only on the 3D editor and the Far field tab. A calculation asks for the ones a
+   visible view needs; a result without them gets them later from the solve the worker keeps (kind 'detail'), so
+   opening a view does not solve again. Only when the worker no longer has that solve is it solved once more. */
+const RSRC = new WeakMap(), DETAIL = new WeakSet();
+function detailWanted() {
+  const t = S.tab;
+  return { cuts: t === 'view' || t === 'pattern', grid: t === 'pattern' || (t === 'view' && !!$('#edLobe').checked) };
+}
+function ensureDetail(r) {
+  if (!r || r.stage !== 'done' || r.detailError || DETAIL.has(r)) return;
+  const w = detailWanted(), want = { cuts: w.cuts && !r.cutAz, grid: w.grid && !r.grid }, model = RSRC.get(r);
+  if (!(want.cuts || want.grid) || !model) return;
+  DETAIL.add(r);
+  job({ kind: 'detail', ref: r.ref, model, f: r.f, want }).then(d => {
+    if (want.cuts) { r.cutAz = d.cutAz; r.cutEl = d.cutEl; }
+    if (want.grid) r.grid = d.grid;
+    if (d.resolved) r.resolved = (r.resolved || 0) + 1;
+    if ((want.cuts && !r.cutAz) || (want.grid && !r.grid)) r.detailError = 'the far field could not be sampled';
+  }, e => { r.detailError = e.message || String(e); }).then(() => {
+    DETAIL.delete(r);
+    // the parts belong to r whatever happened meanwhile; they are drawn only while r is still the latest result
+    if (S.last === r) { drawView(); drawPatterns(); drawEdPolar(); }
+  });
 }
 $('#calcBtn').onclick = calculate;
 
@@ -1121,6 +1222,7 @@ async function calcBands(model, key, main) {
   const version = ++bandVersion, rows = [];
   for (const f of fl) {
     const r = Math.abs(f - main.f) < 1e-9 ? main : await job({ kind: 'calc', model, f });
+    RSRC.set(r, model);
     if (version !== bandVersion) return;
     rows.push(r);
   }
@@ -1533,6 +1635,7 @@ function drawView() {
   }
   c.restore();
   // far-field lobe around the antenna (latest result), translucent so the wires stay visible
+  if ($('#edLobe').checked && S.last && !S.last.grid) ensureDetail(S.last);
   if ($('#edLobe').checked && S.last && S.last.grid) {
     const Wv = W.filter(Boolean);
     if (Wv.length) {
@@ -1809,6 +1912,14 @@ function drawPatterns() {
   const az = $('#azPlot'); if (!az.offsetParent) return;
   const r = S.last;
   if (!r) { prep(az); prep($('#elPlot')); $('#patSum').innerHTML = ''; $('#polDetail').innerHTML = ''; return; }
+  // impedance only so far, or the cuts of this result still on their way from the worker's cached solve
+  if (!r.cutAz) {
+    prep(az); prep($('#elPlot')); $('#patLegend').innerHTML = ''; $('#elTitle').textContent = '';
+    $('#azTitle').textContent = r.detailError ? 'Far field not available: ' + r.detailError : r.stage === 'z' ? 'Computing the far field…' : 'Drawing the cuts…';
+    if (r.stage === 'z') { $('#patSum').innerHTML = ''; $('#polDetail').innerHTML = ''; } else { ensureDetail(r); patTables(r); }
+    drawFF3D();
+    return;
+  }
   const mode = $('#polSel').value;
   const acc = css('--accent'), tr2 = css('--trace2'), tr3 = css('--trace3'), muted = css('--muted');
   const pick = (cut, col) => cut.map(p => [p[0], p[col]]);
@@ -1839,12 +1950,16 @@ function drawPatterns() {
   if (S.held) lg += '<span><i class="dash" style="border-color:var(--muted)"></i>Held: <span class="heldName"></span></span>';
   $('#patLegend').innerHTML = lg;
   if (S.held) $('#patLegend .heldName').textContent = S.held.label;
+  patTables(r);
+  drawFF3D();
+}
+// the tables under the cuts: they need the angle summary only, not the cuts
+function patTables(r) {
   // the other bands of a multiband example, when they were solved for this same model
   const bandRows = S.bandRes && S.bandRes.rows;
   const shown = bandRows && bandRows.some(x => Math.abs(x.f - r.f) < 1e-9) ? bandRows.map(x => (Math.abs(x.f - r.f) < 1e-9 ? r : x)) : [r];
   $('#patSum').innerHTML = patSummaryHtml(shown);
   $('#polDetail').innerHTML = polDetailHtml(shown);
-  drawFF3D();
 }
 /* Angle summary under the cuts: what Max gain and F/B measure, V and H at low angles, the total field at high angles,
    and RDF (see MM.angleSummary and MM.rdf). A verdict is printed only when the engine found one; otherwise "neither". */
@@ -2001,6 +2116,12 @@ function drawEdPolar() {
   const az = $('#edAz'); if (!az || !az.offsetParent) return;
   const r = S.last;
   if (!r) { prep(az); prep($('#edEl')); $('#edPolTxt').textContent = ''; return; }
+  if (!r.cutAz) {
+    prep(az); prep($('#edEl'));
+    $('#edPolTxt').textContent = r.detailError ? 'Far field not available: ' + r.detailError : r.stage === 'z' ? 'Computing the far field…' : 'Drawing the cuts…';
+    ensureDetail(r);
+    return;
+  }
   const COL = { tot: 1, h: 2, v: 3 }, L = lobeLayers($('#edPol').value);
   const series = cut => L.map(l => ({ pts: cut.map(p => [p[0], p[COL[l.key]]]), color: css(l.color || '--accent') }));
   drawPolar(az, series(r.cutAz), false, r.gain);
@@ -2017,7 +2138,12 @@ function drawFF3D() {
   const cv = $('#ff3d'); if (!cv || !cv.offsetParent) return;
   const { c, w, h } = prep(cv);
   const r = S.last, muted = css('--muted'), ink = css('--ink'), grid = css('--grid'), panel = css('--panel');
-  if (!r || !r.grid) { c.fillStyle = muted; c.font = '13px ' + css('--f-body'); c.fillText('Calculate to see the 3D pattern.', 16, 24); $('#ffLegend').innerHTML = ''; return; }
+  if (!r || !r.grid) {
+    const msg = !r ? 'Calculate to see the 3D pattern.' : r.detailError ? 'Far field not available: ' + r.detailError : r.stage === 'z' ? 'Computing the far field…' : 'Drawing the 3D pattern…';
+    c.fillStyle = muted; c.font = '13px ' + css('--f-body'); c.fillText(msg, 16, 24); $('#ffLegend').innerHTML = '';
+    if (r) ensureDetail(r);
+    return;
+  }
   const G = r.grid, mode = $('#polSel').value;
   const arr = mode === 'h' ? G.h : mode === 'v' ? G.v : G.tot;
   const ref = r.gain, nE = G.els.length, nA = G.azs.length;
@@ -2097,7 +2223,7 @@ function drawFF3D() {
   $('#ffAnt').onchange = drawFF3D; $('#ffMesh').onchange = drawFF3D;
 })();
 
-$('#holdBtn').onclick = () => { if (!S.last) return; S.held = Object.assign({}, S.last, { label: (S.last.name || '') + ', ' + fmt(S.last.f, 3) + ' MHz, ' + fmt(S.last.gain, 2) + ' dBi' }); $('#dropHold').hidden = false; drawPatterns(); };
+$('#holdBtn').onclick = () => { if (!S.last || !S.last.cutAz) return; S.held = Object.assign({}, S.last, { label: (S.last.name || '') + ', ' + fmt(S.last.f, 3) + ' MHz, ' + fmt(S.last.gain, 2) + ' dBi' }); $('#dropHold').hidden = false; drawPatterns(); };
 $('#dropHold').onclick = () => { S.held = null; $('#dropHold').hidden = true; drawPatterns(); };
 
 /* ---------------- sweep charts ---------------- */
@@ -2471,6 +2597,7 @@ async function loadHelp() {
 function showTab(name) {
   $$('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
   $$('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== name);
+  S.tab = name;   // what a calculation draws: see detailWanted()
   if (name === 'geometry') renderTables();
   if (name === 'view') renderInspector();
   if (name === 'help') loadHelp();
