@@ -171,9 +171,17 @@ test('UI: changing only the calculation frequency keeps the band results without
   let run = ctx.calculate(); answer(0); await flush(); answer(1); await run; await flush();
   S.calcFreq = 7.1; ctx.changed(false, false);
   assert.ok(S.bandRes, 'still valid');
+  const band71 = S.bandRes.rows[1];
+  run = ctx.calculate(); await run; await flush();
+  assert.equal(jobs.length, 2, 'the 7.1 MHz band was already solved for this model: reused, no new solve');
+  assert.equal(S.last, band71, 'the band result becomes the latest result');
+  assert.equal(S.history[0], band71);
+  assert.match($('#bandRes').innerHTML, /class="on"[^>]*data-band="7.1"|data-band="7.1"[^>]*class="on"/);
+  // a frequency that is not a band still gets its own solve
+  S.calcFreq = 7.15; ctx.changed(false, false);
   run = ctx.calculate(); answer(2); await run; await flush();
   assert.equal(jobs.length, 3, 'only the main solve');
-  assert.match($('#bandRes').innerHTML, /class="on"[^>]*data-band="7.1"|data-band="7.1"[^>]*class="on"/);
+  assert.equal(jobs[2].msg.f, 7.15);
 });
 
 test('UI: live calculations while dragging skip the band solves', async () => {
