@@ -247,6 +247,13 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 </ul>
 
 <h3 id="m-swr">Where SWR comes from</h3>
+<p>The tuner menu beside <b>Calculate</b> changes the SWR colours in the readout strip, band buttons and sweep’s Best SWR column. It uses the calculated SWR before rounding and leaves the values and optimization goals unchanged.</p>
+<ul>
+  <li><b>No tuner</b> (default) shows green through 1.5:1, yellow above 1.5:1 through 2.5:1, and red above 2.5:1.</li>
+  <li><b>Internal tuner</b> shows green below 3:1 and red from 3:1 up.</li>
+  <li><b>External tuner</b> shows green below 5:1, yellow from 5:1 to below 10:1, and red from 10:1 up.</li>
+</ul>
+<p>These generic limits give no guarantee of a match. The range of a particular tuner depends on its design, frequency and the impedance it sees.</p>
 <p>The impedance and the SWR come from the feedpoint of <b>one coupled solution of every modelled wire</b>: the vertical and horizontal legs, radials and the return path (for the RF.Guru EFHW and EFOC29 examples the outside of the coax shield up to the choke) are all in the same set of equations, and the source current of that solution gives R + jX. The far field is computed afterwards from the same currents. SWR is never derived from a pattern, a gain or a polarization component, and no polarization view changes it; changing the length of any leg or of the return path does (shortening the EFHW8040 vertical leg, horizontal leg or shield by a fraction of a metre moves the SWR on both 80 and 40 m).</p>
 
 <h3 id="m-angle">Angle summary and RDF</h3>
