@@ -420,6 +420,12 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 
 <h2 id="h-changes">What changed</h2>
 <p>Changes in the RF.Guru edition, newest first, with the date they reached this edition. The <a href="CONTRIBUTION-HISTORY.md" target="_blank" rel="noopener">contribution history</a> lists who did what. The edition has no version numbers; the newest entry describes what you are running.</p>
+<h3>2026-11-28 · Embeddable 3D view, tidier band strip</h3>
+<ul>
+  <li>Under the readout, <b>Bands</b> now sits on its own row below the antenna name, and the band buttons line up in equal columns below it, one column on a narrow screen. Each button still shows SWR, impedance, F/B and RDF and still makes its band the calculation frequency.</li>
+  <li>Adding <code>?embed=1</code> to the address gives a read-only presentation for another web page, such as a product page: the <b>Bands</b> label, one row of short band pickers (the frequency is in each picker's tooltip) and the turning 3D view. A picker calculates that band and updates the view. It opens the RF.Guru EFOC29, or the model of a share link when <code>?embed=1</code> is put before its <code>#sw=…</code>. It uses no browser storage and exchanges no messages with the page around it. The README describes a ready-to-use iframe.</li>
+  <li>Share links, their format and the full app are unchanged.</li>
+</ul>
 <h3>2026-11-28 · One theme, EFOC29 first</h3>
 <ul>
   <li><b>RF.Guru</b> is the only theme: the <b>Theme</b> switch and the <b>Koen (original)</b> look are gone, and a theme choice stored by an earlier visit is ignored and cleared. The app and this Help page are always dark, with RF.Guru gold for actions and links.</li>

@@ -45,16 +45,20 @@ test('the RF.Guru header stays: adapted mark, RF.Guru edition, What changed and 
 });
 
 test('a stored legacy theme choice is cleared and nothing reads a theme from storage or the URL', () => {
-  assert.match(boot, /try \{ localStorage\.removeItem\('sw-skin'\); \} catch \(e\) \{/);
+  assert.match(boot, /if \(!EMBED\) try \{ localStorage\.removeItem\('sw-skin'\); \} catch \(e\) \{/);
   assert.equal((html.match(/sw-skin/g) || []).length, 1, 'only the removal');
-  assert.doesNotMatch(html, /location\.search|URLSearchParams|searchParams/);
+  // the only query parameter read is the presentation flag (?embed=1), never a theme
+  assert.equal((html.match(/location\.search|URLSearchParams|searchParams/g) || []).length, 2);
+  assert.match(html, /if \(new URLSearchParams\(location\.search\)\.get\('embed'\) === '1'\) document\.documentElement\.classList\.add\('embed'\);/);
   assert.doesNotMatch(html, /dataset\.skin|setAttribute\('data-skin'|\.skin\s*=/);
   // removing the key works where storage is allowed and is silent where it is blocked
-  const line = boot.match(/^try \{ localStorage\.removeItem\('sw-skin'\);.*$/m)[0];
+  const line = boot.match(/^if \(!EMBED\) try \{ localStorage\.removeItem\('sw-skin'\);.*$/m)[0];
   const store = new Map([['sw-skin', 'koen'], ['wm-tab', 'sweep']]);
-  vm.runInNewContext(line, { localStorage: { removeItem: k => store.delete(k) } });
+  vm.runInNewContext(line, { EMBED: false, localStorage: { removeItem: k => store.delete(k) } });
   assert.deepEqual([...store.keys()], ['wm-tab']);
-  assert.doesNotThrow(() => vm.runInNewContext(line, { localStorage: { removeItem() { throw new Error('SecurityError'); } } }));
+  assert.doesNotThrow(() => vm.runInNewContext(line, { EMBED: false, localStorage: { removeItem() { throw new Error('SecurityError'); } } }));
+  // the presentation (?embed=1) leaves storage alone
+  vm.runInNewContext(line, { EMBED: true, localStorage: { removeItem() { throw new Error('touched'); } } });
 });
 
 test('no edition version: no badge, constant or footer version; What changed keeps its dated history', () => {
@@ -66,7 +70,7 @@ test('no edition version: no badge, constant or footer version; What changed kee
   const sec = section('<h2 id="h-changes">', '<h2 id="h-licence">', help);
   assert.doesNotMatch(sec, /version \d/i);
   const heads = [...sec.matchAll(/<h3>([^<]*)<\/h3>/g)].map(m => m[1]);
-  assert.deepEqual(heads, ['2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
+  assert.deepEqual(heads, ['2026-11-28 · Embeddable 3D view, tidier band strip', '2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
   assert.match(sec, /<b>RF\.Guru<\/b> is the only theme/);
   assert.match(sec, /opens the <b>RF\.Guru EFOC29<\/b> example with its eight bands/);
   // the share-link format number is the model encoding, not an edition version, and stays
