@@ -255,7 +255,7 @@ test('page: the readout shows impedance and SWR at once and marks the far-field 
     vm.runInNewContext(section('function patSummaryHtml', "$('#polSel').onchange") + section('function setStatus', '/* ---------------- tables'), ctx); ctx.renderReadout(); return nodes; };
   const n = run(Z({ R: 43.3, X: -42.6, swr: 2.45 }));
   assert.equal(n['#roZ'].innerHTML, '43.3 − j42.6'); assert.equal(n['#roSWR'].innerHTML, '2.45');
-  for (const id of ['#roG', '#roFB', '#roRdf', '#roEl', '#roPol', '#roPkH', '#roPkV', '#roLoV', '#roHiH']) {
+  for (const id of ['#roG', '#roFB', '#roRdf', '#roEl', '#roPol', '#roPkH', '#roPkV', '#roLo', '#roHi']) {
     assert.equal(n[id].innerHTML, '…', id); assert.match(n[id].className, /pending/); assert.match(n[id].title, /Computing the far field/);
   }
   const e = run(Z({ detailError: 'boom' }));

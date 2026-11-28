@@ -25,7 +25,7 @@ function section(start, end) {
 
 // the app's own example table, normalize() and numericModel(), run in a sandbox
 const app = vm.createContext({ MM, WMStruct: globalThis.WMStruct, rfGuruEfhwInvL: globalThis.rfGuruEfhwInvL, rfGuruEfoc29: globalThis.rfGuruEfoc29, clone: o => JSON.parse(JSON.stringify(o)) });
-vm.runInContext(section('const NF_MODES', '/* ---------------- worker') + section('/* amateur HF bands per IARU region', 'const hfBands'), app);
+vm.runInContext(section('const NF_MODES', '/* ---------------- worker') + section('/* amateur HF bands per IARU region', '/* Naming of the high-angle window'), app);
 const EXAMPLES = vm.runInContext('EXAMPLES', app);
 const HAM1 = vm.runInContext('HAM_BANDS[1]', app);
 const appModel = i => vm.runInContext('S.model = normalize(clone(EXAMPLES[' + i + '])); numericModel()', app);

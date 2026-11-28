@@ -70,6 +70,9 @@ label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .ro .v { font-family: var(--f-mono); font-size: 18px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ro .v small { font-size: 12px; color: var(--muted); }
 .ro .v.pending { color: var(--muted); }
+.ro .v.two { font-size: 16px; }
+.ro .v .hl { color: var(--accent); font-weight: 700; }
+.ro .v .dim { color: var(--muted); }
 .ro .s { font-size: 11px; line-height: 1.3; color: var(--muted); }
 .ro .v, .ro .s { transition: opacity 0.15s; }
 .readout.stale .v, .readout.stale .s { opacity: 0.5; transition-delay: 0.6s; }
@@ -210,8 +213,8 @@ footer a { color: var(--accent); }
     <div class="ro"><div class="k" title="Named from the whole pattern: how the radiated power over all directions divides between the H (φ) and V (θ) components. Mixed H+V: within 3 dB of each other. Mostly H or V: 3 dB or more. Horizontal or Vertical: 20 dB or more. Point at the value for the components toward the maximum.">Polarization</div><div class="v" id="roPol">–</div><div class="s" id="roPolS"></div></div>
     <div class="ro"><div class="k" title="Largest H (φ) gain anywhere in the pattern, searched on its own; point at the value for its direction and how it was found">H peak</div><div class="v" id="roPkH">–</div><div class="s" id="roPkHS"></div></div>
     <div class="ro"><div class="k" title="Largest V (θ) gain anywhere in the pattern, searched on its own; point at the value for its direction and how it was found">V peak</div><div class="v" id="roPkV">–</div><div class="s" id="roPkVS"></div></div>
-    <div class="ro"><div class="k" id="roLoVK" title="Largest V (θ) gain inside a fixed low-elevation window, all azimuths. DX only names the window: no path, propagation or dominance is implied.">Low-angle V · DX</div><div class="v" id="roLoV">–</div><div class="s" id="roLoVS"></div></div>
-    <div class="ro"><div class="k" id="roHiHK" title="Largest H (φ) gain inside a fixed high-elevation window, all azimuths. NVIS only names the window: no path, propagation or dominance is implied.">High-angle H · NVIS</div><div class="v" id="roHiH">–</div><div class="s" id="roHiHS"></div></div>
+    <div class="ro wide"><div class="k" id="roLoK" title="Largest H (φ) and largest V (θ) gain inside a fixed low-elevation window, all azimuths, each searched on its own. The component that matches the modelled polarization of this antenna at this frequency is highlighted; a Mixed H+V result highlights neither. DX only names the window: a low-angle antenna figure, with no path or propagation implied.">Low-angle 5–30° · DX</div><div class="v" id="roLo">–</div><div class="s" id="roLoS"></div></div>
+    <div class="ro wide"><div class="k" id="roHiK" title="Largest H (φ) and largest V (θ) gain inside a fixed high-elevation window, all azimuths, each searched on its own: a high-angle antenna figure for the elevations a local or regional skywave path would use, highlighted like the low-angle tile. It is called NVIS only when the frequency lies inside an amateur band from 160 m to 30 m. It is not a propagation prediction, not ground wave and no promise of coverage.">High-angle 60–90°</div><div class="v" id="roHi">–</div><div class="s" id="roHiS"></div></div>
   </section>
   <div id="bandAntenna" hidden></div>
   <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
@@ -939,7 +942,11 @@ function renderReadout() {
   const r = S.last;
   const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
   const sub = (id, o) => { $(id).title = o.title; $(id + 'S').textContent = o.s; };
-  const PK = ['#roPkH', '#roPkV', '#roLoV', '#roHiH'];
+  const PK = ['#roPkH', '#roPkV', '#roLo', '#roHi'];
+  // the window names follow the frequency of the result on show (the NVIS name only inside the 160–30 m amateur bands),
+  // also while its far field is still pending, so the name never lags behind the Frequency tile
+  const keys = angleKeys(r);
+  $('#roLoK').textContent = keys.lo; $('#roHiK').textContent = keys.hi;
   if (!r) { ['#roF', '#roZ', '#roSWR', '#roG', '#roFB', '#roRdf', '#roEl', '#roPol'].concat(PK).forEach(i => set(i, '–')); ['#roRdf', '#roPol'].concat(PK).forEach(i => sub(i, { title: '', s: '' })); $('#roGS').textContent = ''; return; }
   set('#roF', fmt(r.f, 3) + ' <small>MHz</small>');
   set('#roZ', fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1));
@@ -964,12 +971,10 @@ function renderReadout() {
   const rd = rdfReadout(r), po = polReadout(r);
   set('#roRdf', rd.v); sub('#roRdf', rd);
   set('#roPol', po.v); sub('#roPol', po);
-  // H and V peaks, each over the whole pattern and in its own direction; low-angle V and high-angle H in stated windows
+  // H and V peaks, each over the whole pattern and in its own direction; then H and V together in the stated low and
+  // high windows, with the component of this result's own polarization class highlighted
   const pk = peakReadouts(r);
-  PK.forEach((id, i) => { const o = pk[i]; set(id, o.v); sub(id, o); });
-  const w = r.sum && r.sum.peaks ? r.sum.peaks.windows : MM_WINDOWS;
-  $('#roLoVK').textContent = 'Low-angle V ' + w.low[0] + '–' + w.low[1] + '° · DX';
-  $('#roHiHK').textContent = 'High-angle H ' + w.high[0] + '–' + w.high[1] + '° · NVIS';
+  PK.forEach((id, i) => { const o = pk[i]; set(id, o.v, o.cls); sub(id, o); });
 }
 
 /* ---------------- tables ---------------- */
@@ -1970,6 +1975,8 @@ function patSummaryHtml(rows) {
   const hv = rows.some(r => r.sum.hv), m = hv ? rows.find(r => r.sum.hv).sum.hv : null;
   const lo = m && m.low.el0 + '–' + m.low.el1 + '°', hi = m && m.high.el0 + '–' + m.high.el1 + '°', mg = m && m.margin;
   const pol = h => (h.low.dominant ? h.low.dominant + ' dominant' : 'neither dominates');
+  // rows whose frequency lies inside an amateur band from 160 m to 30 m: only there is the high band called NVIS
+  const hvRows = rows.filter(r => r.sum.hv), nv = hvRows.filter(r => lowBandOf(r.f));
   const fav = h => (h.favoured ? h.favoured + ' angles favoured' : 'neither favoured');
   const body = rows.map(r => {
     const s = r.sum, h = s.hv, q = s.uncertain ? '≈ ' : '';
@@ -1991,7 +1998,11 @@ function patSummaryHtml(rows) {
     '</tr></thead><tbody>' + body + '</tbody></table></div>' +
     '<p class="hint"><b>Max gain</b> is the largest total-field gain (H and V power together) over all directions; <b>F/B</b> compares it with the direction 180° away in azimuth at the same elevation, so for a maximum near the zenith it is close to 0 dB and says little. ' +
     (hv ? '<b>Low ' + lo + '</b> and <b>high ' + hi + '</b> cover all azimuths; every mean is a mean of linear power weighted by solid angle. V or H “dominant” and high or low “favoured” appear only for a difference of at least ' + mg + ' dB; otherwise neither is claimed. ' +
-      'The high band holds the angles a near-vertical (NVIS) path would use: a candidate figure, not a propagation prediction, since the ionosphere is not modelled. Close to the zenith both components are horizontal fields, so the high band uses the total. ' : '') +
+      'The high band is a high-angle antenna figure: how much the pattern sends upward. ' +
+      (nv.length ? 'At ' + nv.map(r => fmt(r.f, 3) + ' MHz (' + bandLabel(lowBandOf(r.f)) + ')').join(', ') + ', inside the amateur bands from 160 m to 30 m, it holds the angles a near-vertical (NVIS) local or regional skywave path would use: a candidate figure, not a propagation prediction, since the ionosphere is not modelled; it is not ground wave and promises no coverage. ' +
+        (nv.length < hvRows.length ? 'The other rows lie outside those bands and are not called NVIS. ' : '')
+        : 'No row lies inside the amateur bands from 160 m to 30 m (' + lowBandPlan().text + '), so it is not called NVIS here; it is not a propagation prediction either. ') +
+      'Close to the zenith both components are horizontal fields, so the high band uses the total. ' : '') +
     '<b>RDF</b> = gain toward the maximum minus the mean gain over the assumed noise directions' + (hv ? '; the two columns assume different noise and are not comparable in absolute value' : '') + '. It describes the pattern shape, not real noise.' +
     (why.length ? ' <b>≈ approximate:</b> ' + why.join('; ') + '.' : '') + '</p>';
 }
@@ -2036,36 +2047,88 @@ function rdfReadout(r) {
       (low ? ' Low-angle noise: the same direction against noise from 0–30° elevation only, a different assumption that cannot be compared with the all-sky figure.' : '') +
       ' It describes the pattern shape and is not a signal-to-noise prediction. F/B is a separate figure: two directions only.' };
 }
-/* The four peak tiles of the readout, read from r.sum.peaks (MM.componentPeaks): H and V each over the whole visible
-   pattern, V in the low window and H in the high window. Each is the largest value of that one component, found on
-   its own, in its own direction; none is derived from Max gain (the total field) or from the other component, and no
-   tile compares H with V. "DX" and "NVIS" only name the windows: the figures say how strongly the pattern radiates
-   that component at those elevations, not that a path exists there (the ionosphere is not modelled). */
+/* amateur HF bands per IARU region: [low MHz, high MHz, name] */
+const HF_COMMON = [[10.1, 10.15, '30m'], [14.0, 14.35, '20m'], [18.068, 18.168, '17m'], [21.0, 21.45, '15m'], [24.89, 24.99, '12m'], [28.0, 29.7, '10m']];
+const HAM_BANDS = {
+  1: [[1.81, 2.0, '160m'], [3.5, 3.8, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.2, '40m']].concat(HF_COMMON),
+  2: [[1.8, 2.0, '160m'], [3.5, 4.0, '80m'], [5.3305, 5.4065, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON),
+  3: [[1.8, 2.0, '160m'], [3.5, 3.9, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON)
+};
+/* Naming of the high-angle window. It is called NVIS only inside the amateur bands from 160 m to 30 m of the selected
+   band plan (160, 80, 60, 40 and 30 m, band edges included). The frequencies between those bands are not amateur
+   allocations and get no such name, and neither does anything above 30 m. The figures are shown at every frequency;
+   only the name is withheld. */
+const LOW_BAND_NAMES = ['160m', '80m', '60m', '40m', '30m'];
+const bandLabel = b => b[2].replace(/m$/, ' m');
+function lowBandPlan() {
+  const el = typeof $ === 'function' ? $('#swRegion') : null, region = el && HAM_BANDS[el.value] ? +el.value : 1;
+  const bands = HAM_BANDS[region].filter(b => LOW_BAND_NAMES.includes(b[2])), mhz = x => x.toFixed(4).replace(/0$/, '');
+  return { region, bands, text: 'IARU Region ' + region + ': ' + bands.map(b => bandLabel(b) + ' ' + mhz(b[0]) + '–' + mhz(b[1])).join(', ') + ' MHz' };
+}
+function lowBandOf(f) { return Number.isFinite(f) ? lowBandPlan().bands.find(b => f >= b[0] - 1e-9 && f <= b[1] + 1e-9) || null : null; }
 const MM_WINDOWS = { low: [5, 30], high: [60, 90] };
+// names of the two window tiles for a result (or none): the windows, and NVIS with the band when the frequency is in one
+function angleKeys(r) {
+  const W = r && r.sum && r.sum.peaks ? r.sum.peaks.windows : MM_WINDOWS;
+  const free = !r || r.ground === 0 || (r.sum && !r.sum.hasGround), b = free ? null : lowBandOf(r.f);
+  return { lo: 'Low-angle ' + W.low[0] + '–' + W.low[1] + '° · DX', hi: 'High-angle ' + W.high[0] + '–' + W.high[1] + '°' + (b ? ' · NVIS ' + bandLabel(b) : '') };
+}
+/* The four peak tiles of the readout, read from r.sum.peaks (MM.componentPeaks). Each figure is the largest value of
+   one component, found on its own, in its own direction; none is derived from Max gain (the total field).
+   - H peak, V peak: over the whole visible pattern.
+   - Low-angle (DX) and high-angle tiles: H and V side by side in the stated window. The component that matches the
+     polarization class of THIS result (r.sum.pol.kind, from the modelled pattern at this frequency) is highlighted:
+     H for a mostly-H result, V for a mostly-V one, neither for Mixed H+V. No polarization is assumed for any angle,
+     band or antenna type, and the other component stays on show.
+   "DX" and "NVIS" only name the windows: the figures say how strongly the pattern radiates at those elevations, not
+   that a path exists there (the ionosphere is not modelled). */
 function peakReadouts(r) {
   const s = r && r.sum, P = s && s.peaks, why = s ? approxWhy(s) : [], q = s && s.uncertain ? '≈ ' : '';
   const W = P ? P.windows : MM_WINDOWS, ap = why.length ? 'Approximate: ' + why.join('; ') + '. ' : '';
   const NAME = { h: 'H (φ)', v: 'V (θ)' };
   const where = p => (p.el >= 90 - 1e-9 ? fmt(p.el, 1) + '° el (zenith)' : fmt(p.el, 1) + '° el, ' + fmt(p.az, 1) + '° az');
-  const one = (p, c, win, label) => {
-    const span = win ? win[0] + '–' + win[1] + '° elevation, all azimuths' : (s.hasGround ? 'the whole visible pattern, horizon to zenith, all azimuths' : 'the whole pattern, the full sphere (free space)');
-    const intro = (label ? label + ' names this window only. ' : '') + 'Largest ' + NAME[c] + ' gain over ' + span + ', searched for this component on its own (1° × 4° sky grid, then refined on the pattern to 0.25°' + (win ? ' without leaving the window' : '') + '). ';
-    if (!p) return { v: 'none', s: win ? 'no ' + c.toUpperCase() + ' power in ' + win[0] + '–' + win[1] + '°' : 'no ' + c.toUpperCase() + ' power', title: ap + intro + 'This component carries no power there.' };
-    // on a window limit the component still rises beyond it; the zenith and the horizon over ground have nothing beyond
-    const edge = win && ((Math.abs(p.el - win[0]) < 1e-9 && win[0] > (s.hasGround ? 0 : -90)) || (Math.abs(p.el - win[1]) < 1e-9 && win[1] < 90));
-    return { v: q + fmt(p.db, 2) + ' <small>dBi</small>', s: (win ? win[0] + '–' + win[1] + '° window · ' : '') + where(p),
-      title: ap + intro + 'Found at ' + fmt(p.el, 2) + '° elevation' + (p.el >= 90 - 1e-9 ? ' (the zenith: every azimuth is the same direction there, the azimuth ' + fmt(p.az, 2) + '° only orients θ and φ)' : ', ' + fmt(p.az, 2) + '° azimuth') + '. ' +
-        (edge ? 'That is the edge of the window: the component is still larger just outside it. ' : '') +
-        'Max gain is a different figure: the total field, H and V power together, toward its own maximum; this peak is generally in another direction. ' +
+  const found = p => fmt(p.el, 2) + '° elevation' + (p.el >= 90 - 1e-9 ? ' (the zenith: every azimuth is the same direction there, the azimuth ' + fmt(p.az, 2) + '° only orients θ and φ)' : ', ' + fmt(p.az, 2) + '° azimuth');
+  // on a window limit the component still rises beyond it; the zenith and the horizon over ground have nothing beyond
+  const onEdge = (p, win) => (Math.abs(p.el - win[0]) < 1e-9 && win[0] > (s.hasGround ? 0 : -90)) || (Math.abs(p.el - win[1]) < 1e-9 && win[1] < 90);
+  const tail = 'Max gain is a different figure: the total field, H and V power together, toward its own maximum; ';
+  const one = (p, c) => {
+    const span = s.hasGround ? 'the whole visible pattern, horizon to zenith, all azimuths' : 'the whole pattern, the full sphere (free space)';
+    const intro = 'Largest ' + NAME[c] + ' gain over ' + span + ', searched for this component on its own (1° × 4° sky grid, then refined on the pattern to 0.25°). ';
+    if (!p) return { v: 'none', s: 'no ' + c.toUpperCase() + ' power', title: ap + intro + 'This component carries no power there.' };
+    return { v: q + fmt(p.db, 2) + ' <small>dBi</small>', s: where(p),
+      title: ap + intro + 'Found at ' + found(p) + '. ' + tail + 'this peak is generally in another direction. ' +
         (p.el >= 60 ? 'At this elevation θ and φ are both nearly horizontal fields in space, and which one is called H or V depends on the azimuth. ' : '') +
-        (label ? 'It is a pattern figure, not a statement that ' + (label === 'NVIS' ? 'an ' : 'a ') + label + ' path exists or that one component dominates: the ionosphere is not modelled. ' : '') +
         'H and V are components of the whole antenna’s field, not of single wires.' };
+  };
+  // H and V in one window; `high` adds the NVIS naming rule and what the figure is not
+  const pair = (pH, pV, win, high) => {
+    const span = win[0] + '–' + win[1] + '°', pol = s.pol, kind = pol && pol.kind, hl = kind === 'H' ? 'h' : kind === 'V' ? 'v' : null;
+    const band = high ? lowBandOf(r.f) : null, plan = high ? lowBandPlan() : null, at = fmt(r.f, 3) + ' MHz';
+    const val = (p, c) => '<span' + (hl ? ' class="' + (hl === c ? 'hl' : 'dim') + '"' : '') + '>' + c.toUpperCase() + ' ' + (p ? fmt(p.db, 2) : 'none') + '</span>';
+    const dirs = [[pH, 'h'], [pV, 'v']].map(([p, c]) => c.toUpperCase() + ' ' + (p ? where(p) : 'no power')).join(' · ');
+    const pc = x => Math.round(100 * x), split = pol && pol.share ? ' (H ' + pc(pol.share.h) + ' %, V ' + (100 - pc(pol.share.h)) + ' % of the radiated power over all directions)' : '';
+    const mark = hl ? polLabel(pol) + ': ' + hl.toUpperCase() + ' highlighted' : kind === 'mixed' ? 'Mixed H+V: neither highlighted' : 'no polarization class: neither highlighted';
+    const whyMark = hl ? 'Highlighted: ' + NAME[hl] + ', because the modelled polarization of this antenna at ' + at + ' is ' + polLabel(pol) + split + '; the other component stays on show. '
+      : kind === 'mixed' ? 'Neither is highlighted: the modelled polarization of this antenna at ' + at + ' is Mixed H+V' + split + ', so both are shown alike. '
+        : 'Neither is highlighted: no polarization class could be made for this result. ';
+    const naming = !high ? 'DX names this window only. '
+      : band ? 'NVIS names this window only, and only inside the amateur bands from 160 m to 30 m (' + plan.text + '); ' + at + ' is in the ' + bandLabel(band) + ' band. '
+        : 'Not called NVIS: ' + at + ' is outside the amateur bands from 160 m to 30 m (' + plan.text + '), the only frequencies where this window gets that name; the frequencies between those bands are not amateur allocations. ';
+    const what = high ? 'a high-angle antenna figure for the elevations a local or regional skywave (near-vertical incidence) path would use. It is not a propagation prediction: the ionosphere is not modelled, so no coverage is promised. It is not ground wave either, which travels along the ground and not through this window. '
+      : 'a low-angle antenna figure. It is not a statement that a DX path exists: the ionosphere is not modelled. ';
+    const intro = naming + 'Largest H (φ) and largest V (θ) gain over ' + span + ' elevation, all azimuths, each searched on its own (1° × 4° sky grid, then refined on the pattern to 0.25° without leaving the window): ' + what;
+    const each = [[pH, 'h'], [pV, 'v']].map(([p, c]) => NAME[c] + ': ' + (p ? fmt(p.db, 2) + ' dBi at ' + found(p) + (onEdge(p, win) ? ', the edge of the window: this component is still larger just outside it' : '') : 'no power in this window') + '. ').join('');
+    const note = high ? (band ? ' · skywave angles, not ground wave or coverage' : ' · no NVIS name outside the 160–30 m amateur bands') : '';
+    return { v: (pH || pV ? q : '') + val(pH, 'h') + ' · ' + val(pV, 'v') + (pH || pV ? ' <small>dBi</small>' : ''), cls: 'two', s: mark + ' · ' + dirs + note,
+      title: ap + intro + each + whyMark + 'The highlight follows this model at this frequency; it is not a rule about which polarization these angles need. ' +
+        (high ? 'At these elevations θ and φ are both nearly horizontal fields in space, and which one is called H or V depends on the azimuth. ' : '') +
+        tail + 'these peaks are generally in other directions. H and V are components of the whole antenna’s field, not of single wires.' };
   };
   if (!P) { const t = 'Not available for this result: ' + noSummary(s); return [0, 1, 2, 3].map(() => ({ v: 'n/a', s: '', title: t })); }
   const noGround = win => ({ v: 'n/a', s: 'needs a ground', title: 'The ' + win[0] + '–' + win[1] + '° window is a range of elevations above a ground; this model is in free space. The H and V peaks over the whole pattern are given.' });
   return [one(P.h, 'h'), one(P.v, 'v'),
-    s.hasGround ? one(P.lowV, 'v', W.low, 'DX') : noGround(W.low),
-    s.hasGround ? one(P.highH, 'h', W.high, 'NVIS') : noGround(W.high)];
+    s.hasGround ? pair(P.lowH, P.lowV, W.low, false) : noGround(W.low),
+    s.hasGround ? pair(P.highH, P.highV, W.high, true) : noGround(W.high)];
 }
 // vertical and horizontal extent of the modelled conductors (m), from the solved segments [x0, y0, z0, x1, y1, z1, ...]
 function wireRuns(segs) {
@@ -2394,13 +2457,6 @@ function renderSmithInfo(d, z0) {
   });
   cv.addEventListener('pointerleave', () => { if (smithHover !== -1) { smithHover = -1; drawSmith(); } });
 })();
-/* amateur HF bands per IARU region: [low MHz, high MHz, name] */
-const HF_COMMON = [[10.1, 10.15, '30m'], [14.0, 14.35, '20m'], [18.068, 18.168, '17m'], [21.0, 21.45, '15m'], [24.89, 24.99, '12m'], [28.0, 29.7, '10m']];
-const HAM_BANDS = {
-  1: [[1.81, 2.0, '160m'], [3.5, 3.8, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.2, '40m']].concat(HF_COMMON),
-  2: [[1.8, 2.0, '160m'], [3.5, 4.0, '80m'], [5.3305, 5.4065, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON),
-  3: [[1.8, 2.0, '160m'], [3.5, 3.9, '80m'], [5.3515, 5.3665, '60m'], [7.0, 7.3, '40m']].concat(HF_COMMON)
-};
 /* amateur VHF/UHF bands per IARU region (national allocations differ; check yours) */
 const VU_BANDS = {
   1: [[50.0, 52.0, '6m'], [70.0, 70.5, '4m'], [144.0, 146.0, '2m'], [430.0, 440.0, '70cm'], [1240.0, 1300.0, '23cm']],
@@ -2471,7 +2527,8 @@ function updateSweepControls() {
   $('#swPlan').textContent = plan;
 }
 $('#swMode').onchange = updateSweepControls;
-$('#swRegion').onchange = () => { fillRangeOptions(); updateSweepControls(); drawSweep(); };
+// the band plan also decides where the high-angle window is called NVIS (readout tile and Far field summary)
+$('#swRegion').onchange = () => { fillRangeOptions(); updateSweepControls(); drawSweep(); renderReadout(); drawPatterns(); };
 // typing a range by hand means a custom range
 ['#swFrom', '#swTo'].forEach(id => $(id).addEventListener('input', () => { if ($('#swMode').value.startsWith('band:')) $('#swMode').value = 'custom'; }));
 fillRangeOptions();

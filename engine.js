@@ -1525,12 +1525,16 @@
     return { g: best.g, db: dB(best.g), el: best.el, az: best.az, el0: lo, el1: hi };
   }
   /* The peaks the readout shows: H and V each over the whole visible pattern (horizon to zenith over ground, the full
-   * sphere in free space), V over the low window and H over the high window (over ground only: those windows are
-   * elevations above a ground). The window limits travel with the figures so the page prints them, not assumes them. */
+   * sphere in free space), and H and V each over the low window and over the high window (over ground only: those
+   * windows are elevations above a ground). All six come from the same sky grid and the same search (componentPeak).
+   * The window limits travel with the figures so the page prints them, not assumes them. */
   function componentPeaks(grid, opts) {
     const w = Object.assign({}, PEAK_WINDOWS, opts);
-    const out = { h: componentPeak(grid, 'h'), v: componentPeak(grid, 'v'), lowV: null, highH: null, windows: { low: w.low.slice(), high: w.high.slice() } };
-    if (grid.hasGround) { out.lowV = componentPeak(grid, 'v', w.low[0], w.low[1]); out.highH = componentPeak(grid, 'h', w.high[0], w.high[1]); }
+    const out = { h: componentPeak(grid, 'h'), v: componentPeak(grid, 'v'), lowV: null, lowH: null, highH: null, highV: null, windows: { low: w.low.slice(), high: w.high.slice() } };
+    if (grid.hasGround) {
+      out.lowV = componentPeak(grid, 'v', w.low[0], w.low[1]); out.lowH = componentPeak(grid, 'h', w.low[0], w.low[1]);
+      out.highH = componentPeak(grid, 'h', w.high[0], w.high[1]); out.highV = componentPeak(grid, 'v', w.high[0], w.high[1]);
+    }
     return out;
   }
   /* Summary of one analyze() result for the user interface. Flags that make every figure in it approximate:
