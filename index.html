@@ -198,6 +198,11 @@ footer a { color: var(--accent); }
       </select>
       <label class="file"><input type="file" id="fileIn" accept=".maa,.MAA,.txt"><button type="button" id="openBtn">Open .maa</button></label>
       <button type="button" id="saveBtn">Save .maa</button>
+      <select id="swrTuner" aria-label="SWR tuner display" title="SWR colours only. These generic limits give no guarantee of a match.">
+        <option value="none" selected>No tuner</option>
+        <option value="internal">Internal tuner</option>
+        <option value="external">External tuner</option>
+      </select>
       <button type="button" class="primary" id="calcBtn">Calculate</button>
     </div>
   </header>
@@ -937,7 +942,12 @@ function setStatus(kind, text) {
   const ro = $('.readout');
   if (ro) { const old = !!(S.last && S.dirty); ro.classList.toggle('stale', old); ro.title = old ? 'From the last calculation: the model has changed since then. Calculate to update.' : ''; }
 }
-function swrClass(s) { return s <= 1.5 ? 'good' : s <= 2.5 ? 'warn' : 'bad'; }
+function swrClass(s) {
+  const tuner = $('#swrTuner').value;
+  if (tuner === 'internal') return s < 3 ? 'good' : 'bad';
+  if (tuner === 'external') return s < 5 ? 'good' : s < 10 ? 'warn' : 'bad';
+  return s <= 1.5 ? 'good' : s <= 2.5 ? 'warn' : 'bad';
+}
 function renderReadout() {
   const r = S.last;
   const set = (id, html, cls) => { const el = $(id); el.innerHTML = html; el.className = 'v' + (cls ? ' ' + cls : ''); };
@@ -2529,6 +2539,7 @@ function updateSweepControls() {
 $('#swMode').onchange = updateSweepControls;
 // the band plan also decides where the high-angle window is called NVIS (readout tile and Far field summary)
 $('#swRegion').onchange = () => { fillRangeOptions(); updateSweepControls(); drawSweep(); renderReadout(); drawPatterns(); };
+$('#swrTuner').onchange = () => { renderReadout(); renderBands(); renderBandTable(); };
 // typing a range by hand means a custom range
 ['#swFrom', '#swTo'].forEach(id => $(id).addEventListener('input', () => { if ($('#swMode').value.startsWith('band:')) $('#swMode').value = 'custom'; }));
 fillRangeOptions();
