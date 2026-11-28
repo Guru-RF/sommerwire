@@ -74,8 +74,8 @@ test('plate styling: focus ring, readable colours, wraps on narrow screens, touc
 
 test('embed still hides the header and footer, and the change is noted in Help and README without a version', () => {
   assert.match(html, /html\.embed \.wrap > :not\(#bandRes\):not\(#shareNote\):not\(\[data-panel="view"\]\) \{ display: none !important; \}/);
-  const changes = help.slice(help.indexOf('<h2 id="h-changes">'));
-  assert.match(changes.slice(0, changes.indexOf('</ul>')), /<h3>2026-11-28 · Callsign plates in the header<\/h3>/);
+  const changes = section('<h2 id="h-changes">', '<h2 id="h-licence">', help);
+  assert.match(changes, /<h3>2026-11-28 · Callsign plates in the header<\/h3>/);
   assert.match(readme, /\*\*Callsign plates\*\*/);
   assert.doesNotMatch(headnav, /version \d|\bv\d+\.\d+/i);
 });

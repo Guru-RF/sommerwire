@@ -74,8 +74,10 @@ Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apac
   presentation are laid out as before.
 - **Callsign plates**: two Belgian-style callsign plates sit immediately to the left of GitHub in the header. They are
   drawn locally in HTML, CSS and inline SVG. ON9PK Koen Van den Heuvel links to his [QRZ.com page](https://www.qrz.com/db/ON9PK),
-  and ON6URE Joeri Van Dooren links to [on6ure.be](https://on6ure.be/). The footer credits give both full names and callsigns, their roles
-  and the license terms.
+  and ON6URE Joeri Van Dooren links to [on6ure.be](https://on6ure.be/).
+- **App footer**: the Sommerwire mark sits beside links to Help, What changed, fork issues, RF.Guru apps, Shop and
+  Support. The links wrap on narrow screens and sit below the mark on phones. Credits below give both full linked
+  names and callsigns, their roles and the licence terms. The footer is hidden in `?embed=1` mode.
 - **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
   version number.
 
