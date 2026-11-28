@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <title>Sommerwire</title>
 <link rel="icon" href="brand/icon.svg" type="image/svg+xml">
+<script src="theme.js"></script>
 <script>
 // Visitor count (GoatCounter, no cookies): only on the GitHub Pages site.
 if (location.hostname === 'koenvdh.github.io') {
@@ -34,6 +35,18 @@ if (location.hostname === 'koenvdh.github.io') {
   --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --grid: #1d2731;
   --accent: #4fa8dc; --accent-ink: #08131c; --trace2: #f0a040; --trace3: #5cc28a;
   --good: #5cc28a; --warn: #e5b74a; --bad: #f07060; --field: #111921; --sel: #1c3446; --cur-light: 62%; --logo-a: #3b82f6; --logo-b: #22d3ee; --logo-gnd: #56677a; color-scheme: dark; }
+/* Themes: data-skin="rfguru" (default on this fork, always dark, RF.Guru app-family colours) or "koen"
+   (Koen's original look above, following the OS light/dark setting). Canvases read these variables when they draw. */
+html:root[data-skin="rfguru"] {
+  --bg: #08090c; --panel: #13161d; --ink: #e2e8f0; --muted: #8b98ab; --line: #2a303c; --grid: #1c212b;
+  --accent: #ecc34a; --accent-ink: #08090c; --cta: #e5a823; --cta-hover: #ecc34a; --trace2: #5aa9ff; --trace3: #5cc28a;
+  --good: #5cc28a; --warn: #fb923c; --bad: #f87171; --field: #0e1016; --sel: #2b2512; --cur-light: 62%;
+  --logo-a: #e5a823; --logo-b: #ecc34a; --logo-gnd: #4a5466; --rf-blue: #5aa9ff;
+  --f-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: dark;
+}
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -180,10 +193,50 @@ kbd { font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px
 #polDetail:empty { display: none; }
 #patSum h3, #polDetail h3, .bandsum h3 { margin: 0; font-family: var(--f-display); font-size: 14px; font-weight: 600; }
 table.results td.good { color: var(--good); } table.results td.warn { color: var(--warn); } table.results td.bad { color: var(--bad); }
-footer { color: var(--muted); font-size: 12px; max-width: 80ch; display: grid; gap: 6px; }
+footer { color: var(--muted); font-size: 13px; max-width: min(80ch, calc(100vw - 48px)); min-width: 0; display: grid; gap: 8px; }
 footer p { margin: 0; }
-footer .author { color: var(--ink); font-size: 13px; }
+footer .author { color: var(--ink); font-size: 14px; }
 footer a { color: var(--accent); }
+footer details { color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; font-size: 14px; line-height: 1.5; }
+footer summary { padding: 9px 0; color: var(--accent); font-weight: 600; cursor: pointer; }
+footer summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer details h2 { font: 600 15px var(--f-display); margin: 10px 0 4px; }
+footer details ul { margin: 0 0 12px; padding-inline-start: 1.5em; }
+footer details li + li { margin-top: 6px; }
+footer details p { margin-bottom: 12px; }
+/* theme selector (both themes) and the RF.Guru header (hidden in Koen's theme, which keeps its original header) */
+.headnav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
+.skinpick { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.skinpick .seg button { padding: 5px 11px; font-size: 13px; }
+:root[data-skin="rfguru"] .toolbar { flex-basis: 100%; }
+.toolbar { min-width: 0; max-width: 100%; }
+#exampleSel { max-width: 100%; min-width: 0; }
+.wrap { grid-template-columns: minmax(0, 1fr); }   /* a long Examples entry no longer widens the page on a phone */
+.ver a { color: var(--accent); }
+.brand-rf, .ghlink, .verlink { display: none; }
+:root[data-skin="rfguru"] .brand { display: none; }
+:root[data-skin="rfguru"] .brand-rf { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+.brand-rf .rf-mark { width: 40px; height: 40px; flex: none; }
+.brand-rf .rf-text { display: grid; gap: 1px; line-height: 1.2; min-width: 0; }
+.brand-rf h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; color: #fff; }
+.brand-rf h1 b { color: var(--accent); font-weight: 600; }
+.brand-rf .rf-sub { font-size: 11px; font-weight: 500; color: var(--muted); }
+.brand-rf .rf-sub a { color: inherit; text-decoration: none; }
+.brand-rf .rf-sub a:hover { color: #fff; }
+:root[data-skin="rfguru"] .ghlink { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); text-decoration: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+:root[data-skin="rfguru"] .ghlink:hover { border-color: rgb(236 195 74 / 0.5); color: #fff; }
+.ghlink svg { width: 16px; height: 16px; fill: currentColor; }
+:root[data-skin="rfguru"] .verlink { display: inline; }
+:root[data-skin="rfguru"] button, :root[data-skin="rfguru"] select { border-radius: 8px; }
+:root[data-skin="rfguru"] button:hover, :root[data-skin="rfguru"] select:hover { border-color: rgb(236 195 74 / 0.5); }
+:root[data-skin="rfguru"] button.primary { background: var(--cta); border-color: var(--cta); color: #08090c; }
+:root[data-skin="rfguru"] button.primary:hover { background: var(--cta-hover); border-color: var(--cta-hover); }
+:root[data-skin="rfguru"] .seg button:first-child { border-radius: 8px 0 0 8px; }
+:root[data-skin="rfguru"] .seg button:last-child { border-radius: 0 8px 8px 0; }
+:root[data-skin="rfguru"] .readout, :root[data-skin="rfguru"] .card { border-radius: 12px; }
+:root[data-skin="rfguru"] .tab[aria-selected="true"] { color: #fff; }
+:root[data-skin="rfguru"] :focus-visible { outline-color: #ecc34a; }
+:root[data-skin="rfguru"] .helpdoc .box { border-left-color: var(--accent); }
 @media (max-width: 560px) { .ro .v { font-size: 16px; } .brand span { letter-spacing: 0.18em; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -195,6 +248,18 @@ footer a { color: var(--accent); }
   <g opacity="0.28" stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 0 52.50,103.46 M67.50,103.46 A19.00,19.00 0 0 0 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 0 52.50,115.05 M67.50,115.05 A30.00,30.00 0 0 0 90.00,86.00"/><path d="M60.00,90.00 L60.00,114.00" stroke-dasharray="4.00 5.00"/></g>
   <g stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 1 52.50,68.54 M67.50,68.54 A19.00,19.00 0 0 1 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 1 52.50,56.95 M67.50,56.95 A30.00,30.00 0 0 1 90.00,86.00 M19.00,86.00 A41.00,41.00 0 0 1 52.50,45.69 M67.50,45.69 A41.00,41.00 0 0 1 101.00,86.00 M8.00,86.00 A52.00,52.00 0 0 1 52.50,34.54 M67.50,34.54 A52.00,52.00 0 0 1 112.00,86.00"/><path d="M60.00,86.00 L60.00,30.00"/><circle cx="60.00" cy="23.50" r="6.00"/></g>
 </svg><div class="brand-text"><h1>Sommerwire</h1><span>Wire Antenna Modeler</span><small class="ver" id="swVer"></small></div></div>
+    <div class="brand-rf"><svg class="rf-mark" viewBox="0 0 120 120" aria-hidden="true">  <defs><linearGradient id="swrgh" gradientUnits="userSpaceOnUse" x1="10" y1="10" x2="110" y2="100"><stop offset="0" stop-color="#e5a823"/><stop offset="1" stop-color="#ecc34a"/></linearGradient></defs>
+  <rect x="2" y="2" width="116" height="116" rx="26" fill="#13161d" stroke="#ffffff" stroke-opacity="0.14" stroke-width="2"/>
+  <g transform="translate(13 8) scale(0.783)">
+    <path d="M2.00,86.00 L118.00,86.00" stroke="#4a5466" stroke-width="3" stroke-linecap="round"/>
+    <g opacity="0.55" stroke="#5aa9ff" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 0 52.50,103.46 M67.50,103.46 A19.00,19.00 0 0 0 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 0 52.50,115.05 M67.50,115.05 A30.00,30.00 0 0 0 90.00,86.00"/><path d="M60.00,90.00 L60.00,114.00" stroke-dasharray="4.00 5.00"/></g>
+    <g stroke="url(#swrgh)" stroke-width="5.50" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 1 52.50,68.54 M67.50,68.54 A19.00,19.00 0 0 1 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 1 52.50,56.95 M67.50,56.95 A30.00,30.00 0 0 1 90.00,86.00 M19.00,86.00 A41.00,41.00 0 0 1 52.50,45.69 M67.50,45.69 A41.00,41.00 0 0 1 101.00,86.00 M8.00,86.00 A52.00,52.00 0 0 1 52.50,34.54 M67.50,34.54 A52.00,52.00 0 0 1 112.00,86.00"/><path d="M60.00,86.00 L60.00,30.00"/><circle cx="60.00" cy="23.50" r="6.00"/></g>
+  </g>
+</svg><div class="rf-text"><h1>Sommer<b>wire</b></h1><span class="rf-sub"><a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a> edition</span><small class="ver"><span id="swVerRf"></span> · <a href="#h-changes" class="changeslink">What changed</a></small></div></div>
+    <div class="headnav">
+      <div class="skinpick" role="group" aria-labelledby="skinLbl" title="The look of the app and Help only; models and results do not change."><span id="skinLbl">Theme</span><span class="seg"><button type="button" data-skin-btn="rfguru" aria-pressed="false">RF.Guru</button><button type="button" data-skin-btn="koen" aria-pressed="false">Koen (original)</button></span></div>
+      <a class="ghlink" href="https://github.com/Guru-RF/sommerwire" target="_blank" rel="noopener" aria-label="Sommerwire RF.Guru edition on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </div>
     <div class="toolbar">
       <select id="exampleSel" aria-label="Load an example antenna">
         <option value="">Examples…</option>
@@ -483,8 +548,94 @@ footer a { color: var(--accent); }
   </section>
 
   <footer>
-    <p class="author">Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> with the help of Claude Opus 5.5 in November 2026 · free and unencumbered software, released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
-    <p class="author">Contributions by <b><a href="https://on6ure.be" target="_blank" rel="noopener">ON6URE</a> Joeri Van Dooren</b> (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>): the RF.Guru EFHW inverted-L examples with dual-band results, the RF.Guru EFOC29 example with eight-band results, the horizontal + vertical pattern view, the below-ground wire check and the clearing of sweep results after a model edit.</p>
+    <p class="author">This RF.Guru edition of Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> and
+      <b><a href="https://on6ure.be" target="_blank" rel="noopener">ON6URE</a> Joeri Van Dooren</b>
+      (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>).</p>
+    <p>Koen created Sommerwire with Claude Opus 5.5 in November 2026 and maintains the
+      <a href="https://github.com/KoenVdH/sommerwire" target="_blank" rel="noopener">upstream project</a>.
+      Joeri co-developed this edition.</p>
+    <p>Free and unencumbered software released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
+
+    <details>
+      <summary>ON9PK Koen Van den Heuvel · Original app and upstream maintenance</summary>
+      <ul>
+        <li>Wrote the thin-wire solver for feed impedance and radiation patterns, including the Sommerfeld model
+          for wires above lossy soil. <a href="https://github.com/KoenVdH/sommerwire/commit/2019b921" target="_blank" rel="noopener">Original release</a>.</li>
+        <li>Built the 3D wire editor, MMANA-GAL <code>.maa</code> import and export, frequency sweeps, Smith chart
+          and optimizer. The original examples, Help and NEC-2 comparisons gave modellers cases they could reproduce.
+          <a href="https://github.com/KoenVdH/sommerwire/blob/2019b921cf53b97e70b6d8a338b0c403af1a2be9/README.md" target="_blank" rel="noopener">Original feature list and validation</a>.</li>
+        <li>Added lossy transmission lines, ideal baluns and insulated wire, then telescoping tube elements and boom
+          corrections for Yagis. <a href="https://github.com/KoenVdH/sommerwire/commit/f9fbb9c9" target="_blank" rel="noopener">Line and wire models</a> ·
+          <a href="https://github.com/KoenVdH/sommerwire/commit/ee7f8b92" target="_blank" rel="noopener">Tube elements</a>.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>ON6URE Joeri Van Dooren · RF.Guru development and upstream review</summary>
+      <h2>Later work in the RF.Guru edition</h2>
+      <ul>
+        <li>Modelled the EFHW16080 and EFHW8040 inverted-Ls from published dimensions, with results on both bands
+          for each. Added the RF.Guru EFOC29 flat top with a 4:1 unun and a 12 m coax-shield return. Adding 30 m
+          brought its readout to eight bands.
+          <a href="https://github.com/Guru-RF/sommerwire/pull/2" target="_blank" rel="noopener">Inverted-Ls</a> ·
+          <a href="https://github.com/Guru-RF/sommerwire/pull/4" target="_blank" rel="noopener">EFOC29 preset</a> ·
+          <a href="https://github.com/Guru-RF/sommerwire/pull/5" target="_blank" rel="noopener">Eighth band</a>.</li>
+        <li>Overlaid horizontal and vertical patterns, added receiving directivity factor (RDF) and showed each
+          polarization’s peak and direction. The DX (5–30°) and high-angle (60–90°) readouts show H and V side by
+          side and highlight the component favoured by the whole pattern. The high-angle readout uses the NVIS
+          label only within the 160–30 m amateur bands.
+          <a href="https://github.com/Guru-RF/sommerwire/pull/2" target="_blank" rel="noopener">Pattern and editor views</a> ·
+          <a href="https://github.com/Guru-RF/sommerwire/pull/3" target="_blank" rel="noopener">H/V peaks</a> ·
+          <a href="https://github.com/Guru-RF/sommerwire/pull/7" target="_blank" rel="noopener">Angle windows</a>.</li>
+        <li>Made impedance and SWR appear before the far-field pattern finishes. Repeated solves can reuse matching
+          Sommerfeld tables, and large matrices use a blocked factorization.
+          <a href="https://github.com/Guru-RF/sommerwire/pull/6" target="_blank" rel="noopener">Calculation changes and regression tests</a>.</li>
+        <li>Added SWR colour thresholds for operation without a tuner, with an internal tuner or with an external
+          tuner. Added share links that carry the editable antenna model in the URL fragment and recalculate it
+          when opened. <a href="https://github.com/Guru-RF/sommerwire/pull/8" target="_blank" rel="noopener">Tuner colours</a> ·
+          <a href="https://github.com/Guru-RF/sommerwire/pull/9" target="_blank" rel="noopener">Model sharing</a>.</li>
+        <li>Added the RF.Guru theme, the default in this edition, with the Sommerwire mark adapted to RF.Guru colours.
+          Koen’s original look stays selectable as <b>Koen (original)</b>.</li>
+      </ul>
+      <h2>What the initial release got wrong</h2>
+      <ul>
+        <li>Joeri found and reproduced a gain error: a 20 m-band dipole 1 m above average soil showed 10.3 dBi
+          and a pattern implying 1.82 times the input power when the app combined mirror currents with real-ground
+          reflection. Joeri documented the problem and submitted a patch to hide the affected patterns and gain.
+          Koen closed the PR without merging it and applied a different fix by hand in v1.1.1: the app marks the
+          gain approximate (≈) and caps integrated radiated power at the input power.
+          <a href="https://github.com/KoenVdH/sommerwire/pull/1" target="_blank" rel="noopener">Joeri’s report and patch (upstream PR #1)</a> ·
+          <a href="https://github.com/KoenVdH/sommerwire/pull/1#issuecomment-7202269562" target="_blank" rel="noopener">Koen’s confirmation and credit</a> ·
+          <a href="https://github.com/KoenVdH/sommerwire/commit/8a71c60c" target="_blank" rel="noopener">Koen’s v1.1.1 fix</a>.</li>
+        <li>After a model edit, sweep charts and band summaries could still show the previous antenna’s results.
+          Koen merged Joeri’s fix to clear them and discard late results from the old sweep.
+          <a href="https://github.com/KoenVdH/sommerwire/pull/2" target="_blank" rel="noopener">Upstream PR #2</a>.</li>
+        <li>A wire extending below the ground plane could produce numbers after a warning, even though the solver
+          cannot model buried wire. Koen merged Joeri’s check that stops the calculation and identifies the wire
+          when it extends beyond the contact tolerance.
+          <a href="https://github.com/KoenVdH/sommerwire/pull/6" target="_blank" rel="noopener">Upstream PR #6</a>.</li>
+
+        <li>The optimizer could favour a trial that touched ground because switching to the mirror made gain look
+          better. Following Joeri’s report, Koen excluded those trials when a search starts with a full ground solve.
+          <a href="https://github.com/KoenVdH/sommerwire/issues/3" target="_blank" rel="noopener">Upstream issue #3</a> ·
+          <a href="https://github.com/KoenVdH/sommerwire/commit/b4cd485d" target="_blank" rel="noopener">Optimizer fix</a>.</li>
+      </ul>
+      <h2>Model limits and validation</h2>
+      <ul>
+        <li>Joeri compared the fast complex-image approximation with Sommerfeld near the soil and reviewed automatic
+          wire coarsening. Koen independently revised the height warning, displayed effective segment counts and
+          explained how to check a finer mesh.
+          <a href="https://github.com/KoenVdH/sommerwire/commit/a65521f9" target="_blank" rel="noopener">Upstream response to PRs #4, #5, #7 and #8</a>.</li>
+        <li>Joeri found that the first DX Commander comparison used copper in Sommerwire and lossless wire in NEC-2.
+          Koen reran it with matched materials and archived the runs. The remaining difference at the hub limits what
+          that comparison can establish. <a href="help.html#v-nec" target="_blank" rel="noopener">Corrected comparison</a> ·
+          <a href="https://github.com/KoenVdH/sommerwire/commit/e60e5a7a" target="_blank" rel="noopener">Archived evidence</a>.</li>
+      </ul>
+      <h2>Research</h2>
+      <p>Joeri studied the EFOC29 on a 10 m mast using above-soil substitutes for a buried coax return. The preferred
+        feed height changed with the substitute, so the study yielded no mast preset.
+        <a href="https://github.com/Guru-RF/sommerwire/blob/58586b2d0cdb13c25a20329bb1a04650e3583837/validation/efoc29-mast/README.md" target="_blank" rel="noopener">Mast study and results</a>.</p>
+    </details>
+    <p><a href="#h-changes" class="changeslink">What changed</a> · <a href="CONTRIBUTION-HISTORY.md" target="_blank" rel="noopener">Detailed contribution history</a> · <a href="https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain" target="_blank" rel="noopener">Live history of merged RF.Guru pull requests</a></p>
     <p>Sommerwire is an independent thin-wire moment-method solver in the MININEC style (pulse currents at nodes, reduced kernel, image ground). It reads and writes the plain-text .maa layout used by MMANA-GAL so you can bring models across, but it is not MMANA-GAL and its numbers can differ slightly. The optimizer is a bounded Nelder–Mead search, restarted with smaller steps.</p>
   </footer>
 </div>
@@ -2692,7 +2843,20 @@ function showTab(name) {
 $$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 window.addEventListener('resize', () => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
 if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.("change", () => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); });
-new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
+// the theme switch itself is wired by theme.js; here only the note when the browser will not keep the choice
+document.querySelectorAll('[data-skin-btn]').forEach(b => b.addEventListener('click', () => setTimeout(() => {   // after theme.js saved it
+  let kept = true; try { kept = localStorage.getItem(SWTheme.KEY) === b.dataset.skinBtn; } catch (e) { kept = false; }
+  $('.skinpick').title = kept ? 'The look of the app and Help only; models and results do not change.'
+    : 'Theme changed for this page only: this browser blocks site storage, so the next visit starts in RF.Guru.';
+})));
+// "What changed" (header and footer): the dated change notes in Help
+async function showChanges(e) {
+  if (e) e.preventDefault();
+  showTab('help'); await loadHelp();
+  const t = $('#helpBox #h-changes'); if (t) t.scrollIntoView({ block: 'start' });
+}
+$$('.changeslink').forEach(a => a.addEventListener('click', showChanges));
 
 /* ---------------- optimizer ---------------- */
 const VTYPES = [['len-c', 'Length, centre fixed'], ['len-b', 'Length, begin fixed'], ['pos', 'Move wire'], ['end', 'Move wire end'], ['load', 'Load value']];
@@ -2999,8 +3163,8 @@ async function openShared(hash, atStart) {
 
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.5.0', SW_DATE = '2026-11-28';
-$('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
+const SW_VERSION = '1.6.0', SW_DATE = '2026-11-28';
+$('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerRf').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
 startWorker().finally(async () => {
   // a share link (#sw=…) opens its model; any other fragment (or none) is the ordinary start
   const shared = SWShare.isShareHash(location.hash) && await openShared(location.hash, true);

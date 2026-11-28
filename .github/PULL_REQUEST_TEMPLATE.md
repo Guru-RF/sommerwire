@@ -1,9 +1,9 @@
-## Attribution checklist (review per merge)
+## Attribution checklist for every merge
 
-- [ ] Creator credit untouched: "made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026" in `README.md`, `help.html` (Author and licence) and the `index.html` footer.
-- [ ] Contributor credit reads "ON6URE Joeri Van Dooren (RF.Guru)" with **ON6URE linked to <https://on6ure.be>** in `README.md`, `help.html` (Author and licence) and the `index.html` footer.
-- [ ] [`CONTRIBUTION-HISTORY.md`](../CONTRIBUTION-HISTORY.md) updated: one linked entry per pull request with date, record link and status (**merged** / **independently adopted** / **unmerged** / **research**), and the "current verified work" entry moved up if this merge supersedes it. Record only what read-only `gh` and `git` show — no speculative ownership.
-- [ ] `LICENSE` untouched, byte-for-byte.
-- [ ] Links and HTML checked (new/changed URLs resolve; markup balanced) and `node --test tests/` passes.
-
-This checklist is manual and repo-local; no automation writes to this repository.
+- [ ] Reconcile the [contribution ledger](https://github.com/Guru-RF/sommerwire/blob/main/CONTRIBUTION-HISTORY.md) with the [live RF.Guru merges into main](https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain) and `git log --first-parent origin/main`. Link this PR and describe its contribution and observed state. Fill in the UTC date and merge commit for any preceding entry that has since merged.
+- [ ] Review both disclosures in the `index.html` footer. Update the relevant person’s list and evidence links when this merge adds a contribution or changes an outcome. Identify the repository, credit reports and independent implementations separately, and label study results as research.
+- [ ] Check the opening RF.Guru edition credits in the footer, `README.md` and `help.html`. ON9PK Koen Van den Heuvel comes first, followed by [ON6URE](https://on6ure.be) Joeri Van Dooren (RF.Guru). The roles identify Koen as the creator of the November 2026 app with Claude Opus 5.5 and upstream maintainer, and Joeri as co-developer of this edition.
+- [ ] Preserve `LICENSE` byte-for-byte. Check the evidence links, public-domain licence link and dynamic footer version. Both disclosures start collapsed and operate independently with the keyboard. Run `node --test tests/` and `git diff --check`.
+- [ ] Before deploying, review `README.md` (features, themes, credits and the fork and upstream links), both footer contribution disclosures and the [contribution ledger](../CONTRIBUTION-HISTORY.md).
+- [ ] Check both theme views, **RF.Guru** (default on a first visit) and **Koen (original)** in OS light and dark, on desktop and phone widths, in the app, the in-app Help tab and standalone `help.html`. The choice must survive a reload and fall back to RF.Guru when site storage is blocked.
+- [ ] Add a dated entry to **What changed** in `help.html` for any user-facing change, bump `SW_VERSION` and `SW_DATE` in `index.html`, and cite only pull requests that already exist.
