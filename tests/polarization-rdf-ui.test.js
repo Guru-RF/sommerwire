@@ -295,7 +295,7 @@ test('editor: the mini cuts follow the same view, against the same reference', (
   const { nodes, ctx } = editor('hv', null); ctx.drawEdPolar();
   assert.equal(nodes['#edPolTxt'].textContent, '');
   // an example that opens in H + V on the Far field tab opens the editor the same way; the existing switch is kept
-  const ex = section("$('#exampleSel').onchange", "$('#openBtn')");
+  const ex = section('// open an example exactly as the Examples menu does', "$('#openBtn')");
   assert.match(ex, /if \(ex\.pol\) \$\('#polSel'\)\.value = ex\.pol/);
   assert.match(ex, /\$\('#edPol'\)\.value = ex\.pol/);
 });
@@ -393,5 +393,5 @@ test('the footer has two independent, initially collapsed credits and links to t
   }
   assert.match(footer, /href="https:\/\/github\.com\/Guru-RF\/sommerwire\/pulls\?[^"]*is%3Amerged/);
   assert.match(footer, /href="https:\/\/unlicense\.org"/);
-  assert.match(footer, /<span id="swVerFoot"><\/span>/);
+  assert.doesNotMatch(footer, /swVer|version \d/i, 'the footer shows no edition version');
 });

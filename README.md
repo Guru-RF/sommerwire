@@ -57,12 +57,12 @@ Sommerwire is free and unencumbered software, released into the public domain un
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 
-- **Themes**: **RF.Guru** (the default in this edition: dark, RF.Guru gold actions and links, the Sommerwire mark in
-  RF.Guru colours and a GitHub link in the header) and **Koen (original)**, Sommerwire's original look, which follows
-  the system light or dark setting. Pick one with **Theme** at the top right of the app or of the standalone Help page;
-  the browser remembers it where site storage is allowed. Only the look changes: models, results, share links and
-  `.maa` files are identical in both.
-- **What changed**: dated change notes in Help (linked from the version under the name and from the footer).
+- **RF.Guru theme**: the only look of this edition, in the app and the standalone Help page: dark, RF.Guru gold
+  actions and links, the Sommerwire mark in RF.Guru colours and a GitHub link in the header. There is no theme switch.
+- **Opens on the RF.Guru EFOC29**: an ordinary visit loads and calculates the eight-band RF.Guru EFOC29 example, the
+  same model as in the Examples menu. A share link, an opened `.maa` file or another example replaces it.
+- **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
+  version number.
 
 ## Source and upstream
 
