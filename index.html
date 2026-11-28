@@ -11,6 +11,11 @@ if (location.hostname === 'koenvdh.github.io') {
   document.head.appendChild(gc);
 }
 </script>
+<script>
+// ?embed=1 (before any #sw= share fragment): the read-only presentation for other sites, set before the page draws.
+// It reads only this flag; the model still comes from the share fragment, or is the default example.
+if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.classList.add('embed');
+</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,9 +88,14 @@ label.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .ro .v, .ro .s { transition: opacity 0.15s; }
 .readout.stale .v, .readout.stale .s { opacity: 0.5; transition-delay: 0.6s; }
 .v.good { color: var(--good); } .v.warn { color: var(--warn); } .v.bad { color: var(--bad); }
-.bandres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12.5px; color: var(--muted); }
+#bandAntenna { font-family: var(--f-display); font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+#bandAntenna:not([hidden]) + .bandres { margin-top: -8px; }
+/* the band strip: the label on its own row under the antenna name, the buttons in equal columns that start at the
+   same place on every row (one column on a narrow screen), the note on its own row */
+.bandres { display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); min-width: 0; }
 .bandres .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
-.bandres button { font-family: var(--f-mono); font-size: 12px; padding: 3px 9px; font-variant-numeric: tabular-nums; }
+.bandgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 34em), 1fr)); gap: 6px 8px; min-width: 0; }
+.bandres button { font-family: var(--f-mono); font-size: 12px; padding: 3px 9px; font-variant-numeric: tabular-nums; text-align: left; min-width: 0; overflow-wrap: anywhere; }
 .bandres button.on { border-color: var(--accent); }
 .bandres .good { color: var(--good); } .bandres .warn { color: var(--warn); } .bandres .bad { color: var(--bad); }
 .status { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); min-height: 20px; flex-wrap: wrap; }
@@ -228,6 +238,20 @@ footer details p { margin-bottom: 12px; }
 :root[data-skin="rfguru"] .helpdoc .box { border-left-color: var(--accent); }
 @media (max-width: 560px) { .ro .v { font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* the presentation (?embed=1): the band pickers in one row and the turning 3D view filling the frame, nothing else */
+html.embed, html.embed body { height: 100%; margin: 0; overflow: hidden; }
+html.embed .wrap { height: 100%; max-width: none; padding: 4px; display: flex; flex-direction: column; gap: 4px; }
+html.embed .wrap > :not(#bandRes):not(#shareNote):not([data-panel="view"]) { display: none !important; }
+html.embed .bandres { gap: 3px; flex: none; }
+html.embed .bandres .k { font-size: 10.5px; }
+html.embed .bandgrid { display: flex; flex-wrap: nowrap; gap: 3px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+html.embed .bandres button { flex: 1 0 auto; font-size: 11px; padding: 4px 2px; text-align: center; overflow-wrap: normal; white-space: nowrap; }
+html.embed .sharenote { flex: none; font-size: 12px; padding: 4px 8px; }
+html.embed [data-panel="view"] { flex: 1 1 auto; min-height: 0; display: block; }
+html.embed [data-panel="view"] > .card { height: 100%; padding: 0; border: 0; background: none; display: block; }
+html.embed [data-panel="view"] .card > :not(.edgrid), html.embed .edside, html.embed #edCoord { display: none !important; }
+html.embed .edgrid { display: block; height: 100%; }
+html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-action: pan-y; }
 </style>
 
 <div class="wrap">
@@ -578,6 +602,9 @@ footer details p { margin-bottom: 12px; }
           <a href="https://github.com/Guru-RF/sommerwire/pull/9" target="_blank" rel="noopener">Model sharing</a>.</li>
         <li>Added the RF.Guru theme, with the Sommerwire mark adapted to RF.Guru colours. It is now the only theme
           in this edition, and a fresh visit opens the RF.Guru EFOC29 example.</li>
+        <li>Added an embeddable 3D view for product pages: <code>?embed=1</code> shows only the band pickers and the
+          turning antenna, for the EFOC29 or any share link. Put the band strip in aligned columns under the antenna
+          name.</li>
       </ul>
       <h2>What the initial release got wrong</h2>
       <ul>
@@ -1335,7 +1362,8 @@ async function calculate(opts) {
     const mirrorNote = r.ground === 2 && r.earthed && r.earthed.length ? ' · impedance over the perfect mirror because ' + r.earthed.slice(0, 4).map(w => 'w' + (w + 1)).join(', ') + (r.earthed.length > 4 ? ' …' : '') + (r.earthed.length > 1 ? ' touch' : ' touches') + ' the ground' : '';
     setStatus(S.dirty ? 'stale' : 'ok', (live ? 'Live while editing · ' : '') + r.nseg + ' segments, ' + r.N + ' unknowns, ' + (band ? 'from the band results' : Math.round(r.ms) + ' ms') + mirrorNote + (r.warnings.length ? ' · ' + r.warnings.length + ' warning(s) on the Calculate tab' : ''));
     showWarnings(r.warnings);
-    if (!live && !S.dirty) await calcBands(model, key, r);
+    // the presentation shows no band results: it solves only the frequency on show
+    if (!live && !S.dirty && !isEmbed()) await calcBands(model, key, r);
   } catch (e) {
     // the impedance may already be on screen; then only its far field is missing, and the views say so
     if (S.last && S.last.stage === 'z') { S.last.detailError = e.message; renderReadout(); drawView(); drawPatterns(); drawEdPolar(); }
@@ -1397,26 +1425,56 @@ async function calcBands(model, key, main) {
   drawPatterns();
 }
 function renderBands() {
-  const box = $('#bandRes'), fl = (S.model && S.model.bands) || [];
+  const box = $('#bandRes'), embed = isEmbed(), fl = bandFreqs(embed);
   const title = $('#bandAntenna');
-  title.textContent = fl.length ? (S.model.name || '').trim() : '';
+  title.textContent = fl.length && !embed ? (S.model.name || '').trim() : '';
   title.hidden = !title.textContent;
   box.hidden = !fl.length;
   if (!fl.length) { box.innerHTML = ''; return; }
+  const on = f => Math.abs(f - S.calcFreq) < 1e-9;
+  // the presentation (?embed=1): one row of short band names; the frequency is in the title and the accessible name
+  if (embed) {
+    box.innerHTML = '<span class="k" id="bandsK">Bands</span><div class="bandgrid" role="group" aria-labelledby="bandsK">' + fl.map(f => {
+      const b = bandOf(f), name = b ? b[2] : '', mhz = +f.toFixed(4) + ' MHz', full = (name ? name.replace(/m$/, ' m') + ', ' : '') + mhz;
+      return '<button type="button"' + (on(f) ? ' class="on"' : '') + ' aria-pressed="' + on(f) + '" data-band="' + f + '" title="' + full + '" aria-label="' + full + '">' + (name || +f.toFixed(3)) + '</button>';
+    }).join('') + '</div>';
+    return;
+  }
   const rows = S.bandRes && S.bandRes.rows;
   const z = r => fmt(r.R, 1) + (r.X >= 0 ? ' + j' : ' − j') + fmt(Math.abs(r.X), 1) + ' Ω';
   // F/B and RDF per band, each toward that band's own total-field maximum; RDF needs the angle summary (n/a without one)
   const rdf = r => { const s = r.sum, v = s && s.rdf && s.rdf.sky ? s.rdf.sky.rdf : null; return 'RDF ' + (v == null ? 'n/a' : (s.uncertain ? '≈ ' : '') + fmt(v, 2) + ' dB'); };
   const pat = r => (Number.isFinite(r.fb) ? ' · F/B ' + fmt(r.fb, 1) + ' dB · ' + rdf(r) : '');
-  box.innerHTML = '<span class="k">Bands</span>' + fl.map((f, i) => {
+  // the label on its own row, the band buttons in a grid of equal columns below it, the note on a row of its own
+  box.innerHTML = '<span class="k" id="bandsK">Bands</span><div class="bandgrid" role="group" aria-labelledby="bandsK">' + fl.map((f, i) => {
     const r = rows && rows[i];
-    return '<button type="button"' + (Math.abs(f - S.calcFreq) < 1e-9 ? ' class="on"' : '') + ' data-band="' + f + '" title="Use ' + f + ' MHz as the calculation frequency">' + f + ' MHz' +
+    return '<button type="button"' + (on(f) ? ' class="on"' : '') + ' aria-pressed="' + on(f) + '" data-band="' + f + '" title="Use ' + f + ' MHz as the calculation frequency">' + f + ' MHz' +
       (r ? ' · SWR <span class="' + swrClass(r.swr) + '">' + (Number.isFinite(r.swr) && r.swr < 100 ? fmt(r.swr, 2) : '> 99') + '</span> · ' + z(r) + pat(r) : ' · –') + '</button>';
-  }).join('') + (rows ? (rows.some(r => r && Number.isFinite(r.fb)) ? '<span title="RDF assumes the wanted signal arrives from the total-field maximum of that band and noise from the whole visible sky, even per solid angle, unpolarized. ≈: approximate pattern; n/a: no figure. F/B compares that maximum with the opposite azimuth at the same elevation.">RDF: all-sky noise, toward each band’s own maximum</span>' : '') : '<span>Not calculated for the current model yet.</span>');
+  }).join('') + '</div>' + (rows ? (rows.some(r => r && Number.isFinite(r.fb)) ? '<span class="note" title="RDF assumes the wanted signal arrives from the total-field maximum of that band and noise from the whole visible sky, even per solid angle, unpolarized. ≈: approximate pattern; n/a: no figure. F/B compares that maximum with the opposite azimuth at the same elevation.">RDF: all-sky noise, toward each band’s own maximum</span>' : '') : '<span class="note">Not calculated for the current model yet.</span>');
 }
+/* The embeddable presentation (index.html?embed=1, see README "Embedding"): the class is set in <head> before the
+   page draws. It shows only the band pickers and the turning 3D view of the same model and solver. */
+function isEmbed() { return typeof document !== 'undefined' && !!document.documentElement && !!document.documentElement.classList && document.documentElement.classList.contains('embed'); }
+// the band buttons: the model's bands; the presentation also offers the frequency a link opened with when it is not one
+// of them (or is the only frequency of a single-band model), so every share link has a picker for what it shows
+function bandFreqs(embed) {
+  const fl = ((S.model && S.model.bands) || []).slice(), f0 = S.embedF0;
+  if (embed && Number.isFinite(f0) && !fl.some(f => Math.abs(f - f0) < 1e-9)) { fl.push(f0); if (fl.length > 1) fl.sort((a, b) => a - b); }
+  return fl;
+}
+// the amateur band [lo, hi, name] holding f in the selected band plan, or null
+function bandOf(f) { return bandsFor().find(([lo, hi]) => f >= lo - 1e-9 && f <= hi + 1e-9) || null; }
 $('#bandRes').onclick = e => {
   const b = e.target.closest('[data-band]'); if (!b) return;
   S.calcFreq = +b.dataset.band; $('#cFreq').value = S.calcFreq; setSweepDefaults(); changed(true, false);
+  if (isEmbed()) {
+    // Keep the picker buttons in place so keyboard focus and the row's scroll position survive selection.
+    $$('#bandRes [data-band]').forEach(picker => {
+      const active = picker === b;
+      picker.classList.toggle('on', active);
+      picker.setAttribute('aria-pressed', String(active));
+    });
+  } else renderBands();
   if (!$('#autoCalc').checked) calculate();
 };
 const GNAME = ['Free', 'Perfect', 'Real'];
@@ -1956,8 +2014,8 @@ function drawView() {
     }
     const [sx, sy] = pos(e);
     down = { x: e.clientX, y: e.clientY };
-    if (ED.mode === 'rotate' || e.altKey || e.button === 1 || e.button === 2) {
-      orbit = { x: e.clientX, y: e.clientY, yaw: V.yaw, pitch: V.pitch, pan: e.shiftKey || e.button === 1, px: V.panX, py: V.panY, button: e.button };
+    if (ED.mode === 'rotate' || isEmbed() || e.altKey || e.button === 1 || e.button === 2) {
+      orbit = { x: e.clientX, y: e.clientY, yaw: V.yaw, pitch: V.pitch, pan: !isEmbed() && (e.shiftKey || e.button === 1), px: V.panX, py: V.panY, button: e.button };
       return;
     }
     if (ED.mode === 'select') selectDown(sx, sy);
@@ -1992,7 +2050,8 @@ function drawView() {
   box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
   box.addEventListener('pointerleave', () => { if (!ED.drag && !orbit && ED.hover) { ED.hover = null; drawView(); } });
   box.addEventListener('dblclick', () => { if (ED.mode === 'draw') { ED.start = null; drawView(); } });
-  box.addEventListener('wheel', e => { e.preventDefault(); V.zoom = Math.min(20, Math.max(0.2, V.zoom * Math.exp(-e.deltaY * 0.0015))); drawView(); }, { passive: false });
+  // in the presentation the wheel scrolls the page around the frame, as on any page; drag still turns the view
+  box.addEventListener('wheel', e => { if (isEmbed()) return; e.preventDefault(); V.zoom = Math.min(20, Math.max(0.2, V.zoom * Math.exp(-e.deltaY * 0.0015))); drawView(); }, { passive: false });
 
   $$('[data-mode]').forEach(b => { b.onclick = () => setMode(b.dataset.mode); });
   $('#edHouse').onclick = addHouse;
@@ -2007,7 +2066,7 @@ function drawView() {
     drawView();
   }; });
   document.addEventListener('keydown', e => {
-    if ($('[data-panel="view"]').hidden) return;
+    if ($('[data-panel="view"]').hidden || isEmbed()) return;   // the presentation is read-only
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName || '')) return;
     const mod = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
     if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
@@ -2024,7 +2083,8 @@ function drawView() {
   const box = $('#viewBox'), panel = $('[data-panel="view"]'), cb = $('#edSpin');
   const RATE = 2 * Math.PI / 45, IDLE = 5000;            // one turn in 45 s; restart 5 s after the last interaction
   let reduce = false; try { reduce = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* old browser */ }
-  let saved = null; try { saved = localStorage.getItem('sw-spin'); } catch (e) { /* storage blocked */ }
+  // the presentation (?embed=1) turns unless the visitor prefers reduced motion; it neither reads nor stores a choice
+  let saved = null; if (!isEmbed()) try { saved = localStorage.getItem('sw-spin'); } catch (e) { /* storage blocked */ }
   cb.checked = saved === null ? !reduce : saved === '1';
   let lastAct = 0, last = 0;
   cb.onchange = () => { try { localStorage.setItem('sw-spin', cb.checked ? '1' : '0'); } catch (e) { /* storage blocked */ } last = 0; lastAct = 0; };
@@ -2821,7 +2881,7 @@ function showTab(name) {
   if (name === 'view') renderInspector();
   if (name === 'help') loadHelp();
   requestAnimationFrame(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
-  try { localStorage.setItem('wm-tab', name); } catch (e) {}
+  if (!isEmbed()) try { localStorage.setItem('wm-tab', name); } catch (e) {}
 }
 $$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 window.addEventListener('resize', () => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
@@ -3146,18 +3206,27 @@ async function openShared(hash, atStart) {
 
 /* ---------------- boot ---------------- */
 // one theme only: forget the theme choice an earlier version of this edition may have stored
-try { localStorage.removeItem('sw-skin'); } catch (e) { /* storage blocked */ }
+// (the presentation, ?embed=1, touches no storage at all: a frame on another site often may not)
+const EMBED = isEmbed();
+if (!EMBED) try { localStorage.removeItem('sw-skin'); } catch (e) { /* storage blocked */ }
+// the presentation views the model: rotate only, so a drag turns it and never moves a wire
+if (EMBED) setMode('rotate');
 startWorker().finally(async () => {
   // a share link (#sw=…) opens its model; any other fragment (or none) is the ordinary start
   const shared = SWShare.isShareHash(location.hash) && await openShared(location.hash, true);
   if (!shared) loadExample(DEFAULT_EXAMPLE);
-  // first visit: the RF.Guru EFOC29, calculated, turning slowly in the 3D editor; later visits reopen the last tab
-  let tab = null; try { tab = localStorage.getItem('wm-tab'); } catch (e) {}
-  showTab(tab && $('[data-panel="' + tab + '"]') ? tab : 'view');
+  // first visit: the RF.Guru EFOC29, calculated, turning slowly in the 3D editor; later visits reopen the last tab.
+  // The presentation always shows the 3D view, with a picker for the frequency it opened at.
+  let tab = null; if (!EMBED) try { tab = localStorage.getItem('wm-tab'); } catch (e) {}
+  if (EMBED) { S.embedF0 = S.calcFreq; renderBands(); }
+  showTab(!EMBED && tab && $('[data-panel="' + tab + '"]') ? tab : 'view');
   $('#calcBtn').click();
   // a share link pasted into this same tab changes only the fragment
   window.addEventListener('hashchange', async () => {
-    if (SWShare.isShareHash(location.hash) && await openShared(location.hash, false)) $('#calcBtn').click();
+    if (SWShare.isShareHash(location.hash) && await openShared(location.hash, false)) {
+      if (EMBED) { S.embedF0 = S.calcFreq; renderBands(); }
+      $('#calcBtn').click();
+    }
   });
 });
 })();

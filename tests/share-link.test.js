@@ -178,7 +178,7 @@ test('table cells escape the model text they show', () => {
 });
 
 // The page: openShared() and the start-up block, with the DOM stubbed
-function page(hash, search = '') {
+function page(hash, search = '', embed = false) {
   const nodes = new Map(), log = [];
   const $ = id => { if (!nodes.has(id)) nodes.set(id, { value: '', hidden: true, textContent: '', open: false, showModal() { this.open = true; }, close() { this.open = false; }, click() { log.push(['click', id]); } }); return nodes.get(id); };
   const S = { model: null, calcFreq: 14.15 };
@@ -189,7 +189,7 @@ function page(hash, search = '') {
     window: { addEventListener: (k, f) => { ctx.listeners[k] = f; } },
     localStorage: { getItem: () => null }, showTab: t => log.push(['tab', t]),
     loadModel: (m, keep) => { S.model = m; log.push(['load', m.name, keep, S.calcFreq]); },
-    startWorker: () => Promise.resolve()
+    startWorker: () => Promise.resolve(), EMBED: embed, renderBands: () => log.push(['bands', S.embedF0])
   };
   ctx.$('#polSel').value = 'tot'; ctx.$('#edPol').value = 'tot';
   const boot = section("startWorker().finally(", '})();\n</script>');

@@ -61,6 +61,11 @@ Sommerwire is free and unencumbered software, released into the public domain un
   actions and links, the Sommerwire mark in RF.Guru colours and a GitHub link in the header. There is no theme switch.
 - **Opens on the RF.Guru EFOC29**: an ordinary visit loads and calculates the eight-band RF.Guru EFOC29 example, the
   same model as in the Examples menu. A share link, an opened `.maa` file or another example replaces it.
+- **Band strip**: under the readout, the antenna name, then **Bands** on its own row, then one button per band
+  (SWR, impedance, F/B and RDF) in equal columns that start at the same place on every row and stack into one
+  column on a narrow screen. A button makes that band the calculation frequency.
+- **Embeddable 3D view**: `?embed=1` turns the app into a read-only presentation for another site: the band pickers
+  in one row and the turning 3D view, nothing else. See [Embedding](#embedding).
 - **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
   version number.
 
@@ -84,6 +89,47 @@ python3 -m http.server 8000
 
 from the repository folder, then open <http://localhost:8000>. Any static web host works too, for example GitHub
 Pages serving the repository root.
+
+## Embedding
+
+Add `?embed=1` to the address and Sommerwire shows a read-only presentation for another web page: a **Bands** label,
+one row of compact band pickers (`80m`, `40m` …; the frequency is in each picker's tooltip and accessible name, for
+example "80 m, 3.6 MHz") and the existing 3D view of the antenna with its currents and far field, turning slowly.
+Choosing a picker calculates that frequency and updates the view. There is no header, readout, editor, table, chart or
+footer, and nothing can be edited: a drag turns the view, the mouse wheel and vertical swipes scroll the page around
+it, and a pointer over the view pauses the turning for a few seconds, as in the 3D editor. With *reduce motion* set in
+the visitor's system the view stands still.
+
+Without a share link it opens the eight-band **RF.Guru EFOC29**, the same model as the app's default. This responsive
+iframe fits a product page's side column (about 250 px wide and up; all eight pickers fit at 250 px):
+
+```html
+<iframe src="https://sommerwire.app/?embed=1"
+        title="RF.Guru EFOC29 antenna in 3D, Sommerwire" loading="lazy"
+        style="display:block;width:100%;aspect-ratio:1/1;min-height:280px;border:0"></iframe>
+```
+
+The frame fills whatever width the page gives it; the 3D view takes the height below the picker row, so change
+`aspect-ratio` (for example `4/5` for a taller view) to suit the column. When there are more pickers than fit, or the
+frame is narrower, the picker row scrolls sideways inside itself; the page does not.
+
+**Any model**: make a share link in the app (**Share link**) and put `?embed=1` in front of its `#`:
+
+```text
+https://sommerwire.app/#sw=1.d.…          the share link
+https://sommerwire.app/?embed=1#sw=1.d.…  the same model, embedded
+```
+
+The fragment is the unchanged share format: the same validation and limits apply, and the same link still opens the
+full app without `?embed=1`. The pickers are the model's bands; a model without bands, or a link whose calculation
+frequency is not one of them, also gets a picker for that frequency. A link that cannot be opened shows the reason
+above the view and falls back to the EFOC29.
+
+The presentation is made to work inside a frame from another site. It reads and writes no browser storage (a
+cross-site frame is often denied it, and it does not need it), sends nothing to the embedding page and listens to
+nothing from it (no `postMessage`), and changes no security setting of either page. It solves only the frequency on
+show, in a Web Worker, as the app does. The site sets no `X-Frame-Options` or `frame-ancestors` rule; a host page
+with its own Content Security Policy must allow `https://sommerwire.app` in `frame-src`.
 
 ## RF.Guru EFHW inverted-L examples: provenance and assumptions
 
@@ -216,7 +262,7 @@ index.html           the application, with engine.js, structgen.js, hexgen.js, e
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
-tests/               node --test regression tests (RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout, low- and high-angle window tiles and the NVIS naming rule)
+tests/               node --test regression tests (embedded presentation and band strip layout, RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout, low- and high-angle window tiles and the NVIS naming rule)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 validation/efoc29-mast/  EFOC29 on a 10 m mast with a buried return: feed-height study on above-soil proxies, with a nec2c check
 ```
