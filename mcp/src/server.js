@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire MCP — RF.Guru fork contribution, Apache-2.0. The upstream Sommerwire app by ON9PK Koen Van den Heuvel remains under the Unlicense. See the repository LICENSE for scope. */
 /* Sommerwire MCP server: local, stdio, read-only. Four tools, all without side effects: validate_model, solve,
  * share_link and export_maa. No network, no files written, no paths or commands taken from a client.
  * Run:  node mcp/src/server.js   (an MCP client starts it; it speaks JSON-RPC on stdin/stdout, logs on stderr). */

@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire MCP — RF.Guru fork contribution, Apache-2.0. The upstream Sommerwire app by ON9PK Koen Van den Heuvel remains under the Unlicense. See the repository LICENSE for scope. */
 /* The Sommerwire app code, loaded for Node without changing it.
  *
  * The browser files (engine.js, structgen.js, hexgen.js, efhwgen.js, share.js) run as they are, and the app's own

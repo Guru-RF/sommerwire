@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire MCP — RF.Guru fork contribution, Apache-2.0. The upstream Sommerwire app by ON9PK Koen Van den Heuvel remains under the Unlicense. See the repository LICENSE for scope. */
 /* What the MCP tools do, without the protocol: strict argument schemas, one model source turned into the app's
  * editable model, validation with the share-link bounds, assumptions and labels, share links and .maa export.
  * Solving runs in an isolated worker (see solver.js); everything here is bounded and synchronous or nearly so. */

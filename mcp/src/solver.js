@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire MCP — RF.Guru fork contribution, Apache-2.0. The upstream Sommerwire app by ON9PK Koen Van den Heuvel remains under the Unlicense. See the repository LICENSE for scope. */
 /* Solves run in a worker thread each, at most BUDGET.concurrency at a time (further calls are refused, not queued),
  * under a wall-time budget and a heap limit. A job that runs out of time, or whose request is cancelled, is stopped
  * by terminating its thread, so no runaway factorization outlives its request. */

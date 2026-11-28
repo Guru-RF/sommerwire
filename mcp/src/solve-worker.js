@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire MCP — RF.Guru fork contribution, Apache-2.0. The upstream Sommerwire app by ON9PK Koen Van den Heuvel remains under the Unlicense. See the repository LICENSE for scope. */
 /* One solve job in its own thread: the app's numeric model at each frequency, through the engine and the page's own
  * result payload (packZ + finish from index.html). The parent kills the thread when the time budget runs out. */
 import { parentPort, workerData } from 'node:worker_threads';
