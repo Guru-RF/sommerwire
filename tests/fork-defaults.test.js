@@ -61,6 +61,33 @@ test('a stored legacy theme choice is cleared and nothing reads a theme from sto
   vm.runInNewContext(line, { EMBED: true, localStorage: { removeItem() { throw new Error('touched'); } } });
 });
 
+test('main app footer uses the local RF.Guru mark and app navigation', () => {
+  assert.match(footer, /<img src="brand\/icon-rfguru\.svg" alt=""/);
+  const nav = section('<nav class="footer-links" aria-label="Footer">', '</nav>', footer);
+  const links = [...nav.matchAll(/<a href="([^"]+)"[^>]*>([^<]+)<\/a>/g)].map(([, href, label]) => [label, href]);
+  assert.deepEqual(links, [
+    ['Help', 'help.html'],
+    ['What changed', 'help.html#h-changes'],
+    ['Issues', 'https://github.com/Guru-RF/sommerwire/issues'],
+    ['RF.Guru apps', 'https://rfguru.app/'],
+    ['Shop', 'https://shop.rf.guru/'],
+    ['Support', 'https://shop.rf.guru/pages/contact'],
+  ]);
+  assert.match(footer, /href="https:\/\/rf\.guru\/"[^>]*>RF\.Guru<\/a>/);
+  const credits = section('<div class="footer-credits">', '</footer>', html);
+  for (const href of ['LICENSES/Apache-2.0.txt', 'https://unlicense.org', 'LICENSE']) {
+    assert.ok(credits.includes(`href="${href}"`));
+  }
+  assert.match(html, /footer \{[^}]*border-top: 1px solid var\(--line\)/);
+  assert.match(html, /\.footer-links \{[^}]*flex-wrap: wrap/);
+  assert.match(html, /\.footer-credits \{[^}]*text-align: center/);
+  assert.match(html, /@media \(max-width: 640px\) \{[\s\S]*?\.footer-top \{ flex-direction: column/);
+  // The footer remains a direct child of .wrap, whose embed rule hides non-view children.
+  assert.match(html, /<\/footer>\s*<\/div>\s*<dialog id="saveDlg">/);
+  assert.doesNotMatch(help, /class="footer-links"/);
+  assert.match(readme, /\*\*App footer\*\*/);
+});
+
 test('no edition version: no badge, constant or footer version; What changed keeps its dated history', () => {
   assert.doesNotMatch(html, /SW_VERSION|SW_DATE|swVer/);
   assert.doesNotMatch(header, /\bv\d+\.\d+|version \d/i);
@@ -70,7 +97,7 @@ test('no edition version: no badge, constant or footer version; What changed kee
   const sec = section('<h2 id="h-changes">', '<h2 id="h-licence">', help);
   assert.doesNotMatch(sec, /version \d/i);
   const heads = [...sec.matchAll(/<h3>([^<]*)<\/h3>/g)].map(m => m[1]);
-  assert.deepEqual(heads, ['2026-11-28 · Callsign plates in the header', '2026-11-28 · Phone layout', '2026-11-28 · Embeddable 3D view, tidier band strip', '2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
+  assert.deepEqual(heads, ['2026-11-28 · RF.Guru app footer', '2026-11-28 · Callsign plates in the header', '2026-11-28 · Phone layout', '2026-11-28 · Embeddable 3D view, tidier band strip', '2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
   assert.match(sec, /<b>RF\.Guru<\/b> is the only theme/);
   assert.match(sec, /opens the <b>RF\.Guru EFOC29<\/b> example with its eight bands/);
   // the share-link format number is the model encoding, not an edition version, and stays
