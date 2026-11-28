@@ -23,7 +23,7 @@ presets, polarization readouts, calculation improvements and editable model link
 
 The [contribution history](CONTRIBUTION-HISTORY.md) documents the original app, upstream fixes and RF.Guru additions.
 GitHub lists [every pull request merged into RF.Guru main](https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain).
-Sommerwire is free and unencumbered software, released into the public domain under the [Unlicense](LICENSE).
+Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apache-2.0.txt). Upstream material remains under the [Unlicense](LICENSES/Unlicense.txt). See [Licence](#licence) for scope.
 
 ## Features
 
@@ -286,5 +286,4 @@ published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-e
 
 ## Licence
 
-Public domain under the [Unlicense](LICENSE): anyone may copy, modify, publish, use, compile, sell or distribute
-Sommerwire, for any purpose. It comes without any warranty.
+Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apache-2.0.txt). Upstream material remains under the [Unlicense](LICENSES/Unlicense.txt). This includes upstream code merged after the fork. In mixed files each license applies to its respective portions. Earlier Unlicense grants for published fork contributions remain available. Third-party material retains its applicable terms. See [LICENSE](LICENSE).

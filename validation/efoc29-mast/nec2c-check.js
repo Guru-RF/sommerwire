@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* Independent check of the ABOVE-SOIL PROXY points of study.js with nec2c (NEC-2). It checks the solver on the proxy
  * geometry only: NEC-2 cannot model the buried run either (it stops with "SEGMENT ... EXTENDS BELOW GROUND"), so
  * nothing here validates a buried return. nec2c is GPL-3.0 third-party software and is not in this repository; build it

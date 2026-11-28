@@ -1,7 +1,7 @@
 # Sommerwire vs nec2c (NEC-2)
 
 > nec2c itself is third-party software under the GPL-3.0 and is not included in this repository. Build it into
-> `bin/` (instructions below); the decks, outputs and scripts in this folder are part of Sommerwire (Unlicense).
+> `bin/` (instructions below); the decks, outputs and scripts in this folder are part of Sommerwire and follow the [repository license scope](../../LICENSE).
 
 Comparison of Sommerwire's Sommerfeld ground with nec2c, the C translation of the public-domain NEC-2.
 Summary of the results: Help tab → "How it was checked" → "Comparison with NEC-2".

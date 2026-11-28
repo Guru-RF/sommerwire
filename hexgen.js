@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* Hexbeam geometry from a G3TXQ-style dimension table.
  * Every wire of a band lies on that band's hexagon (corners at 30°, 90°, ... 330°, radius R).
  * Front is +X. Driver ("W"): centre post -> 30° corner (length R) -> along the edge toward 90° (length d).

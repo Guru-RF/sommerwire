@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* RF.Guru low-band EFHW inverted-L examples (EFHW16080 and EFHW8040) and the EFOC29 flat top (further down).
  *
  * Sourced (RF.Guru pages, retrieved 2026-11-26):

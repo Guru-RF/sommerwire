@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* Sommerwire engine — thin-wire method-of-moments solver in the MININEC style.
  * Pulse current expansion centred on nodes, constant charge per segment,
  * reduced thin-wire kernel, point matching at nodes, image theory for ground.
