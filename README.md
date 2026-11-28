@@ -72,6 +72,9 @@ Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apac
   touch-sized controls. A finger on empty space turns the 3D view in Select mode; two fingers zoom. Wide tables
   scroll inside their own frame, never the page. Nothing is removed, and larger screens and the `?embed=1`
   presentation are laid out as before.
+- **Callsign plates**: the footer credit shows Belgian-style callsign plates, drawn locally in HTML, CSS and an
+  inline SVG: ON9PK Koen Van den Heuvel (to his [QRZ.com page](https://www.qrz.com/db/ON9PK)) and ON6URE Joeri Van
+  Dooren (to [on6ure.be](https://on6ure.be/)).
 - **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
   version number.
 
