@@ -49,6 +49,9 @@ for these.
   two-element quad, spiderbeam-style tri-band wire Yagi, 14–30 MHz LPDA, 160 m inverted-L, 40 m 4-square, 20 m magnetic loop, 40/20 m trap vertical, 160 m Beverage, a G3TXQ 5-band hexbeam tuned per band,
   an EFOC29 end-fed flat top, an EFHW-8010 end-fed half-wave for 80–10 m, RF.Guru EFHW16080 (160/80 m, 68:1) and EFHW8040 (80/40 m, 70:1) end-fed inverted-Ls, an RF.Guru EFOC29 (80–10 m, 4:1) flat top with its coax return section, the DX Commander vertical with 16 radials, and a dual-band 2 m/70 cm Yagi pair
   on a mast.
+- **Share link**: copies a link with the editable model in its `#` fragment (no server, no upload): opening it in any
+  browser loads the same model and calculates it again; results are not stored in it. Anyone with the link can read the
+  model. Links are validated and bounded before anything loads; models too large for a link go through **Save .maa**.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 

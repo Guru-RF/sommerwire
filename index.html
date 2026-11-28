@@ -143,6 +143,9 @@ table.results tr.latest td { background: var(--sel); }
 
 dialog { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink); padding: 16px; width: min(640px, calc(100vw - 32px)); }
 dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+.sharenote { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--bad); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--ink); background: var(--panel); }
+.sharenote p { margin: 0; flex: 1; }
+#shareLink { width: 100%; font-family: var(--f-mono); font-size: 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; height: 96px; word-break: break-all; }
 dialog textarea { width: 100%; height: 320px; font-family: var(--f-mono); font-size: 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
 #varTbl select[data-f="type"] { min-width: 12em; }
 #varTbl select[data-f="idx"] { min-width: 7.5em; }
@@ -198,6 +201,7 @@ footer a { color: var(--accent); }
       </select>
       <label class="file"><input type="file" id="fileIn" accept=".maa,.MAA,.txt"><button type="button" id="openBtn">Open .maa</button></label>
       <button type="button" id="saveBtn">Save .maa</button>
+      <button type="button" id="shareBtn" title="Copy a link that holds this model as it is now (not its results). Anyone with the link can read the model.">Share link</button>
       <select id="swrTuner" aria-label="SWR tuner display" title="SWR colours only. These generic limits give no guarantee of a match.">
         <option value="none" selected>No tuner</option>
         <option value="internal">Internal tuner</option>
@@ -224,6 +228,7 @@ footer a { color: var(--accent); }
   <div id="bandAntenna" hidden></div>
   <div class="bandres" id="bandRes" aria-live="polite" hidden></div>
   <div class="status" id="status"></div>
+  <div class="sharenote" id="shareNote" role="alert" hidden><p id="shareNoteTxt"></p><button type="button" id="shareNoteX" aria-label="Dismiss">×</button></div>
 
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="geometry" aria-selected="true">Geometry</button>
@@ -493,10 +498,22 @@ footer a { color: var(--accent); }
   </div>
 </dialog>
 
+<dialog id="shareDlg">
+  <div style="display:grid;gap:10px">
+    <h2 style="margin:0;font-family:var(--f-display);font-size:16px">Share link</h2>
+    <p class="hint" style="margin:0;color:var(--muted)">The link holds this model as it is now: wires and their expressions, sources, loads, lines, houses, ground, segmentation, wire and insulation settings, band frequencies, the calculation frequency and the pattern view. It holds no results: opening it calculates the model again. Nothing is uploaded; the model is in the part after <span class="mono">#</span>, which browsers do not send to the web server.</p>
+    <p class="hint" style="margin:0"><b>Anyone who has the link can read the whole model</b>, including its name and comment. The link stays in browser history and wherever it is pasted.</p>
+    <textarea id="shareLink" readonly aria-label="Share link" hidden></textarea>
+    <p id="shareMsg" role="status" style="margin:0;font-size:12.5px;color:var(--muted)"></p>
+    <div class="row" style="justify-content:flex-end"><button type="button" id="shareCopy" class="primary">Copy</button><button type="button" id="shareSave">Save .maa instead</button><button type="button" id="shareClose">Close</button></div>
+  </div>
+</dialog>
+
 <script src="engine.js"></script>
 <script src="hexgen.js"></script>
 <script src="structgen.js"></script>
 <script src="efhwgen.js"></script>
+<script src="share.js"></script>
 <script>
 (() => {
 'use strict';
@@ -748,7 +765,7 @@ function insWires(spec, n) {
     const m = /^w?(\d+)(?:\s*-\s*w?(\d+))?$/i.exec(part);
     if (!m) throw new Error('Insulated wires: "' + part + '" is not a wire number or range such as 1-3.');
     const a = +m[1], b = m[2] ? +m[2] : a;
-    for (let k = Math.min(a, b); k <= Math.max(a, b); k++) if (k >= 1 && k <= n) out.add(k - 1);
+    for (let k = Math.max(1, Math.min(a, b)); k <= Math.min(n, Math.max(a, b)); k++) out.add(k - 1);
   }
   return [...out];
 }
@@ -989,7 +1006,7 @@ function renderReadout() {
 
 /* ---------------- tables ---------------- */
 const WCOLS = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'r', 'seg'];
-function cellInput(val, attrs) { return '<input ' + attrs + ' value="' + String(val ?? '').replace(/"/g, '&quot;') + '" spellcheck="false" autocomplete="off">'; }
+function cellInput(val, attrs) { return '<input ' + attrs + ' value="' + String(val ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '" spellcheck="false" autocomplete="off">'; }
 function renderTables() {
   const m = S.model;
   $('#wireTbl tbody').innerHTML = m.wires.map((w, i) => '<tr><td class="n">' + (i + 1) + '</td>' +
@@ -2929,16 +2946,73 @@ $('#copyBtn').onclick = () => {
 };
 $('#closeDlg').onclick = () => $('#saveDlg').close();
 
+/* ---------------- share links (share.js) ---------------- */
+// The link holds the editable model as it is now (preset, opened file or edited), the calculation frequency and the
+// pattern view, in the URL fragment; never results. Opening it loads that model and solves it like any other.
+function shareSnapshot() { return { model: S.model, calcFreq: S.calcFreq, view: { pol: $('#polSel').value } }; }
+function shareNote(text) { $('#shareNoteTxt').textContent = text; $('#shareNote').hidden = !text; }
+$('#shareNoteX').onclick = () => shareNote('');
+async function copyText(text, box) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (e) { /* not allowed here */ }
+  try { box.hidden = false; box.focus(); box.select(); return document.execCommand('copy'); } catch (e) { return false; }
+}
+async function copyShare() {
+  const box = $('#shareLink'), ok = await copyText(box.value, box);
+  $('#shareMsg').textContent = ok ? 'Link copied (' + box.value.length + ' characters).' : 'Copying is blocked here: the link is selected, press Ctrl+C or ⌘C.';
+  if (!ok) { box.focus(); box.select(); }
+}
+$('#shareBtn').onclick = async () => {
+  const box = $('#shareLink'), msg = $('#shareMsg');
+  box.value = ''; box.hidden = true; $('#shareCopy').disabled = true; msg.textContent = 'Making the link…';
+  if (!$('#shareDlg').open) $('#shareDlg').showModal();
+  let link;
+  try {
+    link = location.href.split('#')[0] + await SWShare.encode(shareSnapshot());
+    if (link.length > SWShare.LIMITS.link) throw new SWShare.ShareError('This model needs a link of ' + link.length + ' characters, more than the ' + SWShare.LIMITS.link + ' a link can safely carry.');
+  } catch (e) {
+    msg.textContent = (e instanceof SWShare.ShareError ? e.message : 'The link could not be made (' + e.message + ').') + ' Use Save .maa to share the model as a file instead.';
+    return;
+  }
+  box.value = link; box.hidden = false; $('#shareCopy').disabled = false;
+  await copyShare();
+};
+$('#shareCopy').onclick = copyShare;
+$('#shareSave').onclick = () => { $('#shareDlg').close(); $('#saveBtn').click(); };
+$('#shareClose').onclick = () => $('#shareDlg').close();
+// Load the model of a share link; on any problem keep the model on screen and say why
+async function openShared(hash, atStart) {
+  const keep = atStart ? ' The default example is shown instead.' : ' The model on screen is unchanged.';
+  let s;
+  try { s = await SWShare.decode(hash); }
+  catch (e) { shareNote('This share link could not be opened. ' + (e instanceof SWShare.ShareError ? e.message : 'It is not valid.') + keep); return false; }
+  const prev = { model: S.model, calcFreq: S.calcFreq };
+  try {
+    if (s.view.pol) { $('#polSel').value = s.view.pol; if ($('#edPol option[value="' + s.view.pol + '"]')) $('#edPol').value = s.view.pol; }
+    S.calcFreq = s.calcFreq; loadModel(s.model, true);
+  } catch (e) {
+    if (prev.model) { S.calcFreq = prev.calcFreq; loadModel(prev.model, true); }
+    shareNote('This share link could not be opened. The model in it could not be loaded.' + keep); return false;
+  }
+  shareNote('');
+  return true;
+}
+
 /* ---------------- boot ---------------- */
 // bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.4.6', SW_DATE = '2026-11-27';
+const SW_VERSION = '1.5.0', SW_DATE = '2026-11-28';
 $('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
-startWorker().finally(() => {
-  loadModel(clone(EXAMPLES[0]));
+startWorker().finally(async () => {
+  // a share link (#sw=…) opens its model; any other fragment (or none) is the ordinary start
+  const shared = SWShare.isShareHash(location.hash) && await openShared(location.hash, true);
+  if (!shared) loadModel(clone(EXAMPLES[0]));
   // first visit: the 3-element Yagi, calculated, turning slowly in the 3D editor; later visits reopen the last tab
   let tab = null; try { tab = localStorage.getItem('wm-tab'); } catch (e) {}
   showTab(tab && $('[data-panel="' + tab + '"]') ? tab : 'view');
   $('#calcBtn').click();
+  // a share link pasted into this same tab changes only the fragment
+  window.addEventListener('hashchange', async () => {
+    if (SWShare.isShareHash(location.hash) && await openShared(location.hash, false)) $('#calcBtn').click();
+  });
 });
 })();
 </script>
