@@ -64,6 +64,7 @@ integration below builds on [Koen’s upstream revision of 27 November](https://
 | 28 Nov 2026 12:41 | [#10 Add RF.Guru and Koen themes and expand project credits](https://github.com/Guru-RF/sommerwire/pull/10) · [Merge dd208e61](https://github.com/Guru-RF/sommerwire/commit/dd208e615548cde7b6adf82e67ebc46e0d1faf41) | RF.Guru became the default theme, with Koen’s original look still selectable. Expanded the contributor credits and added dated change notes in Help. |
 | 28 Nov 2026 12:42 | [#11 Record the merged theme contribution](https://github.com/Guru-RF/sommerwire/pull/11) · [Merge 12db47bc](https://github.com/Guru-RF/sommerwire/commit/12db47bc378acfeaa1dd99e045eebaba6318a29e) | Recorded #10’s merge in this ledger. |
 | 28 Nov 2026 13:01 | [#12 Use RF.Guru styling and open on EFOC29](https://github.com/Guru-RF/sommerwire/pull/12) · [Merge 648009e4](https://github.com/Guru-RF/sommerwire/commit/648009e438b2c0addb72b5f8904d4cfc86932963) | Removed theme switching and edition version labels, kept dated site changes, and made the eight-band RF.Guru EFOC29 preset the default when no shared model is supplied. |
+| Pending | [#14 Embed the rotating antenna and align band cards](https://github.com/Guru-RF/sommerwire/pull/14) | Added a read-only embedded 3D view using existing share links and aligned the dashboard’s band cards below their heading. |
 
 The fork’s proposal to withhold mixed-ground gain was recorded open on 27 November. It has no merge in the RF.Guru
 history above. [Fork PR #1 and current status](https://github.com/Guru-RF/sommerwire/pull/1)
