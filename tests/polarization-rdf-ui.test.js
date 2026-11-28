@@ -372,9 +372,9 @@ test('the footer, Help and README credit both people in the RF.Guru edition byli
     const koen = intro.indexOf('ON9PK Koen Van den Heuvel');
     assert.ok(koen >= 0 && intro.indexOf('Joeri Van Dooren') > koen, 'Koen appears first in the opening credit');
   }
-  for (const intro of [footerIntro, helpIntro]) {
-    assert.match(intro, /<a\b[^>]*href="https:\/\/on6ure\.be"[^>]*>ON6URE<\/a>\s+Joeri Van Dooren/);
-  }
+  assert.match(footerIntro, /href="https:\/\/www\.qrz\.com\/db\/ON9PK"[^>]*>ON9PK Koen Van den Heuvel<\/a>/);
+  assert.match(footerIntro, /href="https:\/\/on6ure\.be\/"[^>]*>ON6URE Joeri Van Dooren<\/a>/);
+  assert.match(helpIntro, /<a\b[^>]*href="https:\/\/on6ure\.be"[^>]*>ON6URE<\/a>\s+Joeri Van Dooren/);
   assert.match(readmeIntro, /\[ON6URE\]\(https:\/\/on6ure\.be\)\s+Joeri Van Dooren/);
 });
 

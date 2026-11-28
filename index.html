@@ -208,20 +208,16 @@ footer details h2 { font: 600 15px var(--f-display); margin: 10px 0 4px; }
 footer details ul { margin: 0 0 12px; padding-inline-start: 1.5em; }
 footer details li + li { margin-top: 6px; }
 footer details p { margin-bottom: 12px; }
-/* callsign plates in the footer credit: Belgian-style plates drawn locally (CSS plus the inline #euStars symbol), each one link */
-footer .plates { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
-footer .plate-link { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; color: var(--ink); text-decoration: none; border-radius: 6px; padding: 2px; min-width: 0; }
-footer .plate-link:hover .plate-name, footer .plate-link:focus-visible .plate-name { color: var(--accent); text-decoration: underline; }
-footer .plate-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-footer .plate { display: inline-flex; align-items: stretch; flex: none; height: 30px; overflow: hidden; background: #ffffff; border: 2px solid #b3132b; border-radius: 6px; box-shadow: inset 0 0 0 1px #ffffff, 0 2px 6px rgb(0 0 0 / 0.45); }
-footer .plate-eu { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 17px; background: #003399; color: #ffffff; font: 700 8px/1 system-ui, sans-serif; }
-footer .plate-eu svg { width: 12px; height: 12px; }
-footer .plate-call { display: flex; align-items: center; padding: 0 9px 0 7px; color: #b3132b; font: 800 18px/1 ui-monospace, "DejaVu Sans Mono", Menlo, monospace; letter-spacing: 0.06em; }
-footer .plate-name { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-@media (forced-colors: active) { footer .plate { border-color: CanvasText; } footer .plate-call, footer .plate-eu { color: CanvasText; background: Canvas; forced-color-adjust: none; } }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-/* the RF.Guru header */
-.headnav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
+/* The RF.Guru header and locally drawn Belgian-style callsign plates. */
+.headnav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.headnav .plate-link { display: inline-flex; align-items: center; padding: 2px; border-radius: 6px; text-decoration: none; }
+.headnav .plate-link:hover .plate { box-shadow: 0 0 0 1px var(--accent); }
+.headnav .plate-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.headnav .plate { display: inline-flex; align-items: stretch; height: 24px; overflow: hidden; background: #ffffff; border: 2px solid #b3132b; border-radius: 5px; }
+.headnav .plate-eu { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 13px; background: #003399; color: #ffffff; font: 700 7px/1 system-ui, sans-serif; }
+.headnav .plate-eu svg { width: 10px; height: 10px; }
+.headnav .plate-call { display: flex; align-items: center; padding-inline: 5px; color: #b3132b; font: 800 13px/1 ui-monospace, "DejaVu Sans Mono", Menlo, monospace; letter-spacing: 0.04em; }
+@media (forced-colors: active) { .headnav .plate { border-color: CanvasText; } .headnav .plate-call, .headnav .plate-eu { color: CanvasText; background: Canvas; forced-color-adjust: none; } }
 :root[data-skin="rfguru"] .toolbar { flex-basis: 100%; }
 .toolbar { min-width: 0; max-width: 100%; }
 #exampleSel { max-width: 100%; min-width: 0; }
@@ -278,7 +274,7 @@ html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-a
   html:not(.embed) .card { padding: 12px; }
   html:not(.embed) .tscroll { overscroll-behavior-x: contain; }
   /* touch targets */
-  html:not(.embed) button, html:not(.embed) select, html:not(.embed) .ghlink { min-height: 44px; }
+  html:not(.embed) button, html:not(.embed) select, html:not(.embed) .ghlink, html:not(.embed) .headnav .plate-link { min-height: 44px; }
   html:not(.embed) select, html:not(.embed) textarea, html:not(.embed) input:not([type="checkbox"]):not([type="file"]) { font-size: 16px; min-height: 44px; }
   html:not(.embed) input[type="checkbox"] { width: 20px !important; height: 20px; flex: none; }
   html:not(.embed) label.fld:has(> input[type="checkbox"]) { min-height: 44px; justify-content: start; }
@@ -326,7 +322,6 @@ html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-a
   html:not(.embed) dialog textarea { height: min(320px, 38vh); }
   html:not(.embed) dialog .row > button { flex: 1 1 auto; }
   html:not(.embed) footer { max-width: 100%; }
-  html:not(.embed) footer .plate-link { min-height: 44px; }
 }
 </style>
 
@@ -341,6 +336,9 @@ html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-a
   </g>
 </svg><div class="rf-text"><h1>Sommer<b>wire</b></h1><span class="rf-sub"><a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a> edition</span><small class="ver"><a href="#h-changes" class="changeslink">What changed</a></small></div></div>
     <div class="headnav">
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><path id="euStar" d="M0-1.1.26-.36 1.05-.34.42.13.65.89 0 .44-.65.89-.42.13-1.05-.34-.26-.36Z" fill="#ffcc00"/><g id="euStars"><use href="#euStar" transform="rotate(0) translate(0 -6.2) rotate(0)"/><use href="#euStar" transform="rotate(30) translate(0 -6.2) rotate(-30)"/><use href="#euStar" transform="rotate(60) translate(0 -6.2) rotate(-60)"/><use href="#euStar" transform="rotate(90) translate(0 -6.2) rotate(-90)"/><use href="#euStar" transform="rotate(120) translate(0 -6.2) rotate(-120)"/><use href="#euStar" transform="rotate(150) translate(0 -6.2) rotate(-150)"/><use href="#euStar" transform="rotate(180) translate(0 -6.2) rotate(-180)"/><use href="#euStar" transform="rotate(210) translate(0 -6.2) rotate(-210)"/><use href="#euStar" transform="rotate(240) translate(0 -6.2) rotate(-240)"/><use href="#euStar" transform="rotate(270) translate(0 -6.2) rotate(-270)"/><use href="#euStar" transform="rotate(300) translate(0 -6.2) rotate(-300)"/><use href="#euStar" transform="rotate(330) translate(0 -6.2) rotate(-330)"/></g></defs></svg>
+      <a class="plate-link" href="https://www.qrz.com/db/ON9PK" target="_blank" rel="noopener" aria-label="ON9PK Koen Van den Heuvel (QRZ.com, opens in a new tab)"><span class="plate" aria-hidden="true"><span class="plate-eu"><svg viewBox="-10 -10 20 20"><use href="#euStars"/></svg>B</span><span class="plate-call">ON9PK</span></span></a>
+      <a class="plate-link" href="https://on6ure.be/" target="_blank" rel="noopener" aria-label="ON6URE Joeri Van Dooren (on6ure.be, opens in a new tab)"><span class="plate" aria-hidden="true"><span class="plate-eu"><svg viewBox="-10 -10 20 20"><use href="#euStars"/></svg>B</span><span class="plate-call">ON6URE</span></span></a>
       <a class="ghlink" href="https://github.com/Guru-RF/sommerwire" target="_blank" rel="noopener" aria-label="Sommerwire RF.Guru edition on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
     </div>
     <div class="toolbar">
@@ -631,13 +629,9 @@ html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-a
   </section>
 
   <footer>
-    <p class="author">This RF.Guru edition of Sommerwire was made by <b>ON9PK Koen Van den Heuvel</b> and
-      <b><a href="https://on6ure.be" target="_blank" rel="noopener">ON6URE</a> Joeri Van Dooren</b>
+    <p class="author">This RF.Guru edition of Sommerwire was made by <b><a href="https://www.qrz.com/db/ON9PK" target="_blank" rel="noopener">ON9PK Koen Van den Heuvel</a></b> and
+      <b><a href="https://on6ure.be/" target="_blank" rel="noopener">ON6URE Joeri Van Dooren</a></b>
       (<a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a>).</p>
-    <p class="plates"><svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><path id="euStar" d="M0-1.1.26-.36 1.05-.34.42.13.65.89 0 .44-.65.89-.42.13-1.05-.34-.26-.36Z" fill="#ffcc00"/><g id="euStars"><use href="#euStar" transform="rotate(0) translate(0 -6.2) rotate(0)"/><use href="#euStar" transform="rotate(30) translate(0 -6.2) rotate(-30)"/><use href="#euStar" transform="rotate(60) translate(0 -6.2) rotate(-60)"/><use href="#euStar" transform="rotate(90) translate(0 -6.2) rotate(-90)"/><use href="#euStar" transform="rotate(120) translate(0 -6.2) rotate(-120)"/><use href="#euStar" transform="rotate(150) translate(0 -6.2) rotate(-150)"/><use href="#euStar" transform="rotate(180) translate(0 -6.2) rotate(-180)"/><use href="#euStar" transform="rotate(210) translate(0 -6.2) rotate(-210)"/><use href="#euStar" transform="rotate(240) translate(0 -6.2) rotate(-240)"/><use href="#euStar" transform="rotate(270) translate(0 -6.2) rotate(-270)"/><use href="#euStar" transform="rotate(300) translate(0 -6.2) rotate(-300)"/><use href="#euStar" transform="rotate(330) translate(0 -6.2) rotate(-330)"/></g></defs></svg>
-      <a class="plate-link" href="https://www.qrz.com/db/ON9PK" target="_blank" rel="noopener"><span class="plate" aria-hidden="true"><span class="plate-eu"><svg viewBox="-10 -10 20 20"><use href="#euStars"/></svg>B</span><span class="plate-call">ON9PK</span></span><span class="plate-name"><span class="sr-only">ON9PK </span>Koen Van den Heuvel<span class="sr-only"> (QRZ.com, opens in a new tab)</span></span></a>
-      <a class="plate-link" href="https://on6ure.be/" target="_blank" rel="noopener"><span class="plate" aria-hidden="true"><span class="plate-eu"><svg viewBox="-10 -10 20 20"><use href="#euStars"/></svg>B</span><span class="plate-call">ON6URE</span></span><span class="plate-name"><span class="sr-only">ON6URE </span>Joeri Van Dooren<span class="sr-only"> (on6ure.be, opens in a new tab)</span></span></a>
-    </p>
     <p>Koen created Sommerwire with Claude Opus 5.5 in November 2026 and maintains the
       <a href="https://github.com/KoenVdH/sommerwire" target="_blank" rel="noopener">upstream project</a>.
       Joeri co-developed this edition.</p>

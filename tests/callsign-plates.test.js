@@ -1,5 +1,3 @@
-// Footer callsign plates: two Belgian-style plates, Koen first, each one keyboard-reachable link with the full name
-// in its accessible text, drawn locally (no remote image), hidden with the rest of the footer in ?embed=1.
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -15,46 +13,54 @@ function section(start, end, src = html) {
   return src.slice(i, j);
 }
 const footer = section('<footer>', '</footer>');
-const plates = section('<p class="plates">', '</p>', footer);
-const links = [...plates.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
-const text = s => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+const header = section('<header class="top">', '</header>');
+const headnav = section('<div class="headnav">', '</div>', header);
+const byline = section('<p class="author">', '</p>', footer);
+const links = src => [...src.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
+const expected = [
+  ['ON9PK', 'Koen Van den Heuvel', 'https://www.qrz.com/db/ON9PK', 'QRZ.com'],
+  ['ON6URE', 'Joeri Van Dooren', 'https://on6ure.be/', 'on6ure.be'],
+];
 
-test('two plates in the footer credit, Koen first, each linking to the verified page', () => {
-  assert.equal(links.length, 2);
-  const expected = [
-    ['ON9PK', 'Koen Van den Heuvel', 'https://www.qrz.com/db/ON9PK'],
-    ['ON6URE', 'Joeri Van Dooren', 'https://on6ure.be/'],
-  ];
-  links.forEach(([, attrs, body], i) => {
-    const [call, name, href] = expected[i];
-    assert.match(attrs, new RegExp('href="' + href.replace(/[./]/g, '\\$&') + '"'));
+test('header links place Koen and Joeri immediately before GitHub', () => {
+  const headerLinks = links(headnav);
+  assert.equal(headerLinks.length, 3);
+  assert.match(headerLinks[2][1], /class="ghlink"/);
+  expected.forEach(([call, name, href, site], i) => {
+    const [, attrs, body] = headerLinks[i];
+    assert.ok(attrs.includes(`href="${href}"`));
     assert.match(attrs, /class="plate-link"/);
     assert.match(attrs, /target="_blank" rel="noopener"/);
-    assert.match(body, new RegExp('<span class="plate-call">' + call + '</span>'));
-    // the accessible name (the plate itself is aria-hidden) carries the callsign and the full name
+    assert.ok(attrs.includes(`aria-label="${call} ${name} (${site}, opens in a new tab)"`));
+    assert.ok(body.includes(`<span class="plate-call">${call}</span>`));
     assert.match(body, /^<span class="plate" aria-hidden="true">/);
-    const spoken = text(body.slice(body.indexOf('<span class="plate-name">')));
-    assert.ok(spoken.startsWith(call + ' ' + name), spoken);
   });
-  // the plates sit right after the existing byline, which keeps both full names and Joeri's inline link
-  assert.ok(footer.indexOf('<p class="author">') < footer.indexOf('<p class="plates">'));
-  assert.ok(footer.indexOf('<p class="plates">') < footer.indexOf('<details'));
+});
+
+test('footer byline links each complete callsign and name to its plate URL', () => {
+  assert.doesNotMatch(footer, /class="plate[\s"-]/);
+  const bylineLinks = links(byline);
+  expected.forEach(([call, name, href], i) => {
+    const [, attrs, body] = bylineLinks[i];
+    assert.equal(body, `${call} ${name}`);
+    assert.ok(attrs.includes(`href="${href}"`));
+  });
 });
 
 test('plates are drawn locally: no remote images or copied raster assets, no inferred personal domain', () => {
-  assert.doesNotMatch(plates, /<img\b|url\(|https?:\/\/(?!www\.qrz\.com\/db\/ON9PK"|on6ure\.be\/")/);
-  assert.match(plates, /<path id="euStar"/);
-  assert.equal((plates.match(/<use href="#euStar"/g) || []).length, 12);
-  assert.equal((plates.match(/<use href="#euStars"\/>/g) || []).length, 2);
+  assert.doesNotMatch(headnav, /<img\b|url\(|https?:\/\/(?!www\.qrz\.com\/db\/ON9PK"|on6ure\.be\/"|github\.com\/Guru-RF\/sommerwire")/);
+  assert.match(headnav, /<path id="euStar"/);
+  assert.equal((headnav.match(/<use href="#euStar"/g) || []).length, 12);
+  assert.equal((headnav.match(/<use href="#euStars"\/>/g) || []).length, 2);
   assert.doesNotMatch(html, /koen[a-z]*\.(?:be|com|net|org|eu)/i);
 });
 
 test('plate styling: focus ring, readable colours, wraps on narrow screens, touch-sized on phones', () => {
-  assert.match(html, /footer \.plate-link:focus-visible \{ outline: 2px solid var\(--accent\)/);
-  assert.match(html, /footer \.plates \{ display: flex; flex-wrap: wrap;/);
-  assert.match(html, /footer \.plate-call \{[^}]*color: #b3132b;/);
-  assert.match(html, /footer \.plate \{[^}]*background: #ffffff;/);
-  assert.match(html, /html:not\(\.embed\) footer \.plate-link \{ min-height: 44px; \}/);
+  assert.match(html, /\.headnav \.plate-link:focus-visible \{ outline: 2px solid var\(--accent\)/);
+  assert.match(html, /\.headnav \{ display: flex; flex-wrap: wrap;/);
+  assert.match(html, /\.headnav \.plate-call \{[^}]*color: #b3132b;/);
+  assert.match(html, /\.headnav \.plate \{[^}]*background: #ffffff;/);
+  assert.match(html, /html:not\(\.embed\) \.headnav \.plate-link \{ min-height: 44px; \}/);
   // contrast of the plate colours (WCAG relative luminance)
   const lum = hex => {
     const c = hex.match(/\w\w/g).map(h => parseInt(h, 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
@@ -66,10 +72,10 @@ test('plate styling: focus ring, readable colours, wraps on narrow screens, touc
   assert.ok(ratio('ecc34a', '08090c') >= 3, 'gold focus ring on the dark page');
 });
 
-test('embed still hides the footer, and the change is noted in Help and README without a version', () => {
+test('embed still hides the header and footer, and the change is noted in Help and README without a version', () => {
   assert.match(html, /html\.embed \.wrap > :not\(#bandRes\):not\(#shareNote\):not\(\[data-panel="view"\]\) \{ display: none !important; \}/);
   const changes = help.slice(help.indexOf('<h2 id="h-changes">'));
-  assert.match(changes.slice(0, changes.indexOf('</ul>')), /<h3>2026-11-28 · Callsign plates in the credits<\/h3>/);
+  assert.match(changes.slice(0, changes.indexOf('</ul>')), /<h3>2026-11-28 · Callsign plates in the header<\/h3>/);
   assert.match(readme, /\*\*Callsign plates\*\*/);
-  assert.doesNotMatch(plates, /version \d|\bv\d+\.\d+/i);
+  assert.doesNotMatch(headnav, /version \d|\bv\d+\.\d+/i);
 });
