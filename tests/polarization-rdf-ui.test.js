@@ -359,11 +359,39 @@ test('wording: the SWR label and the help say where SWR comes from, and what H a
   assert.doesNotMatch(help, /the polarization component that is larger there/);
 });
 
-test('licence and credits are untouched', () => {
+test('the public-domain licence and source credits are preserved', () => {
   assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'LICENSE'))).digest('hex'), '6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e');
-  for (const t of [html, help, fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8')]) assert.match(t, /ON9PK Koen Van den Heuvel/);
-  const credit = /Contributions by <b><a href="https:\/\/on6ure\.be" target="_blank" rel="noopener">ON6URE<\/a> Joeri Van Dooren<\/b>/;
-  assert.match(html, credit); assert.match(help, credit);
-  assert.match(fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8'), /\[ON6URE\]\(https:\/\/on6ure\.be\) Joeri Van Dooren/);
   for (const f of ['engine.js', 'efhwgen.js', 'structgen.js', 'hexgen.js']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0], /ON9PK Koen Van den Heuvel.*public domain/);
+});
+
+test('the footer, Help and README credit both people in the RF.Guru edition byline', () => {
+  const footerIntro = section('<footer>', '<details');
+  const helpIntro = help.slice(help.indexOf('<h1>'), help.indexOf('<nav'));
+  const readmeIntro = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8').split('## Features')[0];
+  for (const intro of [footerIntro, helpIntro, readmeIntro]) {
+    const koen = intro.indexOf('ON9PK Koen Van den Heuvel');
+    assert.ok(koen >= 0 && intro.indexOf('Joeri Van Dooren') > koen, 'Koen appears first in the opening credit');
+  }
+  for (const intro of [footerIntro, helpIntro]) {
+    assert.match(intro, /<a\b[^>]*href="https:\/\/on6ure\.be"[^>]*>ON6URE<\/a>\s+Joeri Van Dooren/);
+  }
+  assert.match(readmeIntro, /\[ON6URE\]\(https:\/\/on6ure\.be\)\s+Joeri Van Dooren/);
+});
+
+test('the footer has two independent, initially collapsed credits and links to the audit trail', () => {
+  const footer = section('<footer>', '</footer>');
+  const disclosures = [...footer.matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)];
+  assert.equal(disclosures.length, 2);
+  for (const [, attributes] of disclosures) assert.doesNotMatch(attributes, /\s(?:open|name)(?=\s|=|$)/i);
+  assert.match(disclosures[0][2], /^\s*<summary>[^<]*ON9PK Koen Van den Heuvel/);
+  assert.match(disclosures[1][2], /^\s*<summary>[^<]*ON6URE Joeri Van Dooren/);
+  assert.match(disclosures[1][2], /What the initial release got wrong/);
+  assert.match(footer, /href="CONTRIBUTION-HISTORY\.md"/);
+  const ledger = fs.readFileSync(path.join(ROOT, 'CONTRIBUTION-HISTORY.md'), 'utf8');
+  for (const [, pr] of footer.matchAll(/href="(https:\/\/github\.com\/[^/"]+\/sommerwire\/pull\/\d+)"/g)) {
+    assert.ok(ledger.includes('](' + pr + ')'), 'Missing ledger entry for ' + pr);
+  }
+  assert.match(footer, /href="https:\/\/github\.com\/Guru-RF\/sommerwire\/pulls\?[^"]*is%3Amerged/);
+  assert.match(footer, /href="https:\/\/unlicense\.org"/);
+  assert.match(footer, /<span id="swVerFoot"><\/span>/);
 });

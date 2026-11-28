@@ -15,13 +15,15 @@ Its distinguishing feature is the real-ground model: the impedance over lossy so
 integrals, as NEC-2 does, so radials a few centimetres above the ground, low dipoles and feed lines near the soil
 agree with NEC-2, ground loss included. That is where the name comes from.
 
-Sommerwire was made by **ON9PK Koen Van den Heuvel** with the help of Claude Opus 5.5 in November 2026. Free and unencumbered software, released into the public domain (see [LICENSE](LICENSE)).
+This RF.Guru edition of Sommerwire was made by **ON9PK Koen Van den Heuvel** and
+**[ON6URE](https://on6ure.be) Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)).
+Koen created Sommerwire with Claude Opus 5.5 in November 2026 and maintains the
+[upstream project](https://github.com/KoenVdH/sommerwire). Joeri co-developed this edition, including its RF.Guru antenna
+presets, polarization readouts, calculation improvements and editable model links.
 
-Contributions by **[ON6URE](https://on6ure.be) Joeri Van Dooren** ([RF.Guru](https://shop.rf.guru)): the RF.Guru EFHW16080 and EFHW8040
-inverted-L examples with their dual-band results and sourced dimensions, the RF.Guru EFOC29 example with its eight-band
-results, the horizontal + vertical pattern view, the
-check that rejects wires below the ground, the clearing of sweep results after a model edit, and the regression tests
-for these.
+The [contribution history](CONTRIBUTION-HISTORY.md) documents the original app, upstream fixes and RF.Guru additions.
+GitHub lists [every pull request merged into RF.Guru main](https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain).
+Sommerwire is free and unencumbered software, released into the public domain under the [Unlicense](LICENSE).
 
 ## Features
 
@@ -55,7 +57,21 @@ for these.
 - A complete **Help** tab: how to use everything, the physics behind each model, sources, validation, limitations
   and open questions.
 
-**Try it online:** <https://koenvdh.github.io/sommerwire/>
+- **Themes**: **RF.Guru** (the default in this edition: dark, RF.Guru gold actions and links, the Sommerwire mark in
+  RF.Guru colours and a GitHub link in the header) and **Koen (original)**, Sommerwire's original look, which follows
+  the system light or dark setting. Pick one with **Theme** at the top right of the app or of the standalone Help page;
+  the browser remembers it where site storage is allowed. Only the look changes: models, results, share links and
+  `.maa` files are identical in both.
+- **What changed**: dated change notes in Help (linked from the version under the name and from the footer).
+
+## Source and upstream
+
+- [Try the RF.Guru edition online](https://sommerwire.app/).
+- This RF.Guru edition: <https://github.com/Guru-RF/sommerwire>
+  ([merged pull requests](https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain),
+  [contribution history](CONTRIBUTION-HISTORY.md)).
+- Koen’s upstream project: <https://github.com/KoenVdH/sommerwire>.
+  [Try Koen’s upstream app online](https://koenvdh.github.io/sommerwire/).
 
 ## Running it
 
@@ -215,7 +231,6 @@ The RF.Guru EFHW inverted-L and EFOC29 examples were modelled and contributed by
 ([RF.Guru](https://shop.rf.guru)) from RF.Guru's
 published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-examples-provenance-and-assumptions) and
 [the EFOC29 example](#rfguru-efoc29-example-provenance-and-assumptions).
-The pull-request history of these contributions is in [CONTRIBUTION-HISTORY.md](CONTRIBUTION-HISTORY.md).
 
 ## Licence
 
