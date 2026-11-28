@@ -66,6 +66,12 @@ Sommerwire is free and unencumbered software, released into the public domain un
   column on a narrow screen. A button makes that band the calculation frequency.
 - **Embeddable 3D view**: `?embed=1` turns the app into a read-only presentation for another site: the band pickers
   in one row and the turning 3D view, nothing else. See [Embedding](#embedding).
+- **Phone layout**: up to 640 px wide the same app is laid out in one column: Examples, the file and share buttons
+  and **Calculate** at the top, a two-column readout led by frequency and SWR, a tab bar that stays on screen (the
+  arrow keys, Home and End also move between tabs), a larger 3D view placed straight after the mode buttons, and
+  touch-sized controls. A finger on empty space turns the 3D view in Select mode; two fingers zoom. Wide tables
+  scroll inside their own frame, never the page. Nothing is removed, and larger screens and the `?embed=1`
+  presentation are laid out as before.
 - **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
   version number.
 
