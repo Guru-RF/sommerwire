@@ -140,6 +140,21 @@ nothing from it (no `postMessage`), and changes no security setting of either pa
 show, in a Web Worker, as the app does. The site sets no `X-Frame-Options` or `frame-ancestors` rule; a host page
 with its own Content Security Policy must allow `https://sommerwire.app` in `frame-src`.
 
+## MCP server
+
+`mcp/` holds a local, read-only [Model Context Protocol](https://modelcontextprotocol.io) server, so an MCP client
+such as Claude Code or Claude Desktop can use Sommerwire as a tool. It runs over stdio on your own computer with the
+same engine and model code as the page, and offers four tools: `validate_model`, `solve`, `share_link` (a
+`https://sommerwire.app/#sw=…` link, made locally) and `export_maa` (the `.maa` text, with what the format loses). It
+writes no files, opens no network connections and needs no account; `solve` labels its figures as simulation, not
+measurement, with the model's assumptions and every solver warning. The app itself is unchanged and still has no
+dependencies. Install, client configuration, limits and a worked example: [mcp/README.md](mcp/README.md).
+
+```bash
+cd mcp && npm ci && npm test
+claude mcp add sommerwire -- node /path/to/sommerwire/mcp/src/server.js
+```
+
 ## RF.Guru EFHW inverted-L examples: provenance and assumptions
 
 Built by [efhwgen.js](efhwgen.js); checked by `node --test tests/`. Sources (RF.Guru, retrieved 2026-11-26):
@@ -272,6 +287,7 @@ brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
 tests/               node --test regression tests (embedded presentation and band strip layout, RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout, low- and high-angle window tiles and the NVIS naming rule)
+mcp/                 local read-only MCP server (stdio) over the same engine and model code, with its own node --test tests
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 validation/efoc29-mast/  EFOC29 on a 10 m mast with a buried return: feed-height study on above-soil proxies, with a nec2c check
 ```
