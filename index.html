@@ -1,5 +1,6 @@
 <html data-skin="rfguru">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sommerwire</title>
 <link rel="icon" href="brand/icon-rfguru.svg" type="image/svg+xml">
 <script>
@@ -252,6 +253,68 @@ html.embed [data-panel="view"] > .card { height: 100%; padding: 0; border: 0; ba
 html.embed [data-panel="view"] .card > :not(.edgrid), html.embed .edside, html.embed #edCoord { display: none !important; }
 html.embed .edgrid { display: block; height: 100%; }
 html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-action: pan-y; }
+/* phones (640 px and narrower; never the ?embed=1 presentation): the same page and the same order of controls, laid
+   out for one hand. Nothing is hidden. The tab bar stays on screen (at the bottom until the page reaches it, at the top
+   after), wide tables and the tab strip scroll inside themselves, controls are at least 44 px tall and typed text is
+   16 px so the browser does not zoom into a field. */
+@media (max-width: 640px) {
+  html:not(.embed) { scroll-padding-block: 60px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  html:not(.embed) body { margin: 0; }
+  html:not(.embed) .wrap { --gl: max(12px, env(safe-area-inset-left, 0px)); --gr: max(12px, env(safe-area-inset-right, 0px)); padding-left: var(--gl); padding-right: var(--gr); padding-top: max(10px, env(safe-area-inset-top, 0px)); gap: 12px; }
+  /* nothing may widen the page: every card, panel and two-up grid is one column no wider than the screen */
+  html:not(.embed) .panel, html:not(.embed) .card, html:not(.embed) .grid2 { grid-template-columns: minmax(0, 1fr); }
+  html:not(.embed) .card { padding: 12px; }
+  html:not(.embed) .tscroll { overscroll-behavior-x: contain; }
+  /* touch targets */
+  html:not(.embed) button, html:not(.embed) select, html:not(.embed) .ghlink { min-height: 44px; }
+  html:not(.embed) select, html:not(.embed) textarea, html:not(.embed) input:not([type="checkbox"]):not([type="file"]) { font-size: 16px; min-height: 44px; }
+  html:not(.embed) input[type="checkbox"] { width: 20px !important; height: 20px; flex: none; }
+  html:not(.embed) label.fld:has(> input[type="checkbox"]) { min-height: 44px; justify-content: start; }
+  html:not(.embed) td input, html:not(.embed) td select { min-width: 4.8em; padding: 10px 8px; }
+  html:not(.embed) td.x button { min-width: 44px; }
+  html:not(.embed) .tube summary, html:not(.embed) footer summary { padding-block: 12px; }
+  html:not(.embed) .ver a { display: inline-block; padding-block: 6px; }
+  /* header: examples on a full row, the three file actions in equal columns, tuner and Calculate side by side */
+  html:not(.embed) .toolbar { gap: 8px; }
+  html:not(.embed) header.top > .toolbar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  html:not(.embed) header.top > .toolbar > * { grid-column: span 2; min-width: 0; }
+  html:not(.embed) header.top > .toolbar > #exampleSel { grid-column: 1 / -1; width: 100%; }
+  html:not(.embed) header.top > .toolbar > #swrTuner, html:not(.embed) header.top > .toolbar > #calcBtn { grid-column: span 3; width: 100%; }
+  html:not(.embed) header.top > .toolbar button { width: 100%; padding-inline: 6px; }
+  /* readout: two columns; frequency and SWR lead, the impedance has the full row under them */
+  html:not(.embed) .readout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html:not(.embed) .ro { padding: 8px 12px; }
+  html:not(.embed) .ro:nth-child(1) { order: -2; }
+  html:not(.embed) .ro:nth-child(3) { order: -1; }
+  html:not(.embed) .ro:nth-child(8) { grid-column: span 2; }
+  html:not(.embed) .ro:nth-child(-n+3) .v { font-size: 19px; }
+  html:not(.embed) .bandres button { min-height: 44px; padding: 7px 10px; font-size: 12.5px; line-height: 1.5; }
+  /* tabs: always within reach, one strip that scrolls inside itself */
+  html:not(.embed) nav.tabs { position: sticky; top: 0; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--line); margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); padding-left: var(--gl); padding-right: var(--gr); scroll-padding-inline: 12px; overscroll-behavior-x: contain; scrollbar-width: none; }
+  html:not(.embed) nav.tabs::-webkit-scrollbar { display: none; }
+  html:not(.embed) .tab { flex: none; min-height: 46px; padding: 10px 13px; }
+  html:not(.embed) .tab:focus-visible { outline-offset: -3px; }
+  /* fields: two per row at full width; long ones take the whole row */
+  html:not(.embed) .row:has(> .fld) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  html:not(.embed) .row:has(> .fld) > * { min-width: 0; max-width: none; }
+  html:not(.embed) .row > .fld input:not([type="checkbox"]), html:not(.embed) .row > .fld select { width: 100%; }
+  html:not(.embed) .row > .fld:has(> .wide), html:not(.embed) .row > .fld:has(> #tbS), html:not(.embed) .row > .fld:has(> #cNf), html:not(.embed) .row > .fld:has(> #bMount), html:not(.embed) .row > .fld:has(> #autoCalc), html:not(.embed) .row:has(> .fld) > .status { grid-column: 1 / -1; }
+  html:not(.embed) .seg { display: flex; flex: 1 1 100%; }
+  html:not(.embed) .seg button { flex: 1 1 0; padding-inline: 4px; }
+  /* 3D editor: the model comes straight after the mode buttons, its settings after it, then the inspector and cuts */
+  html:not(.embed) [data-panel="view"] .edgrid { display: contents; }
+  html:not(.embed) [data-panel="view"] > .card > *, html:not(.embed) [data-panel="view"] .edgrid > * { order: 3; }
+  html:not(.embed) [data-panel="view"] > .card > .row:first-child { order: 0; }
+  html:not(.embed) [data-panel="view"] #viewBox { order: 1; }
+  html:not(.embed) [data-panel="view"] > .card > .row:nth-child(2) { order: 2; }
+  html:not(.embed) .view3d { aspect-ratio: 1 / 1; max-height: min(560px, 62vh); }
+  html:not(.embed) .igrid { gap: 8px; }
+  /* dialogs fit the screen and scroll inside themselves */
+  html:not(.embed) dialog { width: calc(100vw - 24px); max-width: none; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto; padding: 14px; }
+  html:not(.embed) dialog textarea { height: min(320px, 38vh); }
+  html:not(.embed) dialog .row > button { flex: 1 1 auto; }
+  html:not(.embed) footer { max-width: 100%; }
+}
 </style>
 
 <div class="wrap">
@@ -302,7 +365,7 @@ html.embed .view3d { height: 100%; aspect-ratio: auto; max-height: none; touch-a
   <div class="status" id="status"></div>
   <div class="sharenote" id="shareNote" role="alert" hidden><p id="shareNoteTxt"></p><button type="button" id="shareNoteX" aria-label="Dismiss">×</button></div>
 
-  <nav class="tabs" role="tablist">
+  <nav class="tabs" role="tablist" aria-label="Sections">
     <button class="tab" role="tab" data-tab="geometry" aria-selected="true">Geometry</button>
     <button class="tab" role="tab" data-tab="view" aria-selected="false">3D editor</button>
     <button class="tab" role="tab" data-tab="calc" aria-selected="false">Calculate</button>
@@ -1611,7 +1674,7 @@ function gridSnap(p, off) {
   q[pl.k] = off; return q;
 }
 function hitEnd(sx, sy, skip) {
-  let best = null, bd = 10;
+  let best = null, bd = ED.touch ? 22 : 10;   // a finger is less exact than a mouse
   numWires().forEach((w, i) => {
     if (!w) return;
     [w.a, w.b].forEach((p, k) => {
@@ -1623,7 +1686,7 @@ function hitEnd(sx, sy, skip) {
   return best;
 }
 function hitWire(sx, sy) {
-  let best = null, bd = 7;
+  let best = null, bd = ED.touch ? 16 : 7;
   numWires().forEach((w, i) => {
     if (!w) return;
     const A = ED.cam.P(w.a), B = ED.cam.P(w.b), dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
@@ -1791,7 +1854,7 @@ function edReset() {
   edFit(); renderInspector(); edButtons();
 }
 const HINTS = {
-  select: 'Click a wire or an end point to select it; drag to move it in the work plane. Connected ends move together.',
+  select: 'Click a wire or an end point to select it; drag to move it in the work plane. Connected ends move together. On a touch screen, drag empty space to rotate and pinch to zoom.',
   draw: 'Click to start, click again to end; keep clicking to chain wires. Esc, double-click or right-click stops.',
   rotate: 'Drag to rotate, Shift+drag to pan, scroll or pinch to zoom. In other modes, right-drag or Alt+drag rotates.'
 };
@@ -2013,12 +2076,17 @@ function drawView() {
       return;
     }
     const [sx, sy] = pos(e);
+    ED.touch = e.pointerType === 'touch';
     down = { x: e.clientX, y: e.clientY };
     if (ED.mode === 'rotate' || isEmbed() || e.altKey || e.button === 1 || e.button === 2) {
       orbit = { x: e.clientX, y: e.clientY, yaw: V.yaw, pitch: V.pitch, pan: !isEmbed() && (e.shiftKey || e.button === 1), px: V.panX, py: V.panY, button: e.button };
       return;
     }
-    if (ED.mode === 'select') selectDown(sx, sy);
+    if (ED.mode === 'select') {
+      selectDown(sx, sy);
+      // a finger that lands on no wire turns the view, as in Rotate mode (a mouse has right-drag and Alt+drag for that)
+      if (ED.touch && !ED.drag) orbit = { x: e.clientX, y: e.clientY, yaw: V.yaw, pitch: V.pitch, pan: false, px: V.panX, py: V.panY, button: 0 };
+    }
   });
   box.addEventListener('pointermove', e => {
     const [sx, sy] = pos(e);
@@ -2882,8 +2950,39 @@ function showTab(name) {
   if (name === 'help') loadHelp();
   requestAnimationFrame(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
   if (!isEmbed()) try { localStorage.setItem('wm-tab', name); } catch (e) {}
+  tabStrip(name);
 }
-$$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+// the selected tab stays visible inside the tab strip, which on a phone scrolls sideways (the page itself is not moved)
+function tabStrip(name) {
+  const nav = $('nav.tabs'), t = $('.tab[data-tab="' + name + '"]');
+  if (!nav || !t || !nav.getBoundingClientRect || nav.scrollWidth <= nav.clientWidth) return;
+  const n = nav.getBoundingClientRect(), r = t.getBoundingClientRect();
+  if (r.left < n.left + 12) nav.scrollLeft += r.left - n.left - 12;
+  else if (r.right > n.right - 12) nav.scrollLeft += r.right - n.right + 12;
+}
+// On a phone the tab bar is pinned to the screen edge while its place in the page is off screen. Choosing a tab there
+// brings the start of that panel up under the bar; with the bar in its own place the page stays where it is.
+function panelToTabs(name) {
+  const nav = $('nav.tabs'), p = $('[data-panel="' + name + '"]');
+  if (!nav || !p || getComputedStyle(nav).position !== 'sticky') return;
+  const gap = parseFloat(getComputedStyle(nav.parentElement).rowGap) || 0;
+  const top = p.getBoundingClientRect().top;
+  if (Math.abs(top - nav.getBoundingClientRect().bottom - gap) > 2) window.scrollBy(0, top - nav.offsetHeight - gap);
+}
+$$('.tab').forEach(t => t.onclick = () => { showTab(t.dataset.tab); panelToTabs(t.dataset.tab); });
+// each tab names its panel; the arrow keys, Home and End move between tabs (Tab still reaches every tab, as before)
+$$('.tab').forEach(t => {
+  t.id = 'tab-' + t.dataset.tab;
+  const p = $('[data-panel="' + t.dataset.tab + '"]');
+  if (p) { p.id = p.id || 'panel-' + t.dataset.tab; p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', t.id); t.setAttribute('aria-controls', p.id); }
+});
+$('nav.tabs').addEventListener('keydown', e => {
+  const tabs = $$('.tab'), i = tabs.indexOf(document.activeElement);
+  if (i < 0 || e.altKey || e.ctrlKey || e.metaKey) return;
+  const j = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+  if (j === undefined) return;
+  e.preventDefault(); tabs[j].focus({ preventScroll: true }); tabs[j].click();
+});
 window.addEventListener('resize', () => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
 if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.("change", () => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); });
 new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
