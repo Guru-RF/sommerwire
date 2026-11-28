@@ -4,7 +4,8 @@
  *    and apart from the total-field maximum; the windows clip the search; free space and absent components.
  * 2. The two RF.Guru EFHW inverted-Ls at both bands: pinned engine figures, checked against a dense brute-force search,
  *    with the solver's own Max gain, direction and SWR unchanged.
- * 3. The page: the four tiles, their stated windows and wording (no dominance or propagation claim), ≈, n/a, stale. */
+ * 3. The page: the four tiles, their stated windows and wording (no dominance or propagation claim), ≈, n/a, stale.
+ *    The two window tiles carry H and V together; their highlight and the NVIS name are in tests/angle-windows.test.js. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -117,6 +118,10 @@ for (const c of CASES) {
     const brute = (comp, e0, e1) => { let m = 0; for (let el = e0; el <= e1; el++) for (let az = 0; az < 360; az++) m = Math.max(m, a.pat.gain(el, az)[comp]); return db(m); };
     assert.ok(P.h.db >= brute('h', 0, 90) - 1e-6, 'H'); assert.ok(P.v.db >= brute('v', 0, 90) - 1e-6, 'V');
     assert.ok(P.lowV.db >= brute('v', 5, 30) - 1e-6, 'low V'); assert.ok(P.highH.db >= brute('h', 60, 90) - 1e-6, 'high H');
+    // the other component of each window, from the same search: inside its window, never above the whole-pattern peak
+    assert.ok(P.lowH.db >= brute('h', 5, 30) - 1e-6, 'low H'); assert.ok(P.highV.db >= brute('v', 60, 90) - 1e-6, 'high V');
+    assert.ok(P.lowH.el >= 5 && P.lowH.el <= 30 && P.highV.el >= 60 && P.highV.el <= 90 && P.lowH.g <= P.h.g && P.highV.g <= P.v.g);
+    near(P.lowH.g, a.pat.gain(P.lowH.el, P.lowH.az).h, 1e-12); near(P.highV.g, a.pat.gain(P.highV.el, P.highV.az).v, 1e-12);
     assert.equal(s.uncertain, false);
     packed[c.ex + c.f] = pack(model, c.f);
     assert.deepEqual(JSON.parse(JSON.stringify(packed[c.ex + c.f].sum.peaks)), JSON.parse(JSON.stringify(P)), 'pack() carries the peaks');
@@ -136,13 +141,14 @@ function readout(last, dirty) {
   return { nodes, ctx };
 }
 const cp = o => JSON.parse(JSON.stringify(o));
-const TILES = ['#roPkH', '#roPkV', '#roLoV', '#roHiH'];
+const TILES = ['#roPkH', '#roPkV', '#roLo', '#roHi'];
 
 test('page: four peak tiles after Polarization, the total Max gain kept as its own tile', () => {
   assert.match(html, /id="roPolS"><\/div><\/div>\s*<div class="ro"><div class="k" title="[^"]*">H peak<\/div><div class="v" id="roPkH">–<\/div><div class="s" id="roPkHS"><\/div><\/div>\s*<div class="ro"><div class="k" title="[^"]*">V peak<\/div><div class="v" id="roPkV">/);
   assert.match(html, /<div class="k" title="Largest total-field gain[^"]*">Max gain<\/div><div class="v" id="roG">–<\/div><div class="s" id="roGS"><\/div>/);
-  assert.match(html, /id="roLoVK" title="[^"]*DX only names the window: no path, propagation or dominance is implied\.">Low-angle V · DX</);
-  assert.match(html, /id="roHiHK" title="[^"]*NVIS only names the window: no path, propagation or dominance is implied\.">High-angle H · NVIS</);
+  assert.match(html, /id="roLoK" title="[^"]*DX only names the window: a low-angle antenna figure, with no path or propagation implied\.">Low-angle 5–30° · DX</);
+  assert.match(html, /id="roHiK" title="[^"]*It is not a propagation prediction, not ground wave and no promise of coverage\.">High-angle 60–90°</);
+  assert.doesNotMatch(section('<section class="readout"', '</section>'), />[^<]*NVIS[^<]*</, 'no NVIS name before a frequency is known');
   assert.deepEqual(cp(vm.runInNewContext(helpers + '; MM_WINDOWS', { fmt })), cp(MM.PEAK_WINDOWS), 'page fallback windows match the engine');
 });
 
@@ -153,24 +159,28 @@ for (const c of CASES) {
     const where = p => (p.el >= 90 ? fmt(p.el, 1) + '° el (zenith)' : fmt(p.el, 1) + '° el, ' + fmt(p.az, 1) + '° az');
     assert.equal(nodes['#roPkH'].innerHTML, fmt(P.h.db, 2) + ' <small>dBi</small>'); assert.equal(nodes['#roPkHS'].textContent, where(P.h));
     assert.equal(nodes['#roPkV'].innerHTML, fmt(P.v.db, 2) + ' <small>dBi</small>'); assert.equal(nodes['#roPkVS'].textContent, where(P.v));
-    assert.equal(nodes['#roLoV'].innerHTML, fmt(P.lowV.db, 2) + ' <small>dBi</small>'); assert.equal(nodes['#roLoVS'].textContent, '5–30° window · ' + where(P.lowV));
-    assert.equal(nodes['#roHiH'].innerHTML, fmt(P.highH.db, 2) + ' <small>dBi</small>'); assert.equal(nodes['#roHiHS'].textContent, '60–90° window · ' + where(P.highH));
-    assert.equal(nodes['#roLoVK'].textContent, 'Low-angle V 5–30° · DX'); assert.equal(nodes['#roHiHK'].textContent, 'High-angle H 60–90° · NVIS');
+    const num = p => fmt(p.db, 2), strip = h => h.replace(/<\/?span[^>]*>/g, '');
+    assert.equal(strip(nodes['#roLo'].innerHTML), 'H ' + num(P.lowH) + ' · V ' + num(P.lowV) + ' <small>dBi</small>');
+    assert.equal(strip(nodes['#roHi'].innerHTML), 'H ' + num(P.highH) + ' · V ' + num(P.highV) + ' <small>dBi</small>');
+    assert.ok(nodes['#roLoS'].textContent.endsWith(' · H ' + where(P.lowH) + ' · V ' + where(P.lowV)));
+    assert.ok(nodes['#roHiS'].textContent.includes(' · H ' + where(P.highH) + ' · V ' + where(P.highV) + ' · '));
+    assert.equal(nodes['#roLoK'].textContent, 'Low-angle 5–30° · DX'); assert.match(nodes['#roHiK'].textContent, /^High-angle 60–90° · NVIS (160|80|40) m$/);
     // Max gain stays the total, toward its own maximum
     assert.equal(nodes['#roG'].innerHTML, fmt(r.gain, 2) + ' <small>dBi</small>');
     assert.equal(nodes['#roGS'].textContent, 'total H+V · ' + fmt(r.el, 1) + '° el, ' + fmt(r.az, 1) + '° az');
     for (const id of TILES) {
       const t = nodes[id].title, all = nodes[id].innerHTML + nodes[id + 'S'].textContent + t;
-      assert.match(t, /searched for this component on its own/); assert.match(t, /Max gain is a different figure: the total field/);
-      assert.doesNotMatch(all, /dominant|favoured|stronger|better|good for|works|will reach/i, 'no verdict or propagation claim');
+      assert.match(t, /searched for this component on its own|each searched on its own/); assert.match(t, /Max gain is a different figure: the total field/);
+      assert.doesNotMatch(all, /dominant|dominates|favoured|stronger|better|good for|works|will reach/i, 'no verdict or propagation claim');
     }
-    assert.match(nodes['#roLoV'].title, /^DX names this window only\. Largest V \(θ\) gain over 5–30° elevation, all azimuths/);
-    assert.match(nodes['#roHiH'].title, /^NVIS names this window only\. Largest H \(φ\) gain over 60–90° elevation, all azimuths/);
-    assert.match(nodes['#roLoV'].title, /not a statement that a DX path exists or that one component dominates: the ionosphere is not modelled/);
-    assert.match(nodes['#roHiH'].title, /not a statement that an NVIS path exists or that one component dominates/);
+    assert.match(nodes['#roLo'].title, /^DX names this window only\. Largest H \(φ\) and largest V \(θ\) gain over 5–30° elevation, all azimuths/);
+    assert.match(nodes['#roHi'].title, /^NVIS names this window only, and only inside the amateur bands from 160 m to 30 m .*Largest H \(φ\) and largest V \(θ\) gain over 60–90° elevation, all azimuths/);
+    assert.match(nodes['#roLo'].title, /not a statement that a DX path exists: the ionosphere is not modelled/);
+    assert.match(nodes['#roHi'].title, /It is not a propagation prediction: the ionosphere is not modelled/);
     assert.match(nodes['#roPkH'].title, /whole visible pattern, horizon to zenith/);
-    assert.equal(/edge of the window/.test(nodes['#roLoV'].title), P.lowV.el === 30 || P.lowV.el === 5);
-    assert.equal(/edge of the window/.test(nodes['#roHiH'].title), P.highH.el === 60, 'the zenith is not an edge');
+    const edges = t => (t.match(/the edge of the window/g) || []).length;
+    assert.equal(edges(nodes['#roLo'].title), [P.lowH, P.lowV].filter(p => p.el === 30 || p.el === 5).length);
+    assert.equal(edges(nodes['#roHi'].title), [P.highH, P.highV].filter(p => p.el === 60).length, 'the zenith is not an edge');
     assert.equal(/every azimuth is the same direction/.test(nodes['#roPkH'].title), P.h.el === 90);
     // SWR, F/B and RDF untouched by the new tiles
     near(+nodes['#roSWR'].innerHTML, c.swr, 0.006); assert.equal(nodes['#roFB'].innerHTML, fmt(r.fb, 1) + ' <small>dB</small>');
@@ -181,15 +191,17 @@ test('page: approximate, free space, absent, unavailable and not-yet-calculated 
   const base = packed['RF.Guru EFHW80407.1'];
   const ap = cp(base); ap.sum.approx = ap.sum.uncertain = true;
   let n = readout(ap).nodes;
-  for (const id of TILES) { assert.match(n[id].innerHTML, /^≈ -?\d/); assert.match(n[id].title, /^Approximate: the currents were solved over a perfect mirror/); }
-  const fr = cp(base); fr.sum.hasGround = false; fr.sum.peaks.lowV = fr.sum.peaks.highH = null; fr.sum.peaks.h.el0 = -90;
+  for (const id of TILES) { assert.match(n[id].innerHTML, /^≈ (<span[^>]*>H )?-?\d/); assert.match(n[id].title, /^Approximate: the currents were solved over a perfect mirror/); }
+  const fr = cp(base); fr.sum.hasGround = false; for (const k of ['lowV', 'lowH', 'highH', 'highV']) fr.sum.peaks[k] = null; fr.sum.peaks.h.el0 = -90;
   n = readout(fr).nodes;
   assert.match(n['#roPkH'].innerHTML, /dBi/); assert.match(n['#roPkH'].title, /full sphere \(free space\)/);
-  for (const id of ['#roLoV', '#roHiH']) { assert.equal(n[id].innerHTML, 'n/a'); assert.equal(n[id + 'S'].textContent, 'needs a ground'); assert.match(n[id].title, /free space/); }
+  assert.equal(n['#roHiK'].textContent, 'High-angle 60–90°', 'no NVIS name without a ground');
+  for (const id of ['#roLo', '#roHi']) { assert.equal(n[id].innerHTML, 'n/a'); assert.equal(n[id + 'S'].textContent, 'needs a ground'); assert.match(n[id].title, /free space/); }
   const ab = cp(base); ab.sum.peaks.h = null; ab.sum.peaks.highH = null;
   n = readout(ab).nodes;
   assert.equal(n['#roPkH'].innerHTML, 'none'); assert.equal(n['#roPkHS'].textContent, 'no H power');
-  assert.equal(n['#roHiHS'].textContent, 'no H power in 60–90°'); assert.match(n['#roPkV'].innerHTML, /dBi/);
+  assert.match(n['#roHi'].innerHTML, /H none<\/span> · <span[^>]*>V -?\d/); assert.match(n['#roHiS'].textContent, / · H no power · V /); assert.match(n['#roHi'].title, /H \(φ\): no power in this window\./);
+  assert.match(n['#roPkV'].innerHTML, /dBi/);
   const no = cp(base); no.sum = null;
   n = readout(no).nodes;
   for (const id of TILES) { assert.equal(n[id].innerHTML, 'n/a'); assert.match(n[id].title, /^Not available for this result/); }
@@ -205,5 +217,5 @@ test('page: the peak tiles dim with the rest of the strip when the model changes
   const { nodes, ctx } = readout(packed['RF.Guru EFHW80403.65'], true);
   ctx.setStatus('stale', '');
   assert.ok(nodes['.readout'].classList.on.has('stale'));
-  assert.match(section('<section class="readout"', '</section>'), /id="roHiH"/, 'inside the strip that is dimmed');
+  assert.match(section('<section class="readout"', '</section>'), /id="roHi"/, 'inside the strip that is dimmed');
 });

@@ -37,7 +37,7 @@ for these.
   **Sommerfeld integrals** (default), a complex image (fast approximation) or a perfect mirror (as MININEC/MMANA-GAL);
   far field with Fresnel reflection.
 - **Buildings**: a house beside the antenna with a metal roof as a wire grid, rain gutters and downpipes to earth.
-- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF). The readout shows the H and V peak gains, each over the whole pattern with its own elevation and azimuth and apart from the total-field Max gain, plus the V peak in a stated 5–30° low-angle (DX) window and the H peak in a 60–90° high-angle (NVIS) window, with no propagation or dominance claim; it also shows RDF beside F/B and names the polarization from the whole pattern (for example *Mixed H+V*), apart from the components toward the maximum; the 3D editor can draw the total, H, V or H + V far field on one scale. SWR always comes from the feedpoint of the coupled solve of all wires, never from the pattern.
+- **Far field**: azimuth and elevation plots, horizontal/vertical/total polarization, a rotatable 3D pattern, and an angle summary (low-angle V and H, high-angle total, RDF). The readout shows the H and V peak gains, each over the whole pattern with its own elevation and azimuth and apart from the total-field Max gain, plus the H and V peaks side by side in a stated 5–30° low-angle (DX) window and in a 60–90° high-angle window, with the component of the antenna's own modelled polarization at that frequency highlighted (H for mostly-H, V for mostly-V, neither for *Mixed H+V*) and no propagation or dominance claim; the high-angle window is called NVIS only inside the amateur bands from 160 m to 30 m and is a high-angle antenna figure, not a propagation prediction, ground-wave figure or coverage promise; it also shows RDF beside F/B and names the polarization from the whole pattern (for example *Mixed H+V*), apart from the components toward the maximum; the 3D editor can draw the total, H, V or H + V far field on one scale. SWR always comes from the feedpoint of the coupled solve of all wires, never from the pattern.
 - **HF, VHF and UHF**: the same solver from 160 m to 23 cm; long passive wires such as masts are coarsened automatically
   when a VHF/UHF model would otherwise exceed the 2500-unknown limit.
 - **Frequency sweep** over a custom range, one HF or VHF/UHF amateur band, both 2 m and 70 cm at once (split axis), or the whole
@@ -99,8 +99,8 @@ impedance at each), and open the Pattern tab in *Horizontal + vertical*: the H a
 the same azimuth and elevation cuts, against one 0 dB reference (the total-field maximum).
 
 Under the cuts, a table gives an angle summary per band: mean and peak V and H gain at low angles (5–30°, all azimuths),
-mean and peak total gain at high angles (60–90°, the NVIS candidate range; a figure for how much goes up, not a propagation
-prediction), and RDF toward the total-field maximum for two stated noise assumptions (whole visible sky with the published
+mean and peak total gain at high angles (60–90°; a figure for how much goes up, not a propagation prediction, and called an
+NVIS candidate only for frequencies inside the amateur bands 160, 80, 60, 40 and 30 m of the chosen band plan), and RDF toward the total-field maximum for two stated noise assumptions (whole visible sky with the published
 4π convention, and 0–30° elevation only). Means are linear power weighted by solid angle. “Dominant” or “favoured” is
 printed only for a difference of 3 dB or more. In the model, on the lower band of each example the high angles are
 favoured (by 9.0 dB at 1.85 MHz and 7.4 dB at 3.65 MHz) and low-angle H exceeds V by 3.7 and 3.2 dB; on the upper band
@@ -197,7 +197,7 @@ index.html           the application, with engine.js, structgen.js, hexgen.js, e
 brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
-tests/               node --test regression tests (RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout)
+tests/               node --test regression tests (RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout, low- and high-angle window tiles and the NVIS naming rule)
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 validation/efoc29-mast/  EFOC29 on a 10 m mast with a buried return: feed-height study on above-soil proxies, with a nec2c check
 ```
