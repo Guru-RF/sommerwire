@@ -1,11 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-skin="rfguru">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sommerwire Help</title>
-<link rel="icon" href="brand/icon.svg" type="image/svg+xml">
-<script src="theme.js"></script>
+<link rel="icon" href="brand/icon-rfguru.svg" type="image/svg+xml">
 <style>
 :root {
   --bg: #eef1f4; --panel: #ffffff; --ink: #18212b; --muted: #5b6876; --line: #d5dce3; --accent: #0d5c8c; --field: #f7f9fb;
@@ -17,19 +16,13 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --accent: #4fa8dc; --field: #111921; --warn: #e5b74a; --good: #5cc28a; color-scheme: dark; } }
 :root[data-theme="dark"] { --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --accent: #4fa8dc; --field: #111921; --warn: #e5b74a; --good: #5cc28a; color-scheme: dark; }
-/* RF.Guru theme (see theme.js); without it this is Koen's original look, following the OS light/dark setting */
+/* The RF.Guru theme (data-skin="rfguru" on <html>), the only theme of this edition, overrides every colour above */
 html:root[data-skin="rfguru"] {
   --bg: #08090c; --panel: #13161d; --ink: #e2e8f0; --muted: #8b98ab; --line: #2a303c; --accent: #ecc34a; --field: #0e1016; --warn: #fb923c; --good: #5cc28a;
   --f-display: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; --f-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; color-scheme: dark; }
 .helpbar { max-width: 900px; margin: 0 auto; padding: 12px 16px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; font-size: 13px; }
 .helpbar a { color: var(--accent); text-decoration: none; } .helpbar a:hover { text-decoration: underline; }
-.skinpick { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
-.seg { display: inline-flex; }
-.seg button { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 5px 11px; cursor: pointer; margin-left: -1px; }
-.seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; } .seg button:last-child { border-radius: 0 6px 6px 0; }
-:root[data-skin="rfguru"] .seg button:first-child { border-radius: 8px 0 0 8px; } :root[data-skin="rfguru"] .seg button:last-child { border-radius: 0 8px 8px 0; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); position: relative; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.55; }
@@ -37,8 +30,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 </style>
 </head>
 <body>
-<header class="helpbar"><a href="index.html">← Back to Sommerwire</a>
-  <div class="skinpick" role="group" aria-labelledby="skinLbl"><span id="skinLbl">Theme</span><span class="seg"><button type="button" data-skin-btn="rfguru" aria-pressed="false">RF.Guru</button><button type="button" data-skin-btn="koen" aria-pressed="false">Koen (original)</button></span></div></header>
+<header class="helpbar"><a href="index.html">← Back to Sommerwire</a></header>
 <main class="helpdoc" id="helpdoc">
 <style>
 .helpdoc h1 { font-family: var(--f-display); font-size: 24px; font-weight: 600; margin: 4px 0 6px; }
@@ -427,14 +419,20 @@ Two workable stand-ins: leave the radials out, put the vertical on the ground an
 </ul>
 
 <h2 id="h-changes">What changed</h2>
-<p>Changes in the RF.Guru edition, newest first, with the date they reached this edition. The <a href="CONTRIBUTION-HISTORY.md" target="_blank" rel="noopener">contribution history</a> lists who did what, and the version you are running is under the name at the top left and in the footer.</p>
-<h3>2026-11-28 · version 1.6.0 · Themes</h3>
+<p>Changes in the RF.Guru edition, newest first, with the date they reached this edition. The <a href="CONTRIBUTION-HISTORY.md" target="_blank" rel="noopener">contribution history</a> lists who did what. The edition has no version numbers; the newest entry describes what you are running.</p>
+<h3>2026-11-28 · One theme, EFOC29 first</h3>
+<ul>
+  <li><b>RF.Guru</b> is the only theme: the <b>Theme</b> switch and the <b>Koen (original)</b> look are gone, and a theme choice stored by an earlier visit is ignored and cleared. The app and this Help page are always dark, with RF.Guru gold for actions and links.</li>
+  <li>An ordinary visit opens the <b>RF.Guru EFOC29</b> example with its eight bands, the same model as in the Examples menu, and calculates it. A share link, an opened <code>.maa</code> file or an example you pick still replaces it.</li>
+  <li>The version number under the name and in the footer is gone; these dated notes record the changes. The <code>#sw=1.…</code> share links are unchanged.</li>
+</ul>
+<h3>2026-11-28 · Themes</h3>
 <ul>
   <li>Two themes, chosen with <b>Theme</b> at the top right. <b>RF.Guru</b> is the default in this edition: dark, with RF.Guru gold for actions and links, the Sommerwire mark in RF.Guru colours at the top left and a link to the <a href="https://github.com/Guru-RF/sommerwire" target="_blank" rel="noopener">RF.Guru edition on GitHub</a>. <b>Koen (original)</b> is the original Sommerwire look, which follows your system's light or dark setting.</li>
   <li>The browser remembers the choice, for the app and for this Help page. If it blocks site storage, the theme changes for the open page only and the next visit starts in RF.Guru.</li>
   <li>Only the look changes: models, results, share links and saved <code>.maa</code> files are the same in both themes.</li>
 </ul>
-<h3>2026-11-28 · version 1.5.0</h3>
+<h3>2026-11-28 · Model sharing and staged results</h3>
 <ul>
   <li><b>Share link</b> copies a link that holds the editable model; opening it loads and calculates that model. <a href="https://github.com/Guru-RF/sommerwire/pull/9" target="_blank" rel="noopener">Model sharing</a></li>
   <li>The SWR colours follow a tuner choice: no tuner, internal tuner or external tuner. <a href="https://github.com/Guru-RF/sommerwire/pull/8" target="_blank" rel="noopener">Tuner colours</a></li>

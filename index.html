@@ -1,7 +1,7 @@
+<html data-skin="rfguru">
 <meta charset="utf-8">
 <title>Sommerwire</title>
-<link rel="icon" href="brand/icon.svg" type="image/svg+xml">
-<script src="theme.js"></script>
+<link rel="icon" href="brand/icon-rfguru.svg" type="image/svg+xml">
 <script>
 // Visitor count (GoatCounter, no cookies): only on the GitHub Pages site.
 if (location.hostname === 'koenvdh.github.io') {
@@ -35,8 +35,8 @@ if (location.hostname === 'koenvdh.github.io') {
   --bg: #0f151b; --panel: #161e27; --ink: #e3e9ef; --muted: #93a1b0; --line: #2a3642; --grid: #1d2731;
   --accent: #4fa8dc; --accent-ink: #08131c; --trace2: #f0a040; --trace3: #5cc28a;
   --good: #5cc28a; --warn: #e5b74a; --bad: #f07060; --field: #111921; --sel: #1c3446; --cur-light: 62%; --logo-a: #3b82f6; --logo-b: #22d3ee; --logo-gnd: #56677a; color-scheme: dark; }
-/* Themes: data-skin="rfguru" (default on this fork, always dark, RF.Guru app-family colours) or "koen"
-   (Koen's original look above, following the OS light/dark setting). Canvases read these variables when they draw. */
+/* The RF.Guru theme (data-skin="rfguru" on <html>, the only theme of this edition: always dark, RF.Guru app-family
+   colours) overrides every colour above. Canvases read these variables when they draw. */
 html:root[data-skin="rfguru"] {
   --bg: #08090c; --panel: #13161d; --ink: #e2e8f0; --muted: #8b98ab; --line: #2a303c; --grid: #1c212b;
   --accent: #ecc34a; --accent-ink: #08090c; --cta: #e5a823; --cta-hover: #ecc34a; --trace2: #5aa9ff; --trace3: #5cc28a;
@@ -53,16 +53,9 @@ html:root[data-skin="rfguru"] {
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.45; }
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 14px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
 header.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-.brand-mark { width: 46px; height: 46px; flex: none; }
-.brand-mark .sw-gnd { stroke: var(--logo-gnd); }
-.brand-text { display: grid; gap: 1px; }
-.brand h1 { font-family: var(--f-body); font-weight: 700; font-size: 21px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; line-height: 1.1; color: var(--logo-a); background: linear-gradient(100deg, var(--logo-a), var(--logo-b)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.brand .ver { color: var(--muted); font-size: 10.5px; font-family: var(--f-mono); letter-spacing: 0.04em; opacity: 0.85; }
 .tube { margin: 4px 0 10px; }
 .tube summary { cursor: pointer; color: var(--accent); font-size: 13px; padding: 4px 0; }
 .tube .row { align-items: end; }
-.brand span { color: var(--muted); font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; font-weight: 500; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 button, select, input { font: inherit; color: inherit; }
 button { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
@@ -204,17 +197,14 @@ footer details h2 { font: 600 15px var(--f-display); margin: 10px 0 4px; }
 footer details ul { margin: 0 0 12px; padding-inline-start: 1.5em; }
 footer details li + li { margin-top: 6px; }
 footer details p { margin-bottom: 12px; }
-/* theme selector (both themes) and the RF.Guru header (hidden in Koen's theme, which keeps its original header) */
+/* the RF.Guru header */
 .headnav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
-.skinpick { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
-.skinpick .seg button { padding: 5px 11px; font-size: 13px; }
 :root[data-skin="rfguru"] .toolbar { flex-basis: 100%; }
 .toolbar { min-width: 0; max-width: 100%; }
 #exampleSel { max-width: 100%; min-width: 0; }
 .wrap { grid-template-columns: minmax(0, 1fr); }   /* a long Examples entry no longer widens the page on a phone */
 .ver a { color: var(--accent); }
-.brand-rf, .ghlink, .verlink { display: none; }
-:root[data-skin="rfguru"] .brand { display: none; }
+.brand-rf, .ghlink { display: none; }
 :root[data-skin="rfguru"] .brand-rf { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
 .brand-rf .rf-mark { width: 40px; height: 40px; flex: none; }
 .brand-rf .rf-text { display: grid; gap: 1px; line-height: 1.2; min-width: 0; }
@@ -226,7 +216,6 @@ footer details p { margin-bottom: 12px; }
 :root[data-skin="rfguru"] .ghlink { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); text-decoration: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
 :root[data-skin="rfguru"] .ghlink:hover { border-color: rgb(236 195 74 / 0.5); color: #fff; }
 .ghlink svg { width: 16px; height: 16px; fill: currentColor; }
-:root[data-skin="rfguru"] .verlink { display: inline; }
 :root[data-skin="rfguru"] button, :root[data-skin="rfguru"] select { border-radius: 8px; }
 :root[data-skin="rfguru"] button:hover, :root[data-skin="rfguru"] select:hover { border-color: rgb(236 195 74 / 0.5); }
 :root[data-skin="rfguru"] button.primary { background: var(--cta); border-color: var(--cta); color: #08090c; }
@@ -237,17 +226,12 @@ footer details p { margin-bottom: 12px; }
 :root[data-skin="rfguru"] .tab[aria-selected="true"] { color: #fff; }
 :root[data-skin="rfguru"] :focus-visible { outline-color: #ecc34a; }
 :root[data-skin="rfguru"] .helpdoc .box { border-left-color: var(--accent); }
-@media (max-width: 560px) { .ro .v { font-size: 16px; } .brand span { letter-spacing: 0.18em; } }
+@media (max-width: 560px) { .ro .v { font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="swhg" gradientUnits="userSpaceOnUse" x1="10" y1="10" x2="110" y2="100"><stop offset="0" style="stop-color:var(--logo-a)"/><stop offset="1" style="stop-color:var(--logo-b)"/></linearGradient></defs>
-  <path class="sw-gnd" d="M2.00,86.00 L118.00,86.00" stroke-width="2.40" stroke-linecap="round"/>
-  <g opacity="0.28" stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 0 52.50,103.46 M67.50,103.46 A19.00,19.00 0 0 0 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 0 52.50,115.05 M67.50,115.05 A30.00,30.00 0 0 0 90.00,86.00"/><path d="M60.00,90.00 L60.00,114.00" stroke-dasharray="4.00 5.00"/></g>
-  <g stroke="url(#swhg)" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 1 52.50,68.54 M67.50,68.54 A19.00,19.00 0 0 1 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 1 52.50,56.95 M67.50,56.95 A30.00,30.00 0 0 1 90.00,86.00 M19.00,86.00 A41.00,41.00 0 0 1 52.50,45.69 M67.50,45.69 A41.00,41.00 0 0 1 101.00,86.00 M8.00,86.00 A52.00,52.00 0 0 1 52.50,34.54 M67.50,34.54 A52.00,52.00 0 0 1 112.00,86.00"/><path d="M60.00,86.00 L60.00,30.00"/><circle cx="60.00" cy="23.50" r="6.00"/></g>
-</svg><div class="brand-text"><h1>Sommerwire</h1><span>Wire Antenna Modeler</span><small class="ver" id="swVer"></small></div></div>
     <div class="brand-rf"><svg class="rf-mark" viewBox="0 0 120 120" aria-hidden="true">  <defs><linearGradient id="swrgh" gradientUnits="userSpaceOnUse" x1="10" y1="10" x2="110" y2="100"><stop offset="0" stop-color="#e5a823"/><stop offset="1" stop-color="#ecc34a"/></linearGradient></defs>
   <rect x="2" y="2" width="116" height="116" rx="26" fill="#13161d" stroke="#ffffff" stroke-opacity="0.14" stroke-width="2"/>
   <g transform="translate(13 8) scale(0.783)">
@@ -255,9 +239,8 @@ footer details p { margin-bottom: 12px; }
     <g opacity="0.55" stroke="#5aa9ff" stroke-width="5.00" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 0 52.50,103.46 M67.50,103.46 A19.00,19.00 0 0 0 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 0 52.50,115.05 M67.50,115.05 A30.00,30.00 0 0 0 90.00,86.00"/><path d="M60.00,90.00 L60.00,114.00" stroke-dasharray="4.00 5.00"/></g>
     <g stroke="url(#swrgh)" stroke-width="5.50" stroke-linecap="round" fill="none"><path d="M41.00,86.00 A19.00,19.00 0 0 1 52.50,68.54 M67.50,68.54 A19.00,19.00 0 0 1 79.00,86.00 M30.00,86.00 A30.00,30.00 0 0 1 52.50,56.95 M67.50,56.95 A30.00,30.00 0 0 1 90.00,86.00 M19.00,86.00 A41.00,41.00 0 0 1 52.50,45.69 M67.50,45.69 A41.00,41.00 0 0 1 101.00,86.00 M8.00,86.00 A52.00,52.00 0 0 1 52.50,34.54 M67.50,34.54 A52.00,52.00 0 0 1 112.00,86.00"/><path d="M60.00,86.00 L60.00,30.00"/><circle cx="60.00" cy="23.50" r="6.00"/></g>
   </g>
-</svg><div class="rf-text"><h1>Sommer<b>wire</b></h1><span class="rf-sub"><a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a> edition</span><small class="ver"><span id="swVerRf"></span> · <a href="#h-changes" class="changeslink">What changed</a></small></div></div>
+</svg><div class="rf-text"><h1>Sommer<b>wire</b></h1><span class="rf-sub"><a href="https://shop.rf.guru" target="_blank" rel="noopener">RF.Guru</a> edition</span><small class="ver"><a href="#h-changes" class="changeslink">What changed</a></small></div></div>
     <div class="headnav">
-      <div class="skinpick" role="group" aria-labelledby="skinLbl" title="The look of the app and Help only; models and results do not change."><span id="skinLbl">Theme</span><span class="seg"><button type="button" data-skin-btn="rfguru" aria-pressed="false">RF.Guru</button><button type="button" data-skin-btn="koen" aria-pressed="false">Koen (original)</button></span></div>
       <a class="ghlink" href="https://github.com/Guru-RF/sommerwire" target="_blank" rel="noopener" aria-label="Sommerwire RF.Guru edition on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
     </div>
     <div class="toolbar">
@@ -554,7 +537,7 @@ footer details p { margin-bottom: 12px; }
     <p>Koen created Sommerwire with Claude Opus 5.5 in November 2026 and maintains the
       <a href="https://github.com/KoenVdH/sommerwire" target="_blank" rel="noopener">upstream project</a>.
       Joeri co-developed this edition.</p>
-    <p>Free and unencumbered software released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>) · <span id="swVerFoot"></span></p>
+    <p>Free and unencumbered software released into the public domain (<a href="https://unlicense.org" target="_blank" rel="noopener">Unlicense</a>)</p>
 
     <details>
       <summary>ON9PK Koen Van den Heuvel · Original app and upstream maintenance</summary>
@@ -593,8 +576,8 @@ footer details p { margin-bottom: 12px; }
           tuner. Added share links that carry the editable antenna model in the URL fragment and recalculate it
           when opened. <a href="https://github.com/Guru-RF/sommerwire/pull/8" target="_blank" rel="noopener">Tuner colours</a> ·
           <a href="https://github.com/Guru-RF/sommerwire/pull/9" target="_blank" rel="noopener">Model sharing</a>.</li>
-        <li>Added the RF.Guru theme, the default in this edition, with the Sommerwire mark adapted to RF.Guru colours.
-          Koen’s original look stays selectable as <b>Koen (original)</b>.</li>
+        <li>Added the RF.Guru theme, with the Sommerwire mark adapted to RF.Guru colours. It is now the only theme
+          in this edition, and a fresh visit opens the RF.Guru EFOC29 example.</li>
       </ul>
       <h2>What the initial release got wrong</h2>
       <ul>
@@ -2843,13 +2826,7 @@ function showTab(name) {
 $$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 window.addEventListener('resize', () => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); });
 if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.("change", () => { drawView(); drawPatterns(); drawSweep(); drawEdPolar(); });
-new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
-// the theme switch itself is wired by theme.js; here only the note when the browser will not keep the choice
-document.querySelectorAll('[data-skin-btn]').forEach(b => b.addEventListener('click', () => setTimeout(() => {   // after theme.js saved it
-  let kept = true; try { kept = localStorage.getItem(SWTheme.KEY) === b.dataset.skinBtn; } catch (e) { kept = false; }
-  $('.skinpick').title = kept ? 'The look of the app and Help only; models and results do not change.'
-    : 'Theme changed for this page only: this browser blocks site storage, so the next visit starts in RF.Guru.';
-})));
+new MutationObserver(() => { drawView(); drawPatterns(); drawSweep(); drawOpt(); drawEdPolar(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 // "What changed" (header and footer): the dated change notes in Help
 async function showChanges(e) {
   if (e) e.preventDefault();
@@ -3043,13 +3020,19 @@ function modelFromMAA(text) {
   if (!m.wires.length) throw new Error('No wires found in this file.');
   return m;
 }
-$('#exampleSel').onchange = e => {
-  if (e.target.value === '') return;
-  const ex = EXAMPLES[+e.target.value];
+// open an example exactly as the Examples menu does (its pattern view too)
+function loadExample(i) {
+  const ex = EXAMPLES[i];
   if (ex.pol) $('#polSel').value = ex.pol;
   if (ex.pol && $('#edPol option[value="' + ex.pol + '"]')) $('#edPol').value = ex.pol;
-  S.history = []; loadModel(ex.build === 'hextable' ? hexTableModel(ex.centre, ex.tuned) : ex.maa ? modelFromMAA(ex.maa) : clone(ex)); e.target.value = '';
+  S.history = []; loadModel(ex.build === 'hextable' ? hexTableModel(ex.centre, ex.tuned) : ex.maa ? modelFromMAA(ex.maa) : clone(ex));
   drawPatterns();
+}
+// the model an ordinary visit opens with: the RF.Guru EFOC29 eight-band example
+const DEFAULT_EXAMPLE = EXAMPLES.findIndex(ex => ex.name.startsWith('RF.Guru EFOC29'));
+$('#exampleSel').onchange = e => {
+  if (e.target.value === '') return;
+  loadExample(+e.target.value); e.target.value = '';
 };
 $('#openBtn').onclick = () => $('#fileIn').click();
 $('#fileIn').onchange = e => {
@@ -3162,14 +3145,13 @@ async function openShared(hash, atStart) {
 }
 
 /* ---------------- boot ---------------- */
-// bump with every published change, so people can see which version their browser is showing
-const SW_VERSION = '1.6.0', SW_DATE = '2026-11-28';
-$('#swVer').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerRf').textContent = 'v' + SW_VERSION + ' · ' + SW_DATE; $('#swVerFoot').textContent = 'version ' + SW_VERSION + ' (' + SW_DATE + ')';
+// one theme only: forget the theme choice an earlier version of this edition may have stored
+try { localStorage.removeItem('sw-skin'); } catch (e) { /* storage blocked */ }
 startWorker().finally(async () => {
   // a share link (#sw=…) opens its model; any other fragment (or none) is the ordinary start
   const shared = SWShare.isShareHash(location.hash) && await openShared(location.hash, true);
-  if (!shared) loadModel(clone(EXAMPLES[0]));
-  // first visit: the 3-element Yagi, calculated, turning slowly in the 3D editor; later visits reopen the last tab
+  if (!shared) loadExample(DEFAULT_EXAMPLE);
+  // first visit: the RF.Guru EFOC29, calculated, turning slowly in the 3D editor; later visits reopen the last tab
   let tab = null; try { tab = localStorage.getItem('wm-tab'); } catch (e) {}
   showTab(tab && $('[data-panel="' + tab + '"]') ? tab : 'view');
   $('#calcBtn').click();

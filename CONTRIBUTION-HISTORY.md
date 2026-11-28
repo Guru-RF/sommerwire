@@ -62,6 +62,7 @@ integration below builds on [Koen’s upstream revision of 27 November](https://
 | 28 Nov 2026 10:53 | [#8 Add tuner profiles for SWR colors](https://github.com/Guru-RF/sommerwire/pull/8) · [Merge 7f3f4d48](https://github.com/Guru-RF/sommerwire/commit/7f3f4d48) | No-tuner, internal-tuner and external-tuner thresholds colour the existing SWR values in the readout, band buttons and sweep summary. |
 | 28 Nov 2026 11:34 | [#9 Share editable antenna models by link](https://github.com/Guru-RF/sommerwire/pull/9) · [Merge f3d0362d](https://github.com/Guru-RF/sommerwire/commit/f3d0362d) | Share the editable model in a URL fragment. Opening the link validates the model and recalculates its results locally. |
 | 28 Nov 2026 12:41 | [#10 Add RF.Guru and Koen themes and expand project credits](https://github.com/Guru-RF/sommerwire/pull/10) · [Merge dd208e61](https://github.com/Guru-RF/sommerwire/commit/dd208e615548cde7b6adf82e67ebc46e0d1faf41) | RF.Guru became the default theme, with Koen’s original look still selectable. Expanded the contributor credits and added dated change notes in Help. |
+| 28 Nov 2026 12:42 | [#11 Record the merged theme contribution](https://github.com/Guru-RF/sommerwire/pull/11) · [Merge 12db47bc](https://github.com/Guru-RF/sommerwire/commit/12db47bc378acfeaa1dd99e045eebaba6318a29e) | Recorded #10’s merge in this ledger. |
 
 The fork’s proposal to withhold mixed-ground gain was recorded open on 27 November. It has no merge in the RF.Guru
 history above. [Fork PR #1 and current status](https://github.com/Guru-RF/sommerwire/pull/1)

@@ -212,7 +212,7 @@ test('pattern menu offers Horizontal + vertical and keeps the other modes', () =
 test('the RF.Guru examples open in H + V; no other example sets a pattern view', () => {
   const withPol = EXAMPLES.filter(e => e.pol).map(e => [e.name.slice(0, 17), e.pol]);
   assert.deepEqual(plain(withPol), [['RF.Guru EFHW16080', 'hv'], ['RF.Guru EFHW8040 ', 'hv'], ['RF.Guru EFOC29 en', 'hv']]);
-  assert.match(section("$('#exampleSel').onchange", "$('#openBtn')"), /if \(ex\.pol\) \$\('#polSel'\)\.value = ex\.pol/);
+  assert.match(section('// open an example exactly as the Examples menu does', "$('#openBtn')"), /if \(ex\.pol\) \$\('#polSel'\)\.value = ex\.pol/);
 });
 
 test('H + V draws the H and V columns of the same cuts against the total-field maximum, labelled', () => {

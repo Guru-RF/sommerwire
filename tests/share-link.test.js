@@ -178,13 +178,14 @@ test('table cells escape the model text they show', () => {
 });
 
 // The page: openShared() and the start-up block, with the DOM stubbed
-function page(hash) {
+function page(hash, search = '') {
   const nodes = new Map(), log = [];
   const $ = id => { if (!nodes.has(id)) nodes.set(id, { value: '', hidden: true, textContent: '', open: false, showModal() { this.open = true; }, close() { this.open = false; }, click() { log.push(['click', id]); } }); return nodes.get(id); };
   const S = { model: null, calcFreq: 14.15 };
   const ctx = {
-    $, S, SWShare, EXAMPLES: [{ name: 'Default' }], clone: o => JSON.parse(JSON.stringify(o)), log,
-    location: { hash, href: 'https://example.test/sw/' + hash }, listeners: {},
+    $, S, SWShare, EXAMPLES: [{ name: 'Other' }, { name: 'Default' }], DEFAULT_EXAMPLE: 1, clone: o => JSON.parse(JSON.stringify(o)), log,
+    loadExample: i => ctx.loadModel(ctx.clone(ctx.EXAMPLES[i])),
+    location: { hash, search, href: 'https://example.test/sw/' + search + hash }, listeners: {},
     window: { addEventListener: (k, f) => { ctx.listeners[k] = f; } },
     localStorage: { getItem: () => null }, showTab: t => log.push(['tab', t]),
     loadModel: (m, keep) => { S.model = m; log.push(['load', m.name, keep, S.calcFreq]); },
@@ -203,6 +204,19 @@ test('ordinary start (no fragment, or a help anchor) loads the default example a
     assert.deepEqual(p.log.filter(l => l[0] !== 'tab'), [['load', 'Default', undefined, 14.15], ['click', '#calcBtn']], h);
     assert.equal(p.$('#shareNote').hidden, true, h);
   }
+});
+
+test('old theme parameters change nothing: a theme fragment is an ordinary start, a theme query keeps the share link working', async () => {
+  for (const h of ['#skin=koen', '#theme=koen', '#skin=rfguru']) {
+    const p = page(h); await p.ready;
+    assert.deepEqual(p.log.filter(l => l[0] !== 'tab'), [['load', 'Default', undefined, 14.15], ['click', '#calcBtn']], h);
+    assert.equal(p.$('#shareNote').hidden, true, h);
+  }
+  const m = dipole(); m.name = 'Shared one';
+  const h = await SWShare.encode({ model: m, calcFreq: 14.3, view: { pol: 'hv' } });
+  const p = page(h, '?skin=koen&theme=koen'); await p.ready;
+  assert.deepEqual(p.log.filter(l => l[0] !== 'tab'), [['load', 'Shared one', true, 14.3], ['click', '#calcBtn']]);
+  assert.equal(p.$('#shareNote').hidden, true);
 });
 
 test('a share link opens its model, frequency and view, then calculates it like any start', async () => {
