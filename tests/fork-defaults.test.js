@@ -70,7 +70,7 @@ test('no edition version: no badge, constant or footer version; What changed kee
   const sec = section('<h2 id="h-changes">', '<h2 id="h-licence">', help);
   assert.doesNotMatch(sec, /version \d/i);
   const heads = [...sec.matchAll(/<h3>([^<]*)<\/h3>/g)].map(m => m[1]);
-  assert.deepEqual(heads, ['2026-11-28 · Phone layout', '2026-11-28 · Embeddable 3D view, tidier band strip', '2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
+  assert.deepEqual(heads, ['2026-11-28 · Callsign plates in the credits', '2026-11-28 · Phone layout', '2026-11-28 · Embeddable 3D view, tidier band strip', '2026-11-28 · One theme, EFOC29 first', '2026-11-28 · Themes', '2026-11-28 · Model sharing and staged results', '2026-11-27']);
   assert.match(sec, /<b>RF\.Guru<\/b> is the only theme/);
   assert.match(sec, /opens the <b>RF\.Guru EFOC29<\/b> example with its eight bands/);
   // the share-link format number is the model encoding, not an edition version, and stays

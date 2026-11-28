@@ -23,7 +23,7 @@ presets, polarization readouts, calculation improvements and editable model link
 
 The [contribution history](CONTRIBUTION-HISTORY.md) documents the original app, upstream fixes and RF.Guru additions.
 GitHub lists [every pull request merged into RF.Guru main](https://github.com/Guru-RF/sommerwire/pulls?q=is%3Apr+is%3Amerged+base%3Amain).
-Sommerwire is free and unencumbered software, released into the public domain under the [Unlicense](LICENSE).
+Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apache-2.0.txt). Upstream material remains under the [Unlicense](LICENSES/Unlicense.txt). See [Licence](#licence) for scope.
 
 ## Features
 
@@ -72,6 +72,9 @@ Sommerwire is free and unencumbered software, released into the public domain un
   touch-sized controls. A finger on empty space turns the 3D view in Select mode; two fingers zoom. Wide tables
   scroll inside their own frame, never the page. Nothing is removed, and larger screens and the `?embed=1`
   presentation are laid out as before.
+- **Callsign plates**: the footer credit shows Belgian-style callsign plates, drawn locally in HTML, CSS and an
+  inline SVG: ON9PK Koen Van den Heuvel (to his [QRZ.com page](https://www.qrz.com/db/ON9PK)) and ON6URE Joeri Van
+  Dooren (to [on6ure.be](https://on6ure.be/)).
 - **What changed**: dated change notes in Help (linked under the name and from the footer). The edition carries no
   version number.
 
@@ -136,6 +139,21 @@ cross-site frame is often denied it, and it does not need it), sends nothing to 
 nothing from it (no `postMessage`), and changes no security setting of either page. It solves only the frequency on
 show, in a Web Worker, as the app does. The site sets no `X-Frame-Options` or `frame-ancestors` rule; a host page
 with its own Content Security Policy must allow `https://sommerwire.app` in `frame-src`.
+
+## MCP server
+
+`mcp/` holds a local, read-only [Model Context Protocol](https://modelcontextprotocol.io) server, so an MCP client
+such as Claude Code or Claude Desktop can use Sommerwire as a tool. It runs over stdio on your own computer with the
+same engine and model code as the page, and offers four tools: `validate_model`, `solve`, `share_link` (a
+`https://sommerwire.app/#sw=…` link, made locally) and `export_maa` (the `.maa` text, with what the format loses). It
+writes no files, opens no network connections and needs no account; `solve` labels its figures as simulation, not
+measurement, with the model's assumptions and every solver warning. The app itself is unchanged and still has no
+dependencies. Install, client configuration, limits and a worked example: [mcp/README.md](mcp/README.md).
+
+```bash
+cd mcp && npm ci && npm test
+claude mcp add sommerwire -- node /path/to/sommerwire/mcp/src/server.js
+```
 
 ## RF.Guru EFHW inverted-L examples: provenance and assumptions
 
@@ -269,6 +287,7 @@ brand/               logo and icon (light, dark and auto-switching SVG)
 tools/               make_logo.py, which generates the logo files
 models/              example model files (.maa)
 tests/               node --test regression tests (embedded presentation and band strip layout, RF.Guru EFHW inverted-L and EFOC29 examples, band strip, H + V pattern view, angle summary and RDF, polarization label and editor far-field views, H / V peak readout, low- and high-angle window tiles and the NVIS naming rule)
+mcp/                 local read-only MCP server (stdio) over the same engine and model code, with its own node --test tests
 validation/nec2c/    comparison with NEC-2: decks, outputs, scripts
 validation/efoc29-mast/  EFOC29 on a 10 m mast with a buried return: feed-height study on above-soil proxies, with a nec2c check
 ```
@@ -286,5 +305,4 @@ published dimensions; see [provenance and assumptions](#rfguru-efhw-inverted-l-e
 
 ## Licence
 
-Public domain under the [Unlicense](LICENSE): anyone may copy, modify, publish, use, compile, sell or distribute
-Sommerwire, for any purpose. It comes without any warranty.
+Original RF.Guru fork contributions are offered under [Apache-2.0](LICENSES/Apache-2.0.txt). Upstream material remains under the [Unlicense](LICENSES/Unlicense.txt). This includes upstream code merged after the fork. In mixed files each license applies to its respective portions. Earlier Unlicense grants for published fork contributions remain available. Third-party material retains its applicable terms. See [LICENSE](LICENSE).

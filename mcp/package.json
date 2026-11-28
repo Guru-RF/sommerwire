@@ -1,0 +1,25 @@
+{
+  "name": "sommerwire-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local, read-only MCP server (stdio) for the Sommerwire antenna modeller: validate, solve, share link, .maa export.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "sommerwire-mcp": "src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0"
+  }
+}

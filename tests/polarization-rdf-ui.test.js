@@ -359,9 +359,9 @@ test('wording: the SWR label and the help say where SWR comes from, and what H a
   assert.doesNotMatch(help, /the polarization component that is larger there/);
 });
 
-test('the public-domain licence and source credits are preserved', () => {
-  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'LICENSE'))).digest('hex'), '6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e');
-  for (const f of ['engine.js', 'efhwgen.js', 'structgen.js', 'hexgen.js']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0], /ON9PK Koen Van den Heuvel.*public domain/);
+test('the upstream Unlicense and credits are preserved alongside the fork license', () => {
+  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'LICENSES', 'Unlicense.txt'))).digest('hex'), '6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e');
+  for (const f of ['engine.js', 'efhwgen.js', 'structgen.js', 'hexgen.js']) assert.match(fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n')[0], /ON9PK Koen Van den Heuvel.*Upstream material: Unlicense.*Apache-2.0/);
 });
 
 test('the footer, Help and README credit both people in the RF.Guru edition byline', () => {

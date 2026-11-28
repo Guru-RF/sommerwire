@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* Structures next to the antenna, expanded into wires for the solver.
  * house: { type:'house', x, y (centre of the footprint, m), len (along the ridge), wid, eave (wall height),
  *          ridge (ridge height; equal to eave for a flat roof), rot (degrees, ridge direction from +X),

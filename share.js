@@ -1,4 +1,4 @@
-/* Sommerwire — by ON9PK Koen Van den Heuvel. Free and unencumbered software released into the public domain (see LICENSE, https://unlicense.org). */
+/* Sommerwire — by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE for scope and earlier grants. */
 /* Share links: the editable model in the URL fragment, with no server.
  *
  *   https://…/index.html#sw=1.d.<base64url>

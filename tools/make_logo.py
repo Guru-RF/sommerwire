@@ -1,4 +1,4 @@
-# Sommerwire, by ON9PK Koen Van den Heuvel. Public domain (Unlicense).
+# Sommerwire, by ON9PK Koen Van den Heuvel. Upstream material: Unlicense. Original RF.Guru fork contributions: Apache-2.0. See repository LICENSE.
 # Usage: python3 tools/make_logo.py brand
 # Generates the Sommerwire logo SVGs: a vertical antenna on the ground with its radiated wavefronts,
 # and their faint mirror image below the ground (image theory / Sommerfeld ground).
